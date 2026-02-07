@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Terminal + GUI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="terminal" class="mode">
+      <div id="terminal-output" aria-live="polite"></div>
+      <div id="terminal-input-line">
+        <span id="prompt">Matheus@saragoca:~$</span>
+        <input id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+      </div>
+    </section>
+
+    <section id="gui" class="mode hidden">
+      <div id="desktop">
+        <div id="desktop-icons" aria-label="Atalhos do desktop">
+          <button class="desktop-icon" type="button" data-command="about">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/pessoa.png" alt="" />
+            </span>
+            <span class="icon-label">About</span>
+          </button>
+          <button class="desktop-icon" type="button" data-command="social">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/midia-social.png" alt="" />
+            </span>
+            <span class="icon-label">Social</span>
+          </button>
+          <button class="desktop-icon" type="button" data-command="projects">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/livros.png" alt="" />
+            </span>
+            <span class="icon-label">Projects</span>
+          </button>
+          <button class="desktop-icon" type="button" data-command="resume">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/curriculo.png" alt="" />
+            </span>
+            <span class="icon-label">Curriculum</span>
+          </button>
+          <button class="desktop-icon" type="button" data-command="email">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/o-email.png" alt="" />
+            </span>
+            <span class="icon-label">Email</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="start-menu" class="hidden">
+        <div class="start-menu-header">Start</div>
+        <ul>
+          <li data-command="about">
+            <span class="start-icon" aria-hidden="true">
+              <img class="start-icon-img" src="assets/pessoa.png" alt="" />
+            </span>
+            About
+          </li>
+          <li data-command="social">
+            <span class="start-icon" aria-hidden="true">
+              <img class="start-icon-img" src="assets/midia-social.png" alt="" />
+            </span>
+            Social
+          </li>
+          <li data-command="projects">
+            <span class="start-icon" aria-hidden="true">
+              <img class="start-icon-img" src="assets/livros.png" alt="" />
+            </span>
+            Projects
+          </li>
+          <li data-command="resume">
+            <span class="start-icon" aria-hidden="true">
+              <img class="start-icon-img" src="assets/curriculo.png" alt="" />
+            </span>
+            Curriculum
+          </li>
+          <li data-command="email">
+            <span class="start-icon" aria-hidden="true">
+              <img class="start-icon-img" src="assets/o-email.png" alt="" />
+            </span>
+            Email
+          </li>
+          <li data-command="terminal">
+            <span class="start-icon" aria-hidden="true">
+              <span class="start-icon-terminal-text">>_</span>
+            </span>
+            Terminal
+          </li>
+        </ul>
+      </div>
+
+      <div id="taskbar">
+        <button id="start-button" type="button">Start</button>
+        <div id="task-buttons"></div>
+        <div id="taskbar-clock">Offline</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "user": "Matheus",
+    "machine": "saragoca",
+    "name": "Matheus Saragoca",
+    "role": "Desenvolvedor de Software",
+    "location": "Brasil"
+  },
+  "banner": [
+    "\u001b[33m██████╗  ██████╗ ██████╗ ████████╗███████╗ ██████╗ ██╗     ██╗ ██████╗\u001b[0m",
+    "\u001b[33m██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔═══██╗██║     ██║██╔═══██╗\u001b[0m",
+    "\u001b[33m██████╔╝██║   ██║██████╔╝   ██║   █████╗  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+    "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+    "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
+    "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
+    "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
+  ],
+  "about": [
+    "Sou desenvolvedor de software com forte base em programação competitiva, ciência de dados e inteligência artificial. Atuo de forma organizada e proativa, com foco em resolução de problemas, qualidade de código e melhoria contínua de processos. Tenho experiência no desenvolvimento de sistemas web e back-end, automação e análise de dados, além da construção e treinamento de modelos de aprendizado de máquina e aprendizado profundo.",
+    "Participo de projetos de software científico voltados à pesquisa, incluindo classificação de imagens médicas com redes neurais convolucionais, integração de dados clínicos e geração de relatórios técnicos e métricas de desempenho. Possuo domínio prático de Python, SQL, C++, Java, JavaScript e Kotlin, bem como de frameworks e bibliotecas como Django, Flask, React, Pandas, NumPy, TensorFlow, PyTorch e Scikit-learn.",
+    "Tenho facilidade para trabalhar em equipe, boa comunicação interpessoal e disciplina no cumprimento de prazos e padrões técnicos. Busco aprendizado contínuo e aprimoramento profissional, com interesse especial em algoritmos, estruturas de dados, desenvolvimento de sistemas inteligentes e aplicações de IA em contextos científicos e educacionais.",
+    "Este portfolio demonstra um terminal Ubuntu no browser e uma GUI retro inspirada no Windows 95."
+  ],
+  "aboutKeywords": [
+    "programação competitiva",
+    "ciência de dados",
+    "inteligência artificial",
+    "aprendizado de máquina",
+    "aprendizado profundo",
+    "redes neurais convolucionais",
+    "Python",
+    "SQL",
+    "C++",
+    "Java",
+    "JavaScript",
+    "Kotlin",
+    "Django",
+    "Flask",
+    "React",
+    "Pandas",
+    "NumPy",
+    "TensorFlow",
+    "PyTorch",
+    "Scikit-learn",
+    "algoritmos",
+    "estruturas de dados",
+    "IA"
+  ],
+  "social": [
+    "GitHub: https://github.com/Maitai0981",
+    "LinkedIn: https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/",
+    "Instagram: https://www.instagram.com/math_sara.cpp/",
+    "Codeforces: https://codeforces.com/profile/Matheus2081",
+    "Beecrowd: https://judge.beecrowd.com/pt/profile/999543"
+  ],
+  "projects": [
+    {
+      "name": "SupaSport",
+      "description": "O objetivo do projeto é oferecer uma plataforma completa para que usuários possam encontrar, reservar e pagar por horários em estabelecimentos esportivos, como quadras e ginásios. Proprietários de estabelecimentos também podem cadastrar e gerenciar seus locais de forma simples e intuitiva.",
+      "links": [
+        "https://github.com/Maitai0981/pdm-001"
+      ]
+    },
+    {
+      "name": "PIBIC Dermatologia",
+      "description": "É um aplicativo móvel desenvolvido em React Native/Expo com o objetivo de auxiliar na análise preliminar de lesões de pele.",
+      "links": [
+        "https://github.com/Maitai0981/pibic_02"
+      ]
+    },
+    {
+      "name": "Sistema de cadastro de alunos",
+      "description": "Sistema CRUD para cadastro de alunos com upload de imagens, desenvolvido em Django REST Framework.",
+      "links": [
+        "https://github.com/Maitai0981/Aula_crud_aluno"
+      ]
+    },
+    {
+      "name": "Crud de um banco de dados em python",
+      "description": "um pequeno crud de Banco de dados em python",
+      "links": [
+        "https://github.com/Maitai0981/Crud_BD_02"
+      ]
+    }
+  ],
+  "resume": [
+    "Curriculo: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
+  ],
+  "email": [
+    "Contato: matheussaragoca2017@gmail.com"
+  ],
+  "help": [
+    "Comandos internos definidos. Use `help <comando>` para detalhes.",
+    "about   banner  clear  email   exit   exit-gui",
+    "gui     help    history projects reload curriculum",
+    "social  terminal"
+  ],
+  "commandHelp": {
+    "help": "help [comando]\nMostra a lista de comandos ou detalhes do comando informado.",
+    "about": "about\nResumo profissional.",
+    "social": "social\nLinks para redes sociais.",
+    "projects": "projects\nLista de projetos.",
+    "resume": "resume\nLink do curriculo.",
+    "curriculum": "curriculum\nAlias de resume.",
+    "email": "email\nContato por email.",
+    "banner": "banner\nMostra o banner inicial.",
+    "history": "history\nMostra o historico da sessao.",
+    "clear": "clear\nLimpa o terminal.",
+    "cls": "cls\nAlias de clear.",
+    "reload": "reload\nReinicia o estado da sessao.",
+    "exit": "exit\nEncerra a sessao do terminal.",
+    "gui": "gui\nAlterna para o modo grafico.",
+    "exit-gui": "exit-gui\nSai do modo grafico.",
+    "terminal": "terminal\nSinonimo de exit-gui."
+  }
+}
