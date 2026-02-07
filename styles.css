@@ -139,7 +139,7 @@ body {
 .link-icon-linkedin { background: #9bc5ff; }
 .link-icon-instagram { background: #ffc2f0; }
 .link-icon-codeforces { background: #ffd79a; }
-.link-icon-email { background: #b8f5d0; }
+.link-icon-email { background: #e83636; }
 .link-icon-beecrowd { background: #ffe8b5; }
 .link-icon-link { background: #e4e4e4; }
 
@@ -147,7 +147,7 @@ body {
 .link-linkedin { color: #4da3ff; }
 .link-instagram { color: #ff7ad9; }
 .link-codeforces { color: #ffb74a; }
-.link-email { color: #9ae6b4; }
+.link-email { color: #e83636; }
 .link-beecrowd { color: #e0a931; }
 
 /* GUI */
