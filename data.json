@@ -66,6 +66,11 @@
           "name": "SupaSport",
           "description": "O objetivo do projeto e oferecer uma plataforma completa para que usuarios possam encontrar, reservar e pagar por horarios em estabelecimentos esportivos, como quadras e ginasios. Proprietarios de estabelecimentos tambem podem cadastrar e gerenciar seus locais de forma simples e intuitiva.",
           "details": "Plataforma de reservas esportivas com foco em descoberta de locais, agendamento e pagamento. Inclui area do proprietario para cadastro e administracao de quadras e horarios.",
+          "lessons": [
+            "Modelagem de disponibilidade e conflitos de reservas.",
+            "Separacao de fluxos entre usuario e proprietario com permissoes.",
+            "Integracao de pagamento e notificacoes."
+          ],
           "aliases": ["supasport", "reservas esportivas", "quadras"],
           "links": [
             "https://github.com/Maitai0981/pdm-001"
@@ -75,6 +80,11 @@
           "name": "PIBIC Dermatologia",
           "description": "E um aplicativo movel desenvolvido em React Native/Expo com o objetivo de auxiliar na analise preliminar de lesoes de pele.",
           "details": "Aplicativo mobile voltado a triagem de lesoes de pele, com foco em uma experiencia simples para coleta de informacoes e suporte a pesquisa.",
+          "lessons": [
+            "Pre-processamento e balanceamento de imagens para treino.",
+            "Otimizacao de desempenho no mobile.",
+            "Alinhamento de requisitos com area medica."
+          ],
           "stack": ["React Native", "Expo"],
           "aliases": ["pibic", "dermatologia", "lesoes de pele"],
           "links": [
@@ -85,6 +95,11 @@
           "name": "Sistema de cadastro de alunos",
           "description": "Sistema CRUD para cadastro de alunos com upload de imagens, desenvolvido em Django REST Framework.",
           "details": "API REST para cadastro de alunos com suporte a upload de imagens e operacoes CRUD completas.",
+          "lessons": [
+            "Upload seguro de imagens e validacao de formatos.",
+            "Serializacao e consistencia dos endpoints REST.",
+            "Automacao de CRUD com testes basicos."
+          ],
           "stack": ["Python", "Django REST Framework"],
           "aliases": ["cadastro de alunos", "alunos", "crud alunos", "django"],
           "links": [
@@ -95,12 +110,21 @@
           "name": "Crud de um banco de dados em python",
           "description": "Um pequeno CRUD de banco de dados em Python.",
           "details": "Projeto simples de CRUD em Python para operacoes basicas em banco de dados.",
+          "lessons": [
+            "Tratamento de erros e validacao de entradas.",
+            "Modelagem simples de tabelas e consultas."
+          ],
           "stack": ["Python"],
           "aliases": ["crud python", "banco de dados", "crud bd"],
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]
         }
+      ],
+      "education": [
+        "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas, IFAM Campus Parintins | 2023 - 2025",
+        "Escola SESI/SENAI Padre Francisco Luppino | 2017 - 2022",
+        "Escola Aloys Joao Mann | 2013 - 2016"
       ],
       "resume": [
         "Curriculo: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
@@ -120,6 +144,7 @@
         "cowsay - exibe uma vaca falando",
         "date - mostra data e hora atuais",
         "email - contato por email",
+        "education - formacao academica",
         "find - alias de grep",
         "grep - busca termo em sobre e projetos",
         "gui - alterna para o modo grafico",
@@ -150,6 +175,7 @@
         "resume": "resume\nLink do curriculo.",
         "curriculum": "curriculum\nAlias de resume.",
         "email": "email\nContato por email.",
+        "education": "education\nMostra as instituicoes de ensino.",
         "banner": "banner\nMostra o banner inicial.",
         "history": "history\nMostra o historico da sessao.",
         "clear": "clear\nLimpa o terminal.",
@@ -235,6 +261,11 @@
           "name": "SupaSport",
           "description": "The project aims to provide a complete platform for users to find, book, and pay for time slots at sports facilities such as courts and gyms. Facility owners can also register and manage their locations in a simple and intuitive way.",
           "details": "Sports booking platform focused on discovery, scheduling, and payments. Includes an owner area to register and manage courts and time slots.",
+          "lessons": [
+            "Modeled availability and avoided booking conflicts.",
+            "Separated user and owner flows with permissions.",
+            "Integrated payments and notifications."
+          ],
           "aliases": ["supasport", "sports booking", "courts"],
           "links": [
             "https://github.com/Maitai0981/pdm-001"
@@ -244,6 +275,11 @@
           "name": "PIBIC Dermatologia",
           "description": "A mobile app built with React Native/Expo to assist in the preliminary analysis of skin lesions.",
           "details": "Mobile app focused on skin lesion screening with a simple experience for data collection and research support.",
+          "lessons": [
+            "Image preprocessing and dataset balancing.",
+            "Mobile performance optimization.",
+            "Aligned requirements with medical stakeholders."
+          ],
           "stack": ["React Native", "Expo"],
           "aliases": ["pibic", "dermatology", "skin lesions"],
           "links": [
@@ -254,6 +290,11 @@
           "name": "Student registration system",
           "description": "CRUD system for student registration with image upload, built with Django REST Framework.",
           "details": "REST API for student registration with image upload support and full CRUD operations.",
+          "lessons": [
+            "Secure image upload and format validation.",
+            "Serialization consistency across REST endpoints.",
+            "CRUD automation with basic tests."
+          ],
           "stack": ["Python", "Django REST Framework"],
           "aliases": ["students", "crud students", "django"],
           "links": [
@@ -264,12 +305,21 @@
           "name": "Database CRUD in Python",
           "description": "A small database CRUD in Python.",
           "details": "Simple Python CRUD project for basic database operations.",
+          "lessons": [
+            "Error handling and input validation.",
+            "Simple table modeling and queries."
+          ],
           "stack": ["Python"],
           "aliases": ["crud python", "database", "crud db"],
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]
         }
+      ],
+      "education": [
+        "IFAM - instituto federal de educacao ciencia e tecnologia do amazonas campus parintins | 2023 - 2025",
+        "sesi padre francisco luppino | 2017 - 2022",
+        "aloys joao mann | 2013 - 2016"
       ],
       "resume": [
         "Resume: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
@@ -289,6 +339,7 @@
         "cowsay - display a talking cow",
         "date - show current date and time",
         "email - email contact",
+        "education - education history",
         "find - alias for grep",
         "grep - search terms in about and projects",
         "gui - switch to GUI mode",
@@ -319,6 +370,7 @@
         "resume": "resume\nResume link.",
         "curriculum": "curriculum\nAlias for resume.",
         "email": "email\nEmail contact.",
+        "education": "education\nShows education history.",
         "banner": "banner\nShow the startup banner.",
         "history": "history\nShow session history.",
         "clear": "clear\nClear the terminal.",

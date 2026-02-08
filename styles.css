@@ -194,8 +194,10 @@ body {
 }
 
 .matrix-canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
   pointer-events: none;
   opacity: 0.28;
@@ -334,7 +336,10 @@ button,
 
 /* GUI */
 #gui {
-  background: linear-gradient(135deg, var(--gui-bg) 0%, var(--gui-bg-light) 100%);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.08), transparent 55%),
+    radial-gradient(circle at 80% 10%, rgba(0, 0, 0, 0.1), transparent 60%),
+    linear-gradient(135deg, var(--gui-bg) 0%, var(--gui-bg-light) 100%);
   position: relative;
   overflow: hidden;
   font-family: "MS Sans Serif", "Segoe UI", Tahoma, sans-serif;
@@ -345,9 +350,12 @@ button,
   position: absolute;
   inset: 0 0 40px 0;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
+    radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.08), transparent 60%);
+  background-size: 48px 48px, 48px 48px, 220px 220px, 280px 280px;
+  user-select: none;
 }
 
 #desktop-icons {
@@ -362,18 +370,36 @@ button,
 
 .desktop-icon {
   width: 120px;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: #ffffff;
   text-align: center;
   font-family: inherit;
   cursor: pointer;
   padding: 4px;
+  border-radius: 2px;
 }
 
 .desktop-icon:focus-visible {
   outline: 2px dotted #ffffff;
   outline-offset: 2px;
+}
+
+.desktop-icon.selected {
+  background: rgba(0, 0, 128, 0.35);
+  border: 1px dotted #ffffff;
+}
+
+.desktop-icon.selected .icon-label {
+  background: #000080;
+  padding: 2px 4px;
+  border: 1px dotted #ffffff;
+  text-shadow: none;
+}
+
+.desktop-icon.selected .icon-glyph {
+  border-color: #ffffff;
+  box-shadow: 1px 1px 0 #000000;
 }
 
 .icon-glyph {
@@ -408,8 +434,9 @@ button,
   left: 0;
   right: 0;
   height: 40px;
-  background: var(--gui-taskbar);
+  background: linear-gradient(180deg, #d7d7d7 0%, var(--gui-taskbar) 100%);
   border-top: 2px solid var(--gui-border-light);
+  box-shadow: inset 0 1px 0 #ffffff;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -455,6 +482,10 @@ button,
 
 .task-button.active {
   background: #bdbdbd;
+  border-top-color: var(--gui-btn-shadow);
+  border-left-color: var(--gui-btn-shadow);
+  border-right-color: var(--gui-border-light);
+  border-bottom-color: var(--gui-border-light);
 }
 
 #taskbar-clock {
@@ -467,13 +498,40 @@ button,
   position: absolute;
   left: 8px;
   bottom: 40px;
-  width: 200px;
+  width: 240px;
   background: var(--gui-taskbar);
   border: 2px solid var(--gui-border-light);
   border-right-color: var(--gui-border-dark);
   border-bottom-color: var(--gui-border-dark);
   box-shadow: 2px 2px 0 var(--gui-border-dark);
   z-index: 1000;
+  display: flex;
+  align-items: stretch;
+}
+
+.start-rail {
+  width: 28px;
+  background: linear-gradient(180deg, #000080 0%, #0a3e9a 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+}
+
+.start-rail span {
+  transform: rotate(-90deg);
+  transform-origin: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.start-menu-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .start-menu-header {
@@ -547,14 +605,19 @@ button,
 }
 
 .window-titlebar {
-  background: var(--gui-title);
-  color: var(--gui-title-text);
+  background: #7f7f7f;
+  color: #ededed;
   padding: 4px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: move;
   flex-shrink: 0;
+}
+
+.window.active .window-titlebar {
+  background: linear-gradient(90deg, #000080 0%, var(--gui-title) 100%);
+  color: var(--gui-title-text);
 }
 
 .window-title {
@@ -711,6 +774,12 @@ button,
   gap: 6px;
 }
 
+.algo-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .algo-bars {
   height: 160px;
   display: flex;
@@ -738,7 +807,68 @@ button,
   border-color: #6e2a2a;
 }
 
+.algo-graph {
+  padding: 6px;
+  background: #f1f1f1;
+  border: 2px inset var(--gui-border-mid);
+  display: none;
+}
+
+.algo-graph-svg {
+  width: 100%;
+  height: 180px;
+  display: block;
+}
+
+.algo-edge {
+  stroke: #5a5a5a;
+  stroke-width: 2px;
+}
+
+.algo-edge.active {
+  stroke: #b34545;
+  stroke-width: 3px;
+}
+
+.algo-edge-weight {
+  fill: #2a2a2a;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+.algo-node circle {
+  fill: #ffffff;
+  stroke: #2a2a2a;
+  stroke-width: 2px;
+}
+
+.algo-node-label {
+  fill: #2a2a2a;
+  font-size: 12px;
+  text-anchor: middle;
+  font-weight: 700;
+}
+
+.algo-node-distance {
+  fill: #2a2a2a;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+.algo-node.visited circle {
+  fill: #cfe5c3;
+}
+
+.algo-node.current circle {
+  fill: #f2c94c;
+}
+
 .algo-status {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.gui-lessons {
   font-size: 12px;
   color: #2a2a2a;
 }

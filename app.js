@@ -23,7 +23,7 @@
 
     options: {
       typing: false,
-      typingSpeed: 14
+      typingSpeed: 8
     },
     content: null,
     matrix: {
@@ -32,7 +32,9 @@
       ctx: null,
       animationId: null,
       columns: 0,
-      drops: []
+      drops: [],
+      width: 0,
+      height: 0
     }
   };
 
@@ -55,7 +57,16 @@
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
   const ANSI_REGEX = /\u001b\[(\d+)m/g;
 
-  const GUI_WINDOW_COMMANDS = ["about", "social", "projects", "resume", "email", "algorithms", "snake"];
+  const GUI_WINDOW_COMMANDS = [
+    "about",
+    "social",
+    "projects",
+    "education",
+    "resume",
+    "email",
+    "algorithms",
+    "snake"
+  ];
   const THEMES = ["dark", "light", "hacker", "retro"];
   const COMMANDS = [
     "help",
@@ -64,6 +75,7 @@
     "about",
     "social",
     "projects",
+    "education",
     "resume",
     "curriculum",
     "email",
@@ -90,6 +102,8 @@
     "snake"
   ];
 
+  const FAST_TYPING_SPEED = 2;
+
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
   const SUPPORTED_LANGS = ["pt", "en"];
@@ -108,6 +122,7 @@
           about: "Sobre",
           social: "Social",
           projects: "Projetos",
+          education: "Educacao",
           resume: "Curriculo",
           email: "Email",
           terminal: "Terminal",
@@ -118,6 +133,7 @@
           about: "Sobre",
           social: "Social",
           projects: "Projetos",
+          education: "Educacao",
           resume: "Curriculo",
           email: "Email",
           algorithms: "Visualizador de Algoritmos",
@@ -165,11 +181,14 @@
         meProjectsIntro: "Aqui estao meus projetos:",
         meNoMatchIntro: "Nao entendi a pergunta. Posso falar sobre:",
         meUnknown: "Nao entendi a pergunta. Pergunte sobre meus projetos ou perfil.",
+        localTimeLine: "Local em Londrina, Brasil: {{datetime}} {{tz}}",
         projectNoDescription: "Sem descricao.",
         projectNoDetails: "Sem detalhes cadastrados.",
         projectNoStack: "Nao informada.",
+        projectNoLessons: "Nao informado.",
         projectLinksLabel: "Links",
         projectStackLabel: "Stack",
+        projectLessonsLabel: "Licoes",
         projectDefaultName: "Projeto",
         noProjectsListed: "Nenhum projeto listado.",
         themeCurrent: "Tema atual: {{theme}}",
@@ -182,16 +201,19 @@
         searchNoResults: "Nenhum resultado encontrado.",
         searchAboutLabel: "Sobre",
         searchProjectsLabel: "Projetos",
-        algoHint: "Escolha um algoritmo de ordenacao e acompanhe as trocas.",
+        algoHint: "Escolha um algoritmo e acompanhe a execucao.",
         algoRandom: "Novo array",
+        algoReset: "Resetar",
         algoRun: "Executar",
         algoPause: "Pausar",
         algoStep: "Passo",
         algoBubbleLabel: "Bubble sort",
         algoSelectionLabel: "Selection sort",
+        algoMergeLabel: "Merge sort",
+        algoDijkstraLabel: "Dijkstra",
         algoStatusReady: "Pronto para iniciar.",
         algoStatusRunning: "Executando...",
-        algoStatusDone: "Ordenacao concluida.",
+        algoStatusDone: "Execucao concluida.",
         snakeHint: "Setas ou WASD para mover • Espaco para pausar.",
         snakeStart: "Iniciar",
         snakePause: "Pausar",
@@ -244,6 +266,7 @@
           about: "About",
           social: "Social",
           projects: "Projects",
+          education: "Education",
           resume: "Resume",
           email: "Email",
           terminal: "Terminal",
@@ -254,6 +277,7 @@
           about: "About",
           social: "Social",
           projects: "Projects",
+          education: "Education",
           resume: "Resume",
           email: "Email",
           algorithms: "Algorithm Visualizer",
@@ -301,11 +325,14 @@
         meProjectsIntro: "Here are my projects:",
         meNoMatchIntro: "I didn't get the question. I can talk about:",
         meUnknown: "I didn't get the question. Ask about my projects or profile.",
+        localTimeLine: "Local time in Londrina, Brazil is {{datetime}} {{tz}}",
         projectNoDescription: "No description.",
         projectNoDetails: "No details provided.",
         projectNoStack: "Not provided.",
+        projectNoLessons: "Not provided.",
         projectLinksLabel: "Links",
         projectStackLabel: "Stack",
+        projectLessonsLabel: "Lessons",
         projectDefaultName: "Project",
         noProjectsListed: "No projects listed.",
         themeCurrent: "Current theme: {{theme}}",
@@ -318,16 +345,19 @@
         searchNoResults: "No results found.",
         searchAboutLabel: "About",
         searchProjectsLabel: "Projects",
-        algoHint: "Pick a sorting algorithm and watch the swaps.",
+        algoHint: "Pick an algorithm and follow the execution.",
         algoRandom: "New array",
+        algoReset: "Reset",
         algoRun: "Run",
         algoPause: "Pause",
         algoStep: "Step",
         algoBubbleLabel: "Bubble sort",
         algoSelectionLabel: "Selection sort",
+        algoMergeLabel: "Merge sort",
+        algoDijkstraLabel: "Dijkstra",
         algoStatusReady: "Ready to start.",
         algoStatusRunning: "Running...",
-        algoStatusDone: "Sorting complete.",
+        algoStatusDone: "Execution complete.",
         snakeHint: "Arrows or WASD to move • Space to pause.",
         snakeStart: "Start",
         snakePause: "Pause",
@@ -501,6 +531,7 @@
       if (!winData) return;
       winData.element.style.zIndex = this.zIndex++;
       for (const data of this.windows.values()) {
+        data.element.classList.toggle("active", data.id === id && !data.minimized);
         data.taskButton.classList.toggle("active", data.id === id && !data.minimized);
       }
       if (winData.onFocus) {
@@ -513,6 +544,9 @@
       const shouldMinimize = force !== undefined ? force : !winData.minimized;
       winData.minimized = shouldMinimize;
       winData.element.classList.toggle("minimized", shouldMinimize);
+      if (shouldMinimize) {
+        winData.element.classList.remove("active");
+      }
       winData.taskButton.classList.toggle("active", !shouldMinimize);
       if (!shouldMinimize) {
         this.focusWindow(id);
@@ -604,6 +638,8 @@
     }
   };
 
+  let selectedDesktopIcon = null;
+
   function normalizeLanguage(input) {
     const value = String(input || "")
       .trim()
@@ -653,10 +689,49 @@
 
   function getBannerLines() {
     const content = getContent();
-    if (isMobileViewport() && Array.isArray(content.bannerMobile)) {
-      return content.bannerMobile;
-    }
-    return content.banner || [];
+    const baseLines =
+      isMobileViewport() && Array.isArray(content.bannerMobile)
+        ? content.bannerMobile
+        : content.banner || [];
+    const timeLine = buildLondrinaTimeLine();
+    return timeLine ? [...baseLines, timeLine] : baseLines;
+  }
+
+  function buildLondrinaTimeLine() {
+    const messages = getMessages();
+    const timeZone = "America/Sao_Paulo";
+    const now = new Date();
+    const locale = state.language === "pt" ? "pt-BR" : "en-GB";
+    const dateFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+    const timeFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    });
+    const tzFormatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      timeZoneName: "short"
+    });
+    const tzPart = tzFormatter
+      .formatToParts(now)
+      .find((part) => part.type === "timeZoneName")?.value;
+    const timezone = tzPart || "EET";
+    const datetime =
+      state.language === "pt"
+        ? `${dateFormatter.format(now)} às ${timeFormatter.format(now)}`
+        : `${dateFormatter.format(now)} at ${timeFormatter.format(now)}`;
+    const template =
+      messages.localTimeLine ||
+      "Local time in Londrina, Brazil is {{datetime}} {{tz}}";
+    return formatTemplate(template, { datetime, tz: timezone });
   }
 
   function getUi() {
@@ -846,6 +921,8 @@
     document.addEventListener("keydown", handleGlobalKeydown);
     document.addEventListener("click", handleClickSound, true);
     dom.desktop.addEventListener("click", handleDesktopClick);
+    dom.desktop.addEventListener("dblclick", handleDesktopDblClick);
+    dom.desktop.addEventListener("keydown", handleDesktopKeydown);
     dom.commandMenu.addEventListener("click", handleCommandMenuClick);
     dom.commandSearch.addEventListener("input", handleCommandSearch);
     dom.commandSearch.addEventListener("keydown", handleCommandSearchKeydown);
@@ -1177,7 +1254,7 @@
     }
 
     if (result.lines && result.lines.length > 0) {
-      appendOutputLines(result.lines, { typing: state.options.typing });
+      appendOutputLines(result.lines, { typing: shouldTypeLines(result.lines), speed: FAST_TYPING_SPEED });
     }
 
     if (result.action) {
@@ -1219,6 +1296,8 @@
         return { lines: content?.social || [] };
       case "projects":
         return { lines: formatProjects(content?.projects || []) };
+      case "education":
+        return { lines: content?.education || [] };
       case "resume":
         return { lines: content?.resume || [] };
       case "curriculum":
@@ -1343,6 +1422,13 @@
       if (project.name) fields.push(project.name);
       if (project.description) fields.push(project.description);
       if (project.details && project.details !== project.description) fields.push(project.details);
+      if (project.lessons) {
+        if (Array.isArray(project.lessons)) {
+          fields.push(project.lessons.join(", "));
+        } else {
+          fields.push(project.lessons);
+        }
+      }
       if (Array.isArray(project.stack) && project.stack.length) fields.push(project.stack.join(", "));
       if (Array.isArray(project.aliases) && project.aliases.length) fields.push(project.aliases.join(", "));
       if (Array.isArray(project.links) && project.links.length) fields.push(project.links.join(" | "));
@@ -1432,6 +1518,7 @@
         "about.txt": { type: "file", content: content.about || [] },
         "projects.txt": { type: "file", content: formatProjects(projects) },
         "social.txt": { type: "file", content: content.social || [] },
+        "education.txt": { type: "file", content: content.education || [] },
         "resume.txt": { type: "file", content: content.resume || [] },
         "email.txt": { type: "file", content: content.email || [] },
         "help.txt": { type: "file", content: content.help || [] },
@@ -1448,6 +1535,10 @@
     lines.push(name);
     if (description) lines.push(description);
     if (details) lines.push(details);
+    const lessons = formatProjectLessons(project, messages);
+    if (lessons) {
+      lines.push(`${messages.projectLessonsLabel}: ${lessons}`);
+    }
     if (Array.isArray(project.stack) && project.stack.length) {
       lines.push(`${messages.projectStackLabel}: ${project.stack.join(", ")}`);
     }
@@ -1455,6 +1546,19 @@
       lines.push(`${messages.projectLinksLabel}: ${project.links.join(" | ")}`);
     }
     return lines;
+  }
+
+  function formatProjectLessons(project, messages) {
+    if (!project) return "";
+    const raw = project.lessons;
+    if (Array.isArray(raw)) {
+      const items = raw.map((item) => String(item || "").trim()).filter(Boolean);
+      return items.length ? items.join(" | ") : "";
+    }
+    if (raw) {
+      return String(raw).trim();
+    }
+    return messages.projectNoLessons ? "" : "";
   }
 
   function slugify(value) {
@@ -1585,8 +1689,8 @@
     }
 
     state.me.active = true;
-    const response = buildMeResponse(message);
     state.me.history.push({ role: "user", text: message });
+    const response = buildMeResponse(message);
     state.me.history.push({ role: "assistant", text: response.join("\n") });
     return { lines: prefixAgentLines(response) };
   }
@@ -1685,6 +1789,18 @@
       "framework",
       "linguagem"
     ]);
+    const wantLessons = hasAny(normalizedMessage, [
+      "licao",
+      "licoes",
+      "lesson",
+      "lessons",
+      "desafio",
+      "desafios",
+      "challenge",
+      "challenges",
+      "dificuldade",
+      "dificuldades"
+    ]);
     const wantDetails = hasAny(normalizedMessage, [
       "detalhe",
       "detalhes",
@@ -1706,12 +1822,16 @@
     const description =
       project.details || project.description || messages.projectNoDetails;
     const stack = Array.isArray(project.stack) && project.stack.length ? project.stack.join(", ") : null;
+    const lessons = formatProjectLessons(project, messages);
     const links = Array.isArray(project.links) ? project.links : [];
 
     if (wantLinks && links.length) {
       lines.push(`${name} - ${messages.projectLinksLabel}: ${links.join(" | ")}`);
       if (wantDetails) {
         lines.push(description);
+      }
+      if (wantLessons && lessons) {
+        lines.push(`${messages.projectLessonsLabel}: ${lessons}`);
       }
       return lines;
     }
@@ -1720,6 +1840,9 @@
       lines.push(`${name} - ${messages.projectStackLabel}: ${stack || messages.projectNoStack}`);
       if (wantDetails) {
         lines.push(description);
+      }
+      if (wantLessons && lessons) {
+        lines.push(`${messages.projectLessonsLabel}: ${lessons}`);
       }
       if (wantLinks && links.length) {
         lines.push(`${messages.projectLinksLabel}: ${links.join(" | ")}`);
@@ -1730,6 +1853,9 @@
     lines.push(`${name}: ${description}`);
     if (stack) {
       lines.push(`${messages.projectStackLabel}: ${stack}`);
+    }
+    if (wantLessons && lessons) {
+      lines.push(`${messages.projectLessonsLabel}: ${lessons}`);
     }
     if (wantLinks && links.length) {
       lines.push(`${messages.projectLinksLabel}: ${links.join(" | ")}`);
@@ -1801,6 +1927,10 @@
         lines.push(`   ${project.description}`);
       } else if (messages.projectNoDescription) {
         lines.push(`   ${messages.projectNoDescription}`);
+      }
+      const lessons = formatProjectLessons(project, messages);
+      if (lessons) {
+        lines.push(`   ${messages.projectLessonsLabel}: ${lessons}`);
       }
       if (Array.isArray(project.links)) {
         project.links.forEach((link) => lines.push(`   ${link}`));
@@ -1976,12 +2106,51 @@
     }
   }
 
+  function selectDesktopIcon(icon) {
+    if (selectedDesktopIcon && selectedDesktopIcon !== icon) {
+      selectedDesktopIcon.classList.remove("selected");
+    }
+    selectedDesktopIcon = icon;
+    if (selectedDesktopIcon) {
+      selectedDesktopIcon.classList.add("selected");
+      selectedDesktopIcon.focus({ preventScroll: true });
+    }
+  }
+
+  function clearDesktopSelection() {
+    if (!selectedDesktopIcon) return;
+    selectedDesktopIcon.classList.remove("selected");
+    selectedDesktopIcon = null;
+  }
+
+  function openDesktopCommand(command) {
+    if (GUI_WINDOW_COMMANDS.includes(command)) {
+      openGuiWindow(command);
+    }
+  }
+
   function handleDesktopClick(event) {
+    const icon = event.target.closest(".desktop-icon");
+    if (!icon) {
+      clearDesktopSelection();
+      return;
+    }
+    selectDesktopIcon(icon);
+  }
+
+  function handleDesktopDblClick(event) {
     const icon = event.target.closest(".desktop-icon");
     if (!icon) return;
     const command = icon.dataset.command;
-    if (GUI_WINDOW_COMMANDS.includes(command)) {
-      openGuiWindow(command);
+    openDesktopCommand(command);
+  }
+
+  function handleDesktopKeydown(event) {
+    const icon = event.target.closest(".desktop-icon");
+    if (!icon) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      openDesktopCommand(icon.dataset.command);
     }
   }
 
@@ -2008,28 +2177,40 @@
         closeCommandMenu();
       }
     }
+
+    if (!event.target.closest(".desktop-icon")) {
+      clearDesktopSelection();
+    }
   }
 
   function clearOutput() {
     dom.terminalOutput.innerHTML = "";
   }
 
+  function shouldTypeLines(lines) {
+    if (!lines || lines.length === 0) return false;
+    const totalChars = lines.reduce((sum, line) => sum + String(line || "").length, 0);
+    return lines.length >= 5 || totalChars >= 240;
+  }
+
   function appendOutputLines(lines, options = {}) {
     if (!lines || lines.length === 0) return;
-    if (state.options.typing && options.typing !== false) {
-      typeLines(lines);
+    const shouldType = options.typing === true || (state.options.typing && options.typing !== false);
+    if (shouldType) {
+      const speed = typeof options.speed === "number" ? options.speed : state.options.typingSpeed;
+      typeLines(lines, speed);
     } else {
       lines.forEach((line) => appendOutputLine(line));
     }
   }
 
-  async function typeLines(lines) {
+  async function typeLines(lines, speed) {
     for (const line of lines) {
-      await typeLine(line);
+      await typeLine(line, speed);
     }
   }
 
-  function typeLine(line) {
+  function typeLine(line, speed) {
     return new Promise((resolve) => {
       const lineEl = document.createElement("div");
       lineEl.className = "terminal-line";
@@ -2049,7 +2230,7 @@
           renderLineContent(lineEl, safeLine);
           resolve();
         }
-      }, state.options.typingSpeed);
+      }, speed);
     });
   }
 
@@ -2292,14 +2473,16 @@
 
   function resizeMatrix() {
     if (!state.matrix.canvas || !state.matrix.ctx) return;
-    const width = dom.terminal.clientWidth;
-    const height = dom.terminal.clientHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     const dpr = window.devicePixelRatio || 1;
     state.matrix.canvas.width = width * dpr;
     state.matrix.canvas.height = height * dpr;
     state.matrix.canvas.style.width = `${width}px`;
     state.matrix.canvas.style.height = `${height}px`;
     state.matrix.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    state.matrix.width = width;
+    state.matrix.height = height;
     const columnWidth = 14;
     const columns = Math.max(1, Math.floor(width / columnWidth));
     state.matrix.columns = columns;
@@ -2309,8 +2492,8 @@
   function runMatrix() {
     const ctx = state.matrix.ctx;
     if (!ctx) return;
-    const width = dom.terminal.clientWidth;
-    const height = dom.terminal.clientHeight;
+    const width = state.matrix.width || window.innerWidth;
+    const height = state.matrix.height || window.innerHeight;
     ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
     ctx.fillRect(0, 0, width, height);
 
@@ -2450,6 +2633,9 @@
       case "projects":
         appendProjectCards(wrapper, content.projects || []);
         break;
+      case "education":
+        appendRowsFromLines(wrapper, content.education);
+        break;
       case "algorithms":
         wrapper.append(createAlgorithmViewer());
         break;
@@ -2492,7 +2678,9 @@
     algoSelect.className = "gui-select";
     [
       { value: "bubble", label: messages.algoBubbleLabel },
-      { value: "selection", label: messages.algoSelectionLabel }
+      { value: "selection", label: messages.algoSelectionLabel },
+      { value: "merge", label: messages.algoMergeLabel },
+      { value: "dijkstra", label: messages.algoDijkstraLabel }
     ].forEach((algo) => {
       const option = document.createElement("option");
       option.value = algo.value;
@@ -2507,9 +2695,17 @@
     controls.append(algoSelect, randomBtn, runBtn, stepBtn);
     wrapper.append(controls);
 
+    const view = document.createElement("div");
+    view.className = "algo-view";
+
     const bars = document.createElement("div");
     bars.className = "algo-bars";
-    wrapper.append(bars);
+
+    const graph = document.createElement("div");
+    graph.className = "algo-graph";
+
+    view.append(bars, graph);
+    wrapper.append(view);
 
     const status = document.createElement("div");
     status.className = "algo-status";
@@ -2517,6 +2713,8 @@
     wrapper.append(status);
 
     const BAR_COUNT = 18;
+    const graphData = buildDijkstraGraph();
+    const graphElements = buildGraphSvg(graphData, graph);
     let values = buildRandomValues();
     let steps = [];
     let stepIndex = 0;
@@ -2527,10 +2725,113 @@
       return Array.from({ length: BAR_COUNT }, () => Math.floor(20 + Math.random() * 80));
     }
 
+    function isGraphAlgo(algo) {
+      return algo === "dijkstra";
+    }
+
+    function buildDijkstraGraph() {
+      return {
+        nodes: [
+          { id: "A", x: 40, y: 40 },
+          { id: "B", x: 140, y: 20 },
+          { id: "C", x: 240, y: 50 },
+          { id: "D", x: 70, y: 130 },
+          { id: "E", x: 170, y: 120 },
+          { id: "F", x: 260, y: 140 }
+        ],
+        edges: [
+          { from: "A", to: "B", weight: 4 },
+          { from: "A", to: "D", weight: 2 },
+          { from: "B", to: "C", weight: 6 },
+          { from: "B", to: "E", weight: 5 },
+          { from: "D", to: "E", weight: 1 },
+          { from: "E", to: "C", weight: 2 },
+          { from: "D", to: "F", weight: 7 },
+          { from: "E", to: "F", weight: 3 }
+        ]
+      };
+    }
+
+    function buildGraphSvg(data, container) {
+      container.innerHTML = "";
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", "0 0 300 180");
+      svg.setAttribute("aria-hidden", "true");
+      svg.classList.add("algo-graph-svg");
+
+      const nodeMap = new Map(data.nodes.map((node) => [node.id, node]));
+      const edgeEls = new Map();
+      const nodeEls = new Map();
+      const distEls = new Map();
+
+      data.edges.forEach((edge) => {
+        const from = nodeMap.get(edge.from);
+        const to = nodeMap.get(edge.to);
+        if (!from || !to) return;
+        const line = document.createElementNS(svgNS, "line");
+        line.setAttribute("x1", from.x);
+        line.setAttribute("y1", from.y);
+        line.setAttribute("x2", to.x);
+        line.setAttribute("y2", to.y);
+        line.classList.add("algo-edge");
+        const key = [edge.from, edge.to].sort().join("-");
+        line.dataset.edge = key;
+        edgeEls.set(key, line);
+        svg.append(line);
+
+        const weight = document.createElementNS(svgNS, "text");
+        weight.setAttribute("x", (from.x + to.x) / 2);
+        weight.setAttribute("y", (from.y + to.y) / 2 - 4);
+        weight.classList.add("algo-edge-weight");
+        weight.textContent = edge.weight;
+        svg.append(weight);
+      });
+
+      data.nodes.forEach((node) => {
+        const group = document.createElementNS(svgNS, "g");
+        group.classList.add("algo-node");
+        group.dataset.node = node.id;
+
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", node.x);
+        circle.setAttribute("cy", node.y);
+        circle.setAttribute("r", "14");
+        group.append(circle);
+
+        const label = document.createElementNS(svgNS, "text");
+        label.setAttribute("x", node.x);
+        label.setAttribute("y", node.y + 4);
+        label.classList.add("algo-node-label");
+        label.textContent = node.id;
+        group.append(label);
+
+        const dist = document.createElementNS(svgNS, "text");
+        dist.setAttribute("x", node.x);
+        dist.setAttribute("y", node.y + 26);
+        dist.classList.add("algo-node-distance");
+        dist.textContent = "INF";
+        group.append(dist);
+
+        nodeEls.set(node.id, group);
+        distEls.set(node.id, dist);
+        svg.append(group);
+      });
+
+      container.append(svg);
+      return { svg, nodeEls, distEls, edgeEls };
+    }
+
     function buildSteps() {
       const algo = algoSelect.value;
       if (algo === "selection") {
         return buildSelectionSteps(values);
+      }
+      if (algo === "merge") {
+        return buildMergeSteps(values);
+      }
+      if (algo === "dijkstra") {
+        return buildDijkstraSteps(graphData);
       }
       return buildBubbleSteps(values);
     }
@@ -2573,6 +2874,103 @@
       return output;
     }
 
+    function buildMergeSteps(source) {
+      const arr = source.slice();
+      const temp = source.slice();
+      const output = [];
+
+      function mergeSort(start, end) {
+        if (end - start <= 1) return;
+        const mid = Math.floor((start + end) / 2);
+        mergeSort(start, mid);
+        mergeSort(mid, end);
+        let i = start;
+        let j = mid;
+        let k = start;
+        while (i < mid || j < end) {
+          if (j >= end || (i < mid && arr[i] <= arr[j])) {
+            temp[k] = arr[i];
+            i += 1;
+          } else {
+            temp[k] = arr[j];
+            j += 1;
+          }
+          output.push({ values: temp.slice(), highlight: [k], swap: false });
+          k += 1;
+        }
+        for (let idx = start; idx < end; idx += 1) {
+          arr[idx] = temp[idx];
+          output.push({ values: arr.slice(), highlight: [idx], swap: true });
+        }
+      }
+
+      mergeSort(0, arr.length);
+      return output;
+    }
+
+    function buildDijkstraSteps(data) {
+      const nodes = data.nodes.map((node) => node.id);
+      const adjacency = new Map(nodes.map((id) => [id, []]));
+      data.edges.forEach((edge) => {
+        adjacency.get(edge.from)?.push({ node: edge.to, weight: edge.weight });
+        adjacency.get(edge.to)?.push({ node: edge.from, weight: edge.weight });
+      });
+
+      const distances = {};
+      nodes.forEach((id) => {
+        distances[id] = Number.POSITIVE_INFINITY;
+      });
+      const start = nodes[0];
+      distances[start] = 0;
+
+      const visited = new Set();
+      const output = [];
+
+      while (visited.size < nodes.length) {
+        let current = null;
+        let best = Number.POSITIVE_INFINITY;
+        nodes.forEach((id) => {
+          if (!visited.has(id) && distances[id] < best) {
+            best = distances[id];
+            current = id;
+          }
+        });
+        if (!current) break;
+        output.push({
+          type: "graph",
+          current,
+          visited: Array.from(visited),
+          distances: { ...distances }
+        });
+        visited.add(current);
+        const neighbors = adjacency.get(current) || [];
+        neighbors.forEach((neighbor) => {
+          if (visited.has(neighbor.node)) return;
+          const candidate = distances[current] + neighbor.weight;
+          if (candidate < distances[neighbor.node]) {
+            distances[neighbor.node] = candidate;
+            output.push({
+              type: "graph",
+              current,
+              edge: { from: current, to: neighbor.node },
+              visited: Array.from(visited),
+              distances: { ...distances }
+            });
+          }
+        });
+      }
+
+      output.push({
+        type: "graph",
+        current: null,
+        visited: Array.from(visited),
+        distances: { ...distances },
+        done: true
+      });
+
+      return output;
+    }
+
     function ensureBars() {
       if (bars.children.length === BAR_COUNT) return;
       bars.innerHTML = "";
@@ -2594,6 +2992,52 @@
       });
     }
 
+    function renderGraphBase() {
+      renderGraph({
+        current: null,
+        visited: [],
+        distances: buildInitialDistances(graphData)
+      });
+    }
+
+    function renderGraph(step) {
+      if (!graphElements) return;
+      const visited = new Set(step?.visited || []);
+      const current = step?.current;
+      const distances = step?.distances || buildInitialDistances(graphData);
+      graphElements.nodeEls.forEach((group, id) => {
+        group.classList.toggle("visited", visited.has(id));
+        group.classList.toggle("current", current === id);
+        const distance = distances[id];
+        const distEl = graphElements.distEls.get(id);
+        if (distEl) {
+          distEl.textContent = Number.isFinite(distance) ? String(distance) : "INF";
+        }
+      });
+
+      graphElements.edgeEls.forEach((line) => line.classList.remove("active"));
+      if (step?.edge) {
+        const key = [step.edge.from, step.edge.to].sort().join("-");
+        const edgeEl = graphElements.edgeEls.get(key);
+        if (edgeEl) edgeEl.classList.add("active");
+      }
+    }
+
+    function buildInitialDistances(data) {
+      const distances = {};
+      data.nodes.forEach((node, index) => {
+        distances[node.id] = index === 0 ? 0 : Number.POSITIVE_INFINITY;
+      });
+      return distances;
+    }
+
+    function prepareView() {
+      const graphMode = isGraphAlgo(algoSelect.value);
+      bars.style.display = graphMode ? "none" : "flex";
+      graph.style.display = graphMode ? "block" : "none";
+      randomBtn.textContent = graphMode ? messages.algoReset : messages.algoRandom;
+    }
+
     function updateRunLabel() {
       runBtn.textContent = running ? messages.algoPause : messages.algoRun;
     }
@@ -2606,9 +3050,20 @@
       steps = [];
       stepIndex = 0;
       updateStatus(messages.algoStatusReady);
+      if (isGraphAlgo(algoSelect.value)) {
+        renderGraphBase();
+      }
     }
 
     function randomize() {
+      if (isGraphAlgo(algoSelect.value)) {
+        running = false;
+        clearInterval(intervalId);
+        intervalId = null;
+        resetSteps();
+        updateRunLabel();
+        return;
+      }
       values = buildRandomValues();
       running = false;
       clearInterval(intervalId);
@@ -2621,8 +3076,12 @@
     function applyStep() {
       const step = steps[stepIndex];
       if (!step) return false;
-      values = step.values.slice();
-      renderBars(step);
+      if (isGraphAlgo(algoSelect.value)) {
+        renderGraph(step);
+      } else {
+        values = step.values.slice();
+        renderBars(step);
+      }
       stepIndex += 1;
       return stepIndex < steps.length;
     }
@@ -2679,14 +3138,18 @@
     algoSelect.addEventListener("change", () => {
       stopRun();
       resetSteps();
-      renderBars();
+      prepareView();
+      if (!isGraphAlgo(algoSelect.value)) {
+        renderBars();
+      }
     });
 
+    prepareView();
     renderBars();
     updateRunLabel();
 
     wrapper.__windowMeta = {
-      size: { width: 440, height: 360 },
+      size: { width: 520, height: 420 },
       onClose: () => {
         clearInterval(intervalId);
       }
@@ -2997,6 +3460,14 @@
         const desc = document.createElement("p");
         desc.textContent = project.description;
         card.append(desc);
+      }
+
+      const lessons = formatProjectLessons(project, messages);
+      if (lessons) {
+        const lessonEl = document.createElement("p");
+        lessonEl.className = "gui-lessons";
+        lessonEl.textContent = `${messages.projectLessonsLabel}: ${lessons}`;
+        card.append(lessonEl);
       }
 
       if (Array.isArray(project.links) && project.links.length) {
