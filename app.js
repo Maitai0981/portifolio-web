@@ -4,11 +4,23 @@
     sessionActive: true,
     history: [],
     historyIndex: -1,
+    theme: "dark",
+    secretUnlocked: false,
+    commandMenuOpen: false,
+    commandMenuIndex: 0,
     options: {
       typing: false,
       typingSpeed: 14
     },
-    content: null
+    content: null,
+    matrix: {
+      active: false,
+      canvas: null,
+      ctx: null,
+      animationId: null,
+      columns: 0,
+      drops: []
+    }
   };
 
   const dom = {
@@ -16,6 +28,9 @@
     terminalOutput: null,
     terminalInput: null,
     prompt: null,
+    commandMenu: null,
+    commandSearch: null,
+    commandList: null,
     gui: null,
     desktop: null,
     startButton: null,
@@ -27,6 +42,45 @@
   const ANSI_REGEX = /\u001b\[(\d+)m/g;
 
   const GUI_WINDOW_COMMANDS = ["about", "social", "projects", "resume", "email"];
+  const THEMES = ["dark", "light", "hacker", "retro"];
+  const COMMANDS = [
+    "help",
+    "about",
+    "social",
+    "projects",
+    "resume",
+    "curriculum",
+    "email",
+    "banner",
+    "history",
+    "clear",
+    "cls",
+    "reload",
+    "exit",
+    "gui",
+    "exit-gui",
+    "terminal",
+    "theme"
+  ];
+
+  const audioState = {
+    context: null,
+    lastTime: 0
+  };
+
+  const KONAMI_SEQUENCE = [
+    "ArrowUp",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "ArrowLeft",
+    "ArrowRight",
+    "b",
+    "a"
+  ];
+  let konamiIndex = 0;
 
   const windowManager = {
     nextId: 1,
@@ -173,6 +227,9 @@
     dom.terminalOutput = document.getElementById("terminal-output");
     dom.terminalInput = document.getElementById("terminal-input");
     dom.prompt = document.getElementById("prompt");
+    dom.commandMenu = document.getElementById("command-menu");
+    dom.commandSearch = document.getElementById("command-search");
+    dom.commandList = document.getElementById("command-list");
     dom.gui = document.getElementById("gui");
     dom.desktop = document.getElementById("desktop");
     dom.startButton = document.getElementById("start-button");
@@ -185,7 +242,12 @@
     dom.startButton.addEventListener("click", toggleStartMenu);
     dom.startMenu.addEventListener("click", handleStartMenuClick);
     document.addEventListener("click", handleDocumentClick);
+    document.addEventListener("keydown", handleGlobalKeydown);
+    document.addEventListener("click", handleClickSound, true);
     dom.desktop.addEventListener("click", handleDesktopClick);
+    dom.commandMenu.addEventListener("click", handleCommandMenuClick);
+    dom.commandSearch.addEventListener("input", handleCommandSearch);
+    dom.commandSearch.addEventListener("keydown", handleCommandSearchKeydown);
   }
 
   async function loadContent() {
@@ -231,6 +293,31 @@
   function handleTerminalKeydown(event) {
     if (!state.sessionActive) return;
 
+    if (event.ctrlKey && event.key.toLowerCase() === "l") {
+      event.preventDefault();
+      event.stopPropagation();
+      clearOutput();
+      return;
+    }
+
+    if (event.ctrlKey && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleCommandMenu();
+      return;
+    }
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+      autocompleteCommand();
+      return;
+    }
+
+    if (shouldPlayKeyClick(event)) {
+      ensureAudio();
+      playClick();
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
       const input = dom.terminalInput.value.trim();
@@ -253,6 +340,188 @@
     }
   }
 
+  function handleGlobalKeydown(event) {
+    if (event.altKey && event.key.toLowerCase() === "g") {
+      event.preventDefault();
+      toggleMode();
+      return;
+    }
+
+    if (event.ctrlKey && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      toggleCommandMenu();
+      return;
+    }
+
+    if (event.ctrlKey && event.key.toLowerCase() === "l") {
+      event.preventDefault();
+      clearOutput();
+      return;
+    }
+
+    if (state.commandMenuOpen && event.key === "Escape") {
+      event.preventDefault();
+      closeCommandMenu();
+      return;
+    }
+
+    trackKonami(event);
+  }
+
+  function toggleMode() {
+    if (state.mode === "cli") {
+      setMode("gui");
+    } else {
+      setMode("cli");
+    }
+  }
+
+  function toggleCommandMenu() {
+    if (state.mode !== "cli" || !state.sessionActive) return;
+    if (state.commandMenuOpen) {
+      closeCommandMenu();
+    } else {
+      openCommandMenu();
+    }
+  }
+
+  function openCommandMenu() {
+    state.commandMenuOpen = true;
+    dom.commandMenu.classList.remove("hidden");
+    dom.commandMenu.setAttribute("aria-hidden", "false");
+    dom.commandSearch.value = "";
+    renderCommandMenu("");
+    dom.commandSearch.focus();
+  }
+
+  function closeCommandMenu() {
+    state.commandMenuOpen = false;
+    dom.commandMenu.classList.add("hidden");
+    dom.commandMenu.setAttribute("aria-hidden", "true");
+    focusInput();
+  }
+
+  function handleCommandMenuClick(event) {
+    const item = event.target.closest(".command-item");
+    if (!item) {
+      if (event.target === dom.commandMenu) {
+        closeCommandMenu();
+      }
+      return;
+    }
+    const command = item.dataset.command;
+    runCommandFromMenu(command);
+  }
+
+  function handleCommandSearch() {
+    renderCommandMenu(dom.commandSearch.value);
+  }
+
+  function handleCommandSearchKeydown(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeCommandMenu();
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveCommandSelection(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveCommandSelection(-1);
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      executeSelectedCommand();
+    }
+  }
+
+  function renderCommandMenu(filter) {
+    const query = (filter || "").toLowerCase().trim();
+    const helpMap = state.content?.commandHelp || {};
+    const items = COMMANDS.map((command) => ({
+      command,
+      description: helpMap[command]?.split("\n")[0] || ""
+    })).filter((item) => item.command.includes(query));
+
+    dom.commandList.innerHTML = "";
+    items.forEach((item, index) => {
+      const li = document.createElement("li");
+      li.className = "command-item";
+      if (index === 0) li.classList.add("active");
+      li.dataset.command = item.command;
+      const left = document.createElement("div");
+      left.textContent = item.command;
+      const right = document.createElement("span");
+      right.textContent = item.description;
+      li.append(left, right);
+      dom.commandList.append(li);
+    });
+    state.commandMenuIndex = 0;
+  }
+
+  function moveCommandSelection(delta) {
+    const items = Array.from(dom.commandList.querySelectorAll(".command-item"));
+    if (!items.length) return;
+    state.commandMenuIndex = (state.commandMenuIndex + delta + items.length) % items.length;
+    items.forEach((item, index) => {
+      item.classList.toggle("active", index === state.commandMenuIndex);
+    });
+    items[state.commandMenuIndex].scrollIntoView({ block: "nearest" });
+  }
+
+  function executeSelectedCommand() {
+    const items = Array.from(dom.commandList.querySelectorAll(".command-item"));
+    if (!items.length) return;
+    const item = items[state.commandMenuIndex] || items[0];
+    runCommandFromMenu(item.dataset.command);
+  }
+
+  function runCommandFromMenu(command) {
+    closeCommandMenu();
+    if (!command || !state.sessionActive) return;
+    state.history.push(command);
+    state.historyIndex = -1;
+    appendCommandEcho(command);
+    executeCommand(command, "cli");
+  }
+
+  function handleClickSound(event) {
+    const target = event.target;
+    const isInteractive = target.closest(
+      "button, a, .desktop-icon, #start-menu li, .task-button, .window-btn, .command-item"
+    );
+    if (!isInteractive) return;
+    ensureAudio();
+    playClick();
+  }
+
+  function trackKonami(event) {
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    const expected = KONAMI_SEQUENCE[konamiIndex];
+    if (key === expected) {
+      konamiIndex += 1;
+      if (konamiIndex === KONAMI_SEQUENCE.length) {
+        konamiIndex = 0;
+        unlockSecretMode();
+      }
+    } else {
+      konamiIndex = key === KONAMI_SEQUENCE[0] ? 1 : 0;
+    }
+  }
+
+  function unlockSecretMode() {
+    if (state.secretUnlocked) return;
+    state.secretUnlocked = true;
+    setTheme("secret");
+    if (state.mode === "cli") {
+      appendOutputLine("\u001b[35mModo secreto desbloqueado.\u001b[0m");
+    }
+  }
+
   function navigateHistory(direction) {
     if (state.history.length === 0) return;
     if (state.historyIndex === -1) {
@@ -263,6 +532,25 @@
     state.historyIndex = nextIndex;
     const value = state.history[state.historyIndex] || "";
     dom.terminalInput.value = value;
+  }
+
+  function autocompleteCommand() {
+    const input = dom.terminalInput.value;
+    if (!input.trim()) return;
+    if (dom.terminalInput.selectionStart !== input.length || dom.terminalInput.selectionEnd !== input.length) {
+      return;
+    }
+    const parts = input.trim().split(/\s+/);
+    if (parts.length > 1) return;
+    const prefix = parts[0].toLowerCase();
+    const matches = COMMANDS.filter((command) => command.startsWith(prefix));
+    if (matches.length === 1) {
+      dom.terminalInput.value = matches[0] + " ";
+      return;
+    }
+    if (matches.length > 1) {
+      appendOutputLine(`Possiveis comandos: ${matches.join(" ")}`);
+    }
   }
 
   function appendCommandEcho(input) {
@@ -333,6 +621,8 @@
         return { lines: content?.banner || [] };
       case "history":
         return { lines: formatHistory() };
+      case "theme":
+        return handleThemeCommand(args);
       case "clear":
       case "cls":
         return { action: "cls" };
@@ -377,6 +667,20 @@
     return lines;
   }
 
+  function handleThemeCommand(args) {
+    if (!args || args.length === 0) {
+      const available = THEMES.join(" | ");
+      const current = state.theme;
+      return { lines: [`Tema atual: ${current}`, `Disponiveis: ${available}`] };
+    }
+    const choice = args[0].toLowerCase();
+    const success = setTheme(choice);
+    if (!success) {
+      return { lines: [`Tema invalido: ${choice}`, `Use: theme ${THEMES.join(" | ")}`] };
+    }
+    return { lines: [`Tema alterado para: ${choice}`] };
+  }
+
   function applyAction(action, origin) {
     switch (action) {
       case "cls":
@@ -411,6 +715,7 @@
     state.history = [];
     state.historyIndex = -1;
     dom.terminalInput.removeAttribute("disabled");
+    closeCommandMenu();
     setMode("cli");
   }
 
@@ -419,6 +724,7 @@
     if (mode === "gui") {
       dom.terminal.classList.add("hidden");
       dom.gui.classList.remove("hidden");
+      closeCommandMenu();
     } else {
       dom.gui.classList.add("hidden");
       dom.terminal.classList.remove("hidden");
@@ -471,6 +777,13 @@
       const isStart = dom.startMenu.contains(event.target) || dom.startButton.contains(event.target);
       if (!isStart) {
         dom.startMenu.classList.add("hidden");
+      }
+    }
+
+    if (state.commandMenuOpen) {
+      const panel = dom.commandMenu.querySelector(".command-menu-panel");
+      if (event.target === dom.commandMenu || !panel.contains(event.target)) {
+        closeCommandMenu();
       }
     }
   }
@@ -698,6 +1011,138 @@
     }
   }
 
+  function setTheme(theme) {
+    const normalized = String(theme || "").toLowerCase();
+    const themeClass = normalized === "secret" ? "theme-secret" : `theme-${normalized}`;
+    const allowed = normalized === "secret" ? state.secretUnlocked : THEMES.includes(normalized);
+    if (!allowed) return false;
+    document.body.classList.remove(
+      "theme-dark",
+      "theme-light",
+      "theme-hacker",
+      "theme-retro",
+      "theme-secret"
+    );
+    document.body.classList.add(themeClass);
+    state.theme = normalized;
+    updateMatrixState();
+    return true;
+  }
+
+  function updateMatrixState() {
+    const shouldEnable = state.theme === "hacker" || state.theme === "secret";
+    if (shouldEnable) {
+      enableMatrix();
+    } else {
+      disableMatrix();
+    }
+  }
+
+  function enableMatrix() {
+    if (state.matrix.active) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "matrix-canvas";
+    dom.terminal.prepend(canvas);
+    state.matrix.canvas = canvas;
+    state.matrix.ctx = canvas.getContext("2d");
+    state.matrix.active = true;
+    resizeMatrix();
+    runMatrix();
+    window.addEventListener("resize", resizeMatrix);
+  }
+
+  function disableMatrix() {
+    if (!state.matrix.active) return;
+    cancelAnimationFrame(state.matrix.animationId);
+    state.matrix.animationId = null;
+    if (state.matrix.canvas) {
+      state.matrix.canvas.remove();
+    }
+    state.matrix.active = false;
+    state.matrix.canvas = null;
+    state.matrix.ctx = null;
+    state.matrix.drops = [];
+    window.removeEventListener("resize", resizeMatrix);
+  }
+
+  function resizeMatrix() {
+    if (!state.matrix.canvas || !state.matrix.ctx) return;
+    const width = dom.terminal.clientWidth;
+    const height = dom.terminal.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    state.matrix.canvas.width = width * dpr;
+    state.matrix.canvas.height = height * dpr;
+    state.matrix.canvas.style.width = `${width}px`;
+    state.matrix.canvas.style.height = `${height}px`;
+    state.matrix.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const columnWidth = 14;
+    const columns = Math.max(1, Math.floor(width / columnWidth));
+    state.matrix.columns = columns;
+    state.matrix.drops = Array.from({ length: columns }, () => Math.random() * (height / columnWidth));
+  }
+
+  function runMatrix() {
+    const ctx = state.matrix.ctx;
+    if (!ctx) return;
+    const width = dom.terminal.clientWidth;
+    const height = dom.terminal.clientHeight;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.fillRect(0, 0, width, height);
+
+    const chars = "01アイウエオカキクケコサシスセソタチツテト";
+    ctx.fillStyle = state.theme === "secret" ? "#66f2ff" : "#38ff84";
+    ctx.font = "12px monospace";
+
+    const columnWidth = 14;
+    state.matrix.drops.forEach((drop, index) => {
+      const text = chars.charAt(Math.floor(Math.random() * chars.length));
+      const x = index * columnWidth;
+      const y = drop * columnWidth;
+      ctx.fillText(text, x, y);
+      if (y > height && Math.random() > 0.975) {
+        state.matrix.drops[index] = 0;
+      } else {
+        state.matrix.drops[index] = drop + 1;
+      }
+    });
+
+    state.matrix.animationId = requestAnimationFrame(runMatrix);
+  }
+
+  function ensureAudio() {
+    if (!audioState.context) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      audioState.context = new AudioContext();
+    }
+    if (audioState.context.state === "suspended") {
+      audioState.context.resume();
+    }
+  }
+
+  function playClick() {
+    if (!audioState.context) return;
+    const now = audioState.context.currentTime;
+    if (now - audioState.lastTime < 0.02) return;
+    audioState.lastTime = now;
+    const osc = audioState.context.createOscillator();
+    const gain = audioState.context.createGain();
+    osc.type = "square";
+    osc.frequency.value = 900;
+    gain.gain.value = 0.04;
+    osc.connect(gain);
+    gain.connect(audioState.context.destination);
+    osc.start(now);
+    osc.stop(now + 0.02);
+  }
+
+  function shouldPlayKeyClick(event) {
+    if (event.repeat) return false;
+    if (event.ctrlKey || event.metaKey || event.altKey) return false;
+    if (event.key.length === 1) return true;
+    return event.key === "Enter" || event.key === "Backspace";
+  }
+
   function highlightLinesWithAnsi(lines, keywords) {
     if (!keywords || keywords.length === 0) return lines;
     return lines.map((line) => highlightTextWithAnsi(String(line), keywords));
@@ -890,6 +1335,8 @@
     cacheDom();
     bindEvents();
     await loadContent();
+    setTheme(state.theme);
+    renderCommandMenu("");
     initTerminal();
   }
 

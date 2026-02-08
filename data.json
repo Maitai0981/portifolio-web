@@ -93,7 +93,8 @@
     "Comandos internos definidos. Use `help <comando>` para detalhes.",
     "about   banner  clear  email   exit   exit-gui",
     "gui     help    history projects reload curriculum",
-    "social  terminal"
+    "social  terminal theme",
+    "Atalhos: Ctrl+L limpar, Ctrl+K menu, Alt+G alternar GUI/CLI, Tab autocomplete"
   ],
   "commandHelp": {
     "help": "help [comando]\nMostra a lista de comandos ou detalhes do comando informado.",
@@ -111,6 +112,7 @@
     "exit": "exit\nEncerra a sessao do terminal.",
     "gui": "gui\nAlterna para o modo grafico.",
     "exit-gui": "exit-gui\nSai do modo grafico.",
-    "terminal": "terminal\nSinonimo de exit-gui."
+    "terminal": "terminal\nSinonimo de exit-gui.",
+    "theme": "theme [dark|light|hacker|retro]\nAltera o tema do terminal."
   }
 }
