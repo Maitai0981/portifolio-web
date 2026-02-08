@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Algoritmo">
-  <rect width="64" height="64" rx="8" fill="#f2f2f2" />
-  <rect x="8" y="34" width="10" height="22" fill="#4a6fa5" />
-  <rect x="22" y="24" width="10" height="32" fill="#4a6fa5" />
-  <rect x="36" y="14" width="10" height="42" fill="#4a6fa5" />
-  <rect x="50" y="28" width="6" height="28" fill="#4a6fa5" />
-  <rect x="6" y="56" width="52" height="2" fill="#2a3d5f" />
-</svg>

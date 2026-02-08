@@ -214,7 +214,7 @@
         algoStatusReady: "Pronto para iniciar.",
         algoStatusRunning: "Executando...",
         algoStatusDone: "Execucao concluida.",
-        snakeHint: "Setas ou WASD para mover • Espaco para pausar.",
+        snakeHint: "Setas/WASD ou arraste no celular • Espaco para pausar.",
         snakeStart: "Iniciar",
         snakePause: "Pausar",
         snakeRestart: "Reiniciar",
@@ -358,7 +358,7 @@
         algoStatusReady: "Ready to start.",
         algoStatusRunning: "Running...",
         algoStatusDone: "Execution complete.",
-        snakeHint: "Arrows or WASD to move • Space to pause.",
+        snakeHint: "Arrows/WASD or swipe on mobile • Space to pause.",
         snakeStart: "Start",
         snakePause: "Pause",
         snakeRestart: "Restart",
@@ -1297,7 +1297,7 @@
       case "projects":
         return { lines: formatProjects(content?.projects || []) };
       case "education":
-        return { lines: content?.education || [] };
+        return { lines: formatEducationLines(content?.education || []) };
       case "resume":
         return { lines: content?.resume || [] };
       case "curriculum":
@@ -1937,6 +1937,38 @@
       }
     });
     return lines;
+  }
+
+  function formatEducationLines(lines) {
+    if (!Array.isArray(lines) || lines.length === 0) return [];
+    return lines.map((line, index) => colorizeEducationLine(String(line || ""), index));
+  }
+
+  function colorizeEducationLine(line, index) {
+    const { institution, years } = splitEducationLine(line);
+    const colors = [32, 34, 31];
+    const baseColor = colors[index] ?? 37;
+    const left = institution ? ansiColor(baseColor, institution) : "";
+    const right = years ? ansiColor(35, years) : "";
+    if (left && right) {
+      return `${left} | ${right}`;
+    }
+    return left || right || line;
+  }
+
+  function splitEducationLine(line) {
+    const raw = String(line || "");
+    const parts = raw.split("|");
+    if (parts.length >= 2) {
+      const years = parts.pop().trim();
+      const institution = parts.join("|").trim();
+      return { institution, years };
+    }
+    return { institution: raw.trim(), years: "" };
+  }
+
+  function ansiColor(code, text) {
+    return `\u001b[${code}m${text}\u001b[0m`;
   }
 
   function formatNeofetch() {
@@ -2625,7 +2657,7 @@
         appendRowsFromLines(wrapper, content.social);
         break;
       case "resume":
-        appendRowsFromLines(wrapper, content.resume);
+        appendResumeContent(wrapper, content.resume);
         break;
       case "email":
         appendRowsFromLines(wrapper, content.email);
@@ -2634,7 +2666,7 @@
         appendProjectCards(wrapper, content.projects || []);
         break;
       case "education":
-        appendRowsFromLines(wrapper, content.education);
+        appendEducationContent(wrapper, content.education);
         break;
       case "algorithms":
         wrapper.append(createAlgorithmViewer());
@@ -3202,6 +3234,9 @@
     let running = false;
     let intervalId = null;
     let gameOver = false;
+    let touchStart = null;
+    let touchMoved = false;
+    const SWIPE_THRESHOLD = 14;
 
     function updateScore() {
       score.textContent = formatTemplate(messages.snakeScore, { score: scoreValue });
@@ -3367,7 +3402,49 @@
       pendingDirection = next;
     }
 
+    function handleTouchStart(event) {
+      if (state.mode !== "gui") return;
+      const touch = event.touches?.[0];
+      if (!touch) return;
+      touchStart = { x: touch.clientX, y: touch.clientY };
+      touchMoved = false;
+    }
+
+    function handleTouchMove(event) {
+      if (!touchStart) return;
+      const touch = event.touches?.[0];
+      if (!touch) return;
+      const dx = touch.clientX - touchStart.x;
+      const dy = touch.clientY - touchStart.y;
+      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+      event.preventDefault();
+      touchMoved = true;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        const next = dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
+        if (!(next.x === -direction.x && next.y === -direction.y)) {
+          pendingDirection = next;
+        }
+      } else {
+        const next = dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
+        if (!(next.x === -direction.x && next.y === -direction.y)) {
+          pendingDirection = next;
+        }
+      }
+      touchStart = null;
+    }
+
+    function handleTouchEnd() {
+      if (!touchStart) return;
+      if (!touchMoved) {
+        toggleRun();
+      }
+      touchStart = null;
+    }
+
     wrapper.addEventListener("pointerdown", () => wrapper.focus({ preventScroll: true }));
+    canvas.addEventListener("touchstart", handleTouchStart, { passive: true });
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
     window.addEventListener("keydown", handleKey);
 
     resetGame();
@@ -3377,6 +3454,9 @@
       onClose: () => {
         clearInterval(intervalId);
         window.removeEventListener("keydown", handleKey);
+        canvas.removeEventListener("touchstart", handleTouchStart);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+        canvas.removeEventListener("touchend", handleTouchEnd);
       },
       onFocus: () => {
         wrapper.focus({ preventScroll: true });
@@ -3435,6 +3515,89 @@
       const value = document.createElement("div");
       linkify(match[2], value);
       row.append(label, value);
+      wrapper.append(row);
+    });
+  }
+
+  function appendResumeContent(wrapper, lines = []) {
+    if (!lines.length) {
+      const empty = document.createElement("div");
+      empty.textContent = getUi().noContent;
+      wrapper.append(empty);
+      return;
+    }
+
+    const resumeUrl = findFirstUrl(lines);
+    if (!resumeUrl) {
+      appendRowsFromLines(wrapper, lines);
+      return;
+    }
+
+    const frame = document.createElement("iframe");
+    frame.className = "resume-frame";
+    frame.src = resumeUrl;
+    frame.title = "Curriculo";
+    frame.loading = "lazy";
+    frame.setAttribute("referrerpolicy", "no-referrer");
+    wrapper.append(frame);
+
+    const linkWrap = document.createElement("div");
+    linkWrap.className = "resume-link";
+    const a = document.createElement("a");
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.classList.add("link");
+    const type = classifyLink(resumeUrl, false);
+    applyLinkClasses(a, resumeUrl, false, type);
+    a.append(buildLinkIcon(type), document.createTextNode(resumeUrl));
+    linkWrap.append(a);
+    wrapper.append(linkWrap);
+  }
+
+  function findFirstUrl(lines) {
+    if (!Array.isArray(lines)) return "";
+    for (const line of lines) {
+      const text = String(line || "");
+      LINK_REGEX.lastIndex = 0;
+      const match = LINK_REGEX.exec(text);
+      if (match && match[0]) {
+        return match[0];
+      }
+    }
+    return "";
+  }
+
+  function appendEducationContent(wrapper, lines = []) {
+    if (!lines.length) {
+      const empty = document.createElement("div");
+      empty.textContent = getUi().noContent;
+      wrapper.append(empty);
+      return;
+    }
+
+    lines.forEach((line, index) => {
+      const { institution, years } = splitEducationLine(line);
+      const row = document.createElement("div");
+      const colorIndex = (index % 3) + 1;
+      row.className = `edu-item edu-item-${colorIndex}`;
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "edu-name";
+      nameSpan.textContent = institution || line;
+      row.append(nameSpan);
+
+      if (years) {
+        const sep = document.createElement("span");
+        sep.className = "edu-sep";
+        sep.textContent = " | ";
+        row.append(sep);
+
+        const yearsSpan = document.createElement("span");
+        yearsSpan.className = "edu-years";
+        yearsSpan.textContent = years;
+        row.append(yearsSpan);
+      }
+
       wrapper.append(row);
     });
   }
