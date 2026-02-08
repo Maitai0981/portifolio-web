@@ -784,26 +784,26 @@
 
   function showMode(element) {
     if (!element) return;
-    // if (element._hideTimeout) {
-    //   clearTimeout(element._hideTimeout);
-    //   element._hideTimeout = null;
-    // }
+    if (element._hideTimeout) {
+      clearTimeout(element._hideTimeout);
+      element._hideTimeout = null;
+    }
     element.classList.remove("hidden");
-    // requestAnimationFrame(() => {
-    //   element.classList.remove("mode-hidden");
-    // });
+    requestAnimationFrame(() => {
+      element.classList.remove("mode-hidden");
+    });
     element.classList.remove("mode-hidden");
   }
 
   function hideMode(element) {
     if (!element) return;
-    // element.classList.add("mode-hidden");
-    // if (element._hideTimeout) {
-    //   clearTimeout(element._hideTimeout);
-    // }
-    // element._hideTimeout = setTimeout(() => {
-    //   element.classList.add("hidden");
-    // }, TRANSITION_MS);
+    element.classList.add("mode-hidden");
+    if (element._hideTimeout) {
+      clearTimeout(element._hideTimeout);
+    }
+    element._hideTimeout = setTimeout(() => {
+      element.classList.add("hidden");
+    }, TRANSITION_MS);
     element.classList.add("mode-hidden");
     element.classList.add("hidden");
   }
