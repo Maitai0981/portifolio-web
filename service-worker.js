@@ -1,4 +1,4 @@
-const CACHE_NAME = "portfolio-cache-v3";
+const CACHE_NAME = "portfolio-cache-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -38,16 +38,39 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => caches.match("./index.html"));
-    })
-  );
+  const url = new URL(event.request.url);
+  const isHtml =
+    event.request.mode === "navigate" ||
+    event.request.destination === "document" ||
+    event.request.headers.get("accept")?.includes("text/html");
+  const isJson = url.pathname.endsWith(".json");
+
+  if (isHtml || isJson) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(cacheFirst(event.request));
 });
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  const cache = await caches.open(CACHE_NAME);
+  cache.put(request, response.clone());
+  return response;
+}
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    return caches.match("./index.html");
+  }
+}

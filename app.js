@@ -69,6 +69,7 @@
   ];
 
   const TRANSITION_MS = 120;
+  const APP_VERSION = window.__APP_VERSION__ || "dev";
 
   const audioState = {
     context: null,
@@ -260,7 +261,7 @@
 
   async function loadContent() {
     try {
-      const response = await fetch("./data.json", { cache: "no-store" });
+      const response = await fetch(`./data.json?v=${APP_VERSION}`, { cache: "no-store" });
       if (!response.ok) {
         throw new Error("Falha ao carregar data.json");
       }
@@ -1418,9 +1419,11 @@
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
+    const swUrl = `./service-worker.js?v=${APP_VERSION}`;
     navigator.serviceWorker
-      .register("./service-worker.js")
+      .register(swUrl, { updateViaCache: "none" })
       .then((registration) => {
+        registration.update();
         if (registration.waiting) {
           registration.waiting.postMessage({ type: "SKIP_WAITING" });
         }
