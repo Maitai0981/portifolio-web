@@ -16,6 +16,7 @@
       history: [],
       lastProject: null
     },
+    pendingWindowCommand: null,
     shell: {
       cwd: "~"
     },
@@ -54,7 +55,7 @@
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
   const ANSI_REGEX = /\u001b\[(\d+)m/g;
 
-  const GUI_WINDOW_COMMANDS = ["about", "social", "projects", "resume", "email"];
+  const GUI_WINDOW_COMMANDS = ["about", "social", "projects", "resume", "email", "algorithms", "snake"];
   const THEMES = ["dark", "light", "hacker", "retro"];
   const COMMANDS = [
     "help",
@@ -82,7 +83,11 @@
     "gui",
     "exit-gui",
     "terminal",
-    "theme"
+    "theme",
+    "grep",
+    "find",
+    "algorithms",
+    "snake"
   ];
 
   const TRANSITION_MS = 120;
@@ -105,14 +110,18 @@
           projects: "Projetos",
           resume: "Curriculo",
           email: "Email",
-          terminal: "Terminal"
+          terminal: "Terminal",
+          algorithms: "Algoritmos",
+          snake: "Snake"
         },
         windowTitles: {
           about: "Sobre",
           social: "Social",
           projects: "Projetos",
           resume: "Curriculo",
-          email: "Email"
+          email: "Email",
+          algorithms: "Visualizador de Algoritmos",
+          snake: "Snake"
         },
         profileLabel: "Perfil",
         noContent: "Sem conteudo.",
@@ -168,6 +177,27 @@
         themeInvalid: "Tema invalido: {{theme}}",
         themeChanged: "Tema alterado para: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
+        searchUsage: "Uso: grep <termo> (ou find <termo>)",
+        searchHeader: "Resultados para: {{query}}",
+        searchNoResults: "Nenhum resultado encontrado.",
+        searchAboutLabel: "Sobre",
+        searchProjectsLabel: "Projetos",
+        algoHint: "Escolha um algoritmo de ordenacao e acompanhe as trocas.",
+        algoRandom: "Novo array",
+        algoRun: "Executar",
+        algoPause: "Pausar",
+        algoStep: "Passo",
+        algoBubbleLabel: "Bubble sort",
+        algoSelectionLabel: "Selection sort",
+        algoStatusReady: "Pronto para iniciar.",
+        algoStatusRunning: "Executando...",
+        algoStatusDone: "Ordenacao concluida.",
+        snakeHint: "Setas ou WASD para mover • Espaco para pausar.",
+        snakeStart: "Iniciar",
+        snakePause: "Pausar",
+        snakeRestart: "Reiniciar",
+        snakeGameOver: "Fim de jogo.",
+        snakeScore: "Pontos: {{score}}",
         neofetch: {
           os: "OS",
           host: "Host",
@@ -216,14 +246,18 @@
           projects: "Projects",
           resume: "Resume",
           email: "Email",
-          terminal: "Terminal"
+          terminal: "Terminal",
+          algorithms: "Algorithms",
+          snake: "Snake"
         },
         windowTitles: {
           about: "About",
           social: "Social",
           projects: "Projects",
           resume: "Resume",
-          email: "Email"
+          email: "Email",
+          algorithms: "Algorithm Visualizer",
+          snake: "Snake"
         },
         profileLabel: "Profile",
         noContent: "No content.",
@@ -279,6 +313,27 @@
         themeInvalid: "Invalid theme: {{theme}}",
         themeChanged: "Theme set to: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
+        searchUsage: "Usage: grep <term> (or find <term>)",
+        searchHeader: "Results for: {{query}}",
+        searchNoResults: "No results found.",
+        searchAboutLabel: "About",
+        searchProjectsLabel: "Projects",
+        algoHint: "Pick a sorting algorithm and watch the swaps.",
+        algoRandom: "New array",
+        algoRun: "Run",
+        algoPause: "Pause",
+        algoStep: "Step",
+        algoBubbleLabel: "Bubble sort",
+        algoSelectionLabel: "Selection sort",
+        algoStatusReady: "Ready to start.",
+        algoStatusRunning: "Running...",
+        algoStatusDone: "Sorting complete.",
+        snakeHint: "Arrows or WASD to move • Space to pause.",
+        snakeStart: "Start",
+        snakePause: "Pause",
+        snakeRestart: "Restart",
+        snakeGameOver: "Game over.",
+        snakeScore: "Score: {{score}}",
         neofetch: {
           os: "OS",
           host: "Host",
@@ -372,13 +427,25 @@
 
       const content = document.createElement("div");
       content.className = "window-content";
+      let contentNode = null;
+      let windowMeta = null;
       if (typeof contentFactory === "function") {
-        content.append(contentFactory());
+        const result = contentFactory();
+        if (result) {
+          contentNode = result.node || result;
+          windowMeta = result.__windowMeta || contentNode.__windowMeta || null;
+        }
       } else {
         renderLines(content, lines, { typing: false });
       }
+      if (contentNode) {
+        content.append(contentNode);
+      }
 
-      win.append(titleBar, content);
+      const resizer = document.createElement("div");
+      resizer.className = "window-resizer";
+
+      win.append(titleBar, content, resizer);
       dom.desktop.append(win);
 
       const taskButton = document.createElement("button");
@@ -394,8 +461,21 @@
         contentEl: content,
         taskButton,
         minimized: false,
-        commandKey
+        commandKey,
+        onClose: null,
+        onFocus: null
       };
+      if (windowMeta?.size) {
+        const { width, height } = windowMeta.size;
+        if (width) win.style.width = `${width}px`;
+        if (height) win.style.height = `${height}px`;
+      }
+      if (windowMeta?.onClose) {
+        winData.onClose = windowMeta.onClose;
+      }
+      if (windowMeta?.onFocus) {
+        winData.onFocus = windowMeta.onFocus;
+      }
       this.windows.set(id, winData);
 
       const focus = () => this.focusWindow(id);
@@ -413,6 +493,7 @@
       });
 
       this.enableDrag(win, titleBar);
+      this.enableResize(win, resizer);
       this.focusWindow(id);
     },
     focusWindow(id) {
@@ -421,6 +502,9 @@
       winData.element.style.zIndex = this.zIndex++;
       for (const data of this.windows.values()) {
         data.taskButton.classList.toggle("active", data.id === id && !data.minimized);
+      }
+      if (winData.onFocus) {
+        winData.onFocus();
       }
     },
     toggleMinimize(id, force) {
@@ -437,6 +521,9 @@
     closeWindow(id) {
       const winData = this.windows.get(id);
       if (!winData) return;
+      if (winData.onClose) {
+        winData.onClose();
+      }
       winData.element.remove();
       winData.taskButton.remove();
       this.windows.delete(id);
@@ -463,6 +550,7 @@
       };
 
       handle.addEventListener("mousedown", (event) => {
+        if (event.button !== 0) return;
         dragging = true;
         startX = event.clientX;
         startY = event.clientY;
@@ -470,6 +558,48 @@
         startTop = win.offsetTop;
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
+      });
+    },
+    enableResize(win, handle) {
+      let resizing = false;
+      let startX = 0;
+      let startY = 0;
+      let startWidth = 0;
+      let startHeight = 0;
+
+      const onPointerMove = (event) => {
+        if (!resizing) return;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        const minWidth = 260;
+        const minHeight = 180;
+        const maxWidth = window.innerWidth - 20;
+        const maxHeight = window.innerHeight - 120;
+        const nextWidth = Math.min(Math.max(startWidth + dx, minWidth), maxWidth);
+        const nextHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
+        win.style.width = `${nextWidth}px`;
+        win.style.height = `${nextHeight}px`;
+      };
+
+      const onPointerUp = (event) => {
+        if (!resizing) return;
+        resizing = false;
+        handle.releasePointerCapture(event.pointerId);
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+      };
+
+      handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        resizing = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        startWidth = win.offsetWidth;
+        startHeight = win.offsetHeight;
+        handle.setPointerCapture(event.pointerId);
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", onPointerUp);
       });
     }
   };
@@ -1076,9 +1206,9 @@
             return { lines: [formatTemplate(messages.helpNotFound, { topic })] };
           }
           const lines = String(entry).split("\n");
-          return { lines };
+          return { lines: formatHelpDetail(lines, topic) };
         }
-        return { lines: content?.help || [] };
+        return { lines: formatHelpList(content?.help || []) };
       case "lang":
         return handleLangCommand(args);
       case "me":
@@ -1113,8 +1243,14 @@
         return handleCdCommand(args);
       case "cat":
         return handleCatCommand(args);
+      case "grep":
+      case "find":
+        return handleSearchCommand(args);
       case "theme":
         return handleThemeCommand(args);
+      case "algorithms":
+      case "snake":
+        return handleProgramCommand(command);
       case "clear":
       case "cls":
         return { action: "cls" };
@@ -1175,6 +1311,102 @@
     const fallbackList = DEFAULT_I18N[state.language]?.messages?.sudoMessages || [];
     const list = messages.sudoMessages || fallbackList;
     return { lines: [getRandomItem(list) || "sudo: nope."] };
+  }
+
+  function handleSearchCommand(args) {
+    const messages = getMessages();
+    const content = getContent();
+    const query = args.join(" ").trim();
+    if (!query) {
+      return { lines: [messages.searchUsage] };
+    }
+    const lowerQuery = query.toLowerCase();
+    const lines = [formatTemplate(messages.searchHeader, { query })];
+    let hasResults = false;
+
+    const aboutMatches = (content.about || []).filter((line) =>
+      String(line).toLowerCase().includes(lowerQuery)
+    );
+    if (aboutMatches.length) {
+      lines.push(`${messages.searchAboutLabel}:`);
+      aboutMatches.forEach((line) => {
+        const snippet = highlightTextWithAnsi(truncateText(String(line), 160), [query]);
+        lines.push(`- ${snippet}`);
+      });
+      hasResults = true;
+    }
+
+    const projectMatches = [];
+    (content.projects || []).forEach((project, index) => {
+      const name = project.name || `${messages.projectDefaultName} ${index + 1}`;
+      const fields = [];
+      if (project.name) fields.push(project.name);
+      if (project.description) fields.push(project.description);
+      if (project.details && project.details !== project.description) fields.push(project.details);
+      if (Array.isArray(project.stack) && project.stack.length) fields.push(project.stack.join(", "));
+      if (Array.isArray(project.aliases) && project.aliases.length) fields.push(project.aliases.join(", "));
+      if (Array.isArray(project.links) && project.links.length) fields.push(project.links.join(" | "));
+      const matching = fields.filter((field) =>
+        String(field).toLowerCase().includes(lowerQuery)
+      );
+      if (matching.length) {
+        projectMatches.push({ name, snippet: matching[0] });
+      }
+    });
+
+    if (projectMatches.length) {
+      lines.push(`${messages.searchProjectsLabel}:`);
+      projectMatches.forEach((match) => {
+        const snippet = highlightTextWithAnsi(truncateText(String(match.snippet), 160), [query]);
+        lines.push(`- ${match.name}: ${snippet}`);
+      });
+      hasResults = true;
+    }
+
+    if (!hasResults) {
+      lines.push(messages.searchNoResults);
+    }
+
+    return { lines };
+  }
+
+  function formatHelpList(lines) {
+    return (lines || []).map((line) => {
+      const text = String(line);
+      return text.replace(/^([\w-]+)(\s+-\s+)/, (_match, command, sep) => {
+        return `${colorizeCommand(command)}${sep}`;
+      });
+    });
+  }
+
+  function formatHelpDetail(lines, command) {
+    const target = String(command || "").toLowerCase();
+    if (!target) return lines || [];
+    const pattern = new RegExp(`^(${escapeRegExp(target)})(?=\\s|$)`, "i");
+    return (lines || []).map((line) => {
+      const text = String(line);
+      return text.replace(pattern, (match) => colorizeCommand(match));
+    });
+  }
+
+  function colorizeCommand(command) {
+    return `\u001b[36m${command}\u001b[0m`;
+  }
+
+  function handleProgramCommand(command) {
+    if (state.mode === "gui") {
+      openGuiWindow(command);
+      return { lines: [] };
+    }
+    state.pendingWindowCommand = command;
+    const messages = getMessages();
+    return { lines: [messages.switchGui], action: "gui" };
+  }
+
+  function truncateText(text, maxLength) {
+    const value = String(text || "");
+    if (value.length <= maxLength) return value;
+    return `${value.slice(0, maxLength - 3)}...`;
   }
 
   function buildVirtualFs(content) {
@@ -1681,6 +1913,11 @@
       hideMode(dom.terminal);
       showMode(dom.gui);
       closeCommandMenu();
+      if (state.pendingWindowCommand) {
+        const pending = state.pendingWindowCommand;
+        state.pendingWindowCommand = null;
+        openGuiWindow(pending);
+      }
     } else {
       hideMode(dom.gui);
       showMode(dom.terminal);
@@ -2213,10 +2450,475 @@
       case "projects":
         appendProjectCards(wrapper, content.projects || []);
         break;
+      case "algorithms":
+        wrapper.append(createAlgorithmViewer());
+        break;
+      case "snake":
+        wrapper.append(createSnakeGame());
+        break;
       default:
         wrapper.textContent = getUi().noContent;
         break;
     }
+
+    return wrapper;
+  }
+
+  function createGuiButton(label, onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "gui-button";
+    button.textContent = label;
+    if (onClick) {
+      button.addEventListener("click", onClick);
+    }
+    return button;
+  }
+
+  function createAlgorithmViewer() {
+    const messages = getMessages();
+    const wrapper = document.createElement("div");
+    wrapper.className = "algo-viewer";
+
+    const hint = document.createElement("div");
+    hint.className = "algo-hint";
+    hint.textContent = messages.algoHint;
+    wrapper.append(hint);
+
+    const controls = document.createElement("div");
+    controls.className = "algo-controls";
+
+    const algoSelect = document.createElement("select");
+    algoSelect.className = "gui-select";
+    [
+      { value: "bubble", label: messages.algoBubbleLabel },
+      { value: "selection", label: messages.algoSelectionLabel }
+    ].forEach((algo) => {
+      const option = document.createElement("option");
+      option.value = algo.value;
+      option.textContent = algo.label;
+      algoSelect.append(option);
+    });
+
+    const randomBtn = createGuiButton(messages.algoRandom, () => randomize());
+    const runBtn = createGuiButton(messages.algoRun, () => toggleRun());
+    const stepBtn = createGuiButton(messages.algoStep, () => stepOnce());
+
+    controls.append(algoSelect, randomBtn, runBtn, stepBtn);
+    wrapper.append(controls);
+
+    const bars = document.createElement("div");
+    bars.className = "algo-bars";
+    wrapper.append(bars);
+
+    const status = document.createElement("div");
+    status.className = "algo-status";
+    status.textContent = messages.algoStatusReady;
+    wrapper.append(status);
+
+    const BAR_COUNT = 18;
+    let values = buildRandomValues();
+    let steps = [];
+    let stepIndex = 0;
+    let running = false;
+    let intervalId = null;
+
+    function buildRandomValues() {
+      return Array.from({ length: BAR_COUNT }, () => Math.floor(20 + Math.random() * 80));
+    }
+
+    function buildSteps() {
+      const algo = algoSelect.value;
+      if (algo === "selection") {
+        return buildSelectionSteps(values);
+      }
+      return buildBubbleSteps(values);
+    }
+
+    function buildBubbleSteps(source) {
+      const arr = source.slice();
+      const output = [];
+      for (let i = 0; i < arr.length; i += 1) {
+        for (let j = 0; j < arr.length - i - 1; j += 1) {
+          output.push({ values: arr.slice(), highlight: [j, j + 1], swap: false });
+          if (arr[j] > arr[j + 1]) {
+            const temp = arr[j];
+            arr[j] = arr[j + 1];
+            arr[j + 1] = temp;
+            output.push({ values: arr.slice(), highlight: [j, j + 1], swap: true });
+          }
+        }
+      }
+      return output;
+    }
+
+    function buildSelectionSteps(source) {
+      const arr = source.slice();
+      const output = [];
+      for (let i = 0; i < arr.length - 1; i += 1) {
+        let minIndex = i;
+        for (let j = i + 1; j < arr.length; j += 1) {
+          output.push({ values: arr.slice(), highlight: [minIndex, j], swap: false });
+          if (arr[j] < arr[minIndex]) {
+            minIndex = j;
+          }
+        }
+        if (minIndex !== i) {
+          const temp = arr[i];
+          arr[i] = arr[minIndex];
+          arr[minIndex] = temp;
+          output.push({ values: arr.slice(), highlight: [i, minIndex], swap: true });
+        }
+      }
+      return output;
+    }
+
+    function ensureBars() {
+      if (bars.children.length === BAR_COUNT) return;
+      bars.innerHTML = "";
+      for (let i = 0; i < BAR_COUNT; i += 1) {
+        const bar = document.createElement("div");
+        bar.className = "algo-bar";
+        bars.append(bar);
+      }
+    }
+
+    function renderBars(step) {
+      ensureBars();
+      const highlights = step?.highlight || [];
+      const isSwap = step?.swap;
+      Array.from(bars.children).forEach((bar, index) => {
+        bar.style.height = `${values[index]}%`;
+        bar.classList.toggle("active", highlights.includes(index));
+        bar.classList.toggle("swap", isSwap && highlights.includes(index));
+      });
+    }
+
+    function updateRunLabel() {
+      runBtn.textContent = running ? messages.algoPause : messages.algoRun;
+    }
+
+    function updateStatus(text) {
+      status.textContent = text;
+    }
+
+    function resetSteps() {
+      steps = [];
+      stepIndex = 0;
+      updateStatus(messages.algoStatusReady);
+    }
+
+    function randomize() {
+      values = buildRandomValues();
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      resetSteps();
+      updateRunLabel();
+      renderBars();
+    }
+
+    function applyStep() {
+      const step = steps[stepIndex];
+      if (!step) return false;
+      values = step.values.slice();
+      renderBars(step);
+      stepIndex += 1;
+      return stepIndex < steps.length;
+    }
+
+    function stepOnce() {
+      if (!steps.length || stepIndex >= steps.length) {
+        steps = buildSteps();
+        stepIndex = 0;
+      }
+      if (!applyStep()) {
+        updateStatus(messages.algoStatusDone);
+      } else {
+        updateStatus(messages.algoStatusRunning);
+      }
+    }
+
+    function startRun() {
+      if (!steps.length || stepIndex >= steps.length) {
+        steps = buildSteps();
+        stepIndex = 0;
+      }
+      if (!steps.length) {
+        updateStatus(messages.algoStatusDone);
+        return;
+      }
+      running = true;
+      updateRunLabel();
+      updateStatus(messages.algoStatusRunning);
+      intervalId = setInterval(() => {
+        const hasMore = applyStep();
+        if (!hasMore) {
+          stopRun();
+          updateStatus(messages.algoStatusDone);
+        }
+      }, 140);
+    }
+
+    function stopRun() {
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      updateRunLabel();
+    }
+
+    function toggleRun() {
+      if (running) {
+        stopRun();
+        updateStatus(messages.algoStatusReady);
+        return;
+      }
+      startRun();
+    }
+
+    algoSelect.addEventListener("change", () => {
+      stopRun();
+      resetSteps();
+      renderBars();
+    });
+
+    renderBars();
+    updateRunLabel();
+
+    wrapper.__windowMeta = {
+      size: { width: 440, height: 360 },
+      onClose: () => {
+        clearInterval(intervalId);
+      }
+    };
+
+    return wrapper;
+  }
+
+  function createSnakeGame() {
+    const messages = getMessages();
+    const wrapper = document.createElement("div");
+    wrapper.className = "snake-game";
+    wrapper.tabIndex = 0;
+
+    const hint = document.createElement("div");
+    hint.className = "snake-hint";
+    hint.textContent = messages.snakeHint;
+    wrapper.append(hint);
+
+    const controls = document.createElement("div");
+    controls.className = "snake-controls";
+
+    const startBtn = createGuiButton(messages.snakeStart, () => toggleRun());
+    const restartBtn = createGuiButton(messages.snakeRestart, () => resetGame());
+    controls.append(startBtn, restartBtn);
+    wrapper.append(controls);
+
+    const score = document.createElement("div");
+    score.className = "snake-score";
+    wrapper.append(score);
+
+    const status = document.createElement("div");
+    status.className = "snake-status";
+    wrapper.append(status);
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "snake-canvas";
+    const gridSize = 16;
+    const cellSize = 16;
+    canvas.width = gridSize * cellSize;
+    canvas.height = gridSize * cellSize;
+    wrapper.append(canvas);
+
+    const ctx = canvas.getContext("2d");
+    let snake = [];
+    let direction = { x: 1, y: 0 };
+    let pendingDirection = { x: 1, y: 0 };
+    let food = null;
+    let scoreValue = 0;
+    let running = false;
+    let intervalId = null;
+    let gameOver = false;
+
+    function updateScore() {
+      score.textContent = formatTemplate(messages.snakeScore, { score: scoreValue });
+    }
+
+    function setStatus(text) {
+      status.textContent = text;
+    }
+
+    function buildInitialSnake() {
+      return [
+        { x: 8, y: 8 },
+        { x: 7, y: 8 },
+        { x: 6, y: 8 }
+      ];
+    }
+
+    function spawnFood() {
+      let candidate = null;
+      let attempts = 0;
+      do {
+        candidate = {
+          x: Math.floor(Math.random() * gridSize),
+          y: Math.floor(Math.random() * gridSize)
+        };
+        attempts += 1;
+      } while (snake.some((segment) => segment.x === candidate.x && segment.y === candidate.y) && attempts < 200);
+      return candidate;
+    }
+
+    function resetGame() {
+      stopRun();
+      snake = buildInitialSnake();
+      direction = { x: 1, y: 0 };
+      pendingDirection = { x: 1, y: 0 };
+      food = spawnFood();
+      scoreValue = 0;
+      gameOver = false;
+      updateScore();
+      setStatus("");
+      render();
+      updateStartLabel();
+    }
+
+    function updateStartLabel() {
+      if (gameOver) {
+        startBtn.textContent = messages.snakeStart;
+        return;
+      }
+      startBtn.textContent = running ? messages.snakePause : messages.snakeStart;
+    }
+
+    function stopRun() {
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      updateStartLabel();
+    }
+
+    function startRun() {
+      if (gameOver) {
+        resetGame();
+      }
+      running = true;
+      updateStartLabel();
+      setStatus("");
+      intervalId = setInterval(step, 140);
+    }
+
+    function toggleRun() {
+      if (running) {
+        stopRun();
+        return;
+      }
+      startRun();
+    }
+
+    function step() {
+      direction = pendingDirection;
+      const head = { ...snake[0] };
+      head.x += direction.x;
+      head.y += direction.y;
+
+      if (head.x < 0 || head.y < 0 || head.x >= gridSize || head.y >= gridSize) {
+        endGame();
+        return;
+      }
+      if (snake.some((segment) => segment.x === head.x && segment.y === head.y)) {
+        endGame();
+        return;
+      }
+
+      snake.unshift(head);
+      if (food && head.x === food.x && head.y === food.y) {
+        scoreValue += 1;
+        food = spawnFood();
+        updateScore();
+      } else {
+        snake.pop();
+      }
+      render();
+    }
+
+    function endGame() {
+      gameOver = true;
+      stopRun();
+      setStatus(messages.snakeGameOver);
+    }
+
+    function renderGrid() {
+      ctx.fillStyle = "#f2f2f2";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#d0d0d0";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= gridSize; i += 1) {
+        const pos = i * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(pos, 0);
+        ctx.lineTo(pos, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, pos);
+        ctx.lineTo(canvas.width, pos);
+        ctx.stroke();
+      }
+    }
+
+    function render() {
+      renderGrid();
+      ctx.fillStyle = "#1f7a1f";
+      snake.forEach((segment, index) => {
+        ctx.fillStyle = index === 0 ? "#0c5a0c" : "#1f7a1f";
+        ctx.fillRect(segment.x * cellSize + 1, segment.y * cellSize + 1, cellSize - 2, cellSize - 2);
+      });
+      if (food) {
+        ctx.fillStyle = "#b33a3a";
+        ctx.fillRect(food.x * cellSize + 2, food.y * cellSize + 2, cellSize - 4, cellSize - 4);
+      }
+    }
+
+    function handleKey(event) {
+      if (state.mode !== "gui") return;
+      if (!wrapper.contains(document.activeElement)) return;
+      const key = event.key.toLowerCase();
+      if (key === " " || key === "spacebar") {
+        event.preventDefault();
+        toggleRun();
+        return;
+      }
+      const next = {
+        arrowup: { x: 0, y: -1 },
+        w: { x: 0, y: -1 },
+        arrowdown: { x: 0, y: 1 },
+        s: { x: 0, y: 1 },
+        arrowleft: { x: -1, y: 0 },
+        a: { x: -1, y: 0 },
+        arrowright: { x: 1, y: 0 },
+        d: { x: 1, y: 0 }
+      }[key];
+      if (!next) return;
+      event.preventDefault();
+      if (next.x === -direction.x && next.y === -direction.y) return;
+      pendingDirection = next;
+    }
+
+    wrapper.addEventListener("pointerdown", () => wrapper.focus({ preventScroll: true }));
+    window.addEventListener("keydown", handleKey);
+
+    resetGame();
+
+    wrapper.__windowMeta = {
+      size: { width: 360, height: 420 },
+      onClose: () => {
+        clearInterval(intervalId);
+        window.removeEventListener("keydown", handleKey);
+      },
+      onFocus: () => {
+        wrapper.focus({ preventScroll: true });
+      }
+    };
 
     return wrapper;
   }

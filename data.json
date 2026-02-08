@@ -111,6 +111,7 @@
       "help": [
         "Comandos disponiveis:",
         "about - resumo profissional",
+        "algorithms - abre o visualizador de algoritmos",
         "banner - mostra o banner inicial",
         "cat - mostra o conteudo de um arquivo",
         "cd - muda o diretorio atual",
@@ -119,6 +120,8 @@
         "cowsay - exibe uma vaca falando",
         "date - mostra data e hora atuais",
         "email - contato por email",
+        "find - alias de grep",
+        "grep - busca termo em sobre e projetos",
         "gui - alterna para o modo grafico",
         "help - lista comandos ou detalhes de um comando",
         "history - mostra o historico da sessao",
@@ -129,6 +132,7 @@
         "projects - lista de projetos",
         "reload - reinicia o estado da sessao",
         "resume - link do curriculo",
+        "snake - jogo da cobrinha",
         "social - links para redes sociais",
         "sudo - tenta executar um comando com permissao elevada",
         "terminal - sinonimo de exit-gui",
@@ -140,6 +144,7 @@
         "help": "help [comando]\nMostra a lista de comandos ou detalhes do comando informado.",
         "lang": "lang [pt|en]\nAltera o idioma da interface.",
         "about": "about\nResumo profissional.",
+        "algorithms": "algorithms\nAbre o visualizador de algoritmos na GUI.",
         "social": "social\nLinks para redes sociais.",
         "projects": "projects\nLista de projetos.",
         "resume": "resume\nLink do curriculo.",
@@ -151,6 +156,8 @@
         "cls": "cls\nAlias de clear.",
         "reload": "reload\nReinicia o estado da sessao.",
         "exit": "exit\nEncerra a sessao do terminal.",
+        "find": "find <termo>\nAlias de grep.",
+        "grep": "grep <termo>\nBusca termo em sobre e projetos.",
         "gui": "gui\nAlterna para o modo grafico.",
         "exit-gui": "exit-gui\nSai do modo grafico.",
         "terminal": "terminal\nSinonimo de exit-gui.",
@@ -162,7 +169,8 @@
         "ls": "ls [caminho]\nLista arquivos e diretorios.",
         "cd": "cd [caminho]\nMuda o diretorio atual.",
         "cat": "cat <arquivo>\nMostra o conteudo de um arquivo.",
-        "me": "me [mensagem]\nConversa com o assistente do portfolio."
+        "me": "me [mensagem]\nConversa com o assistente do portfolio.",
+        "snake": "snake\nAbre o jogo da cobrinha na GUI."
       }
     },
     "en": {
@@ -272,6 +280,7 @@
       "help": [
         "Available commands:",
         "about - professional summary",
+        "algorithms - open algorithm visualizer",
         "banner - show startup banner",
         "cat - show file contents",
         "cd - change current directory",
@@ -280,6 +289,8 @@
         "cowsay - display a talking cow",
         "date - show current date and time",
         "email - email contact",
+        "find - alias for grep",
+        "grep - search terms in about and projects",
         "gui - switch to GUI mode",
         "help - list commands or show details for a command",
         "history - show session history",
@@ -290,6 +301,7 @@
         "projects - project list",
         "reload - reset session state",
         "resume - resume link",
+        "snake - play snake game",
         "social - social links",
         "sudo - attempt to run a command with elevated permissions",
         "terminal - alias for exit-gui",
@@ -301,6 +313,7 @@
         "help": "help [command]\nList commands or show details for a specific command.",
         "lang": "lang [pt|en]\nSwitch interface language.",
         "about": "about\nProfessional summary.",
+        "algorithms": "algorithms\nOpen the algorithm visualizer in the GUI.",
         "social": "social\nSocial links.",
         "projects": "projects\nProject list.",
         "resume": "resume\nResume link.",
@@ -312,6 +325,8 @@
         "cls": "cls\nAlias for clear.",
         "reload": "reload\nReset session state.",
         "exit": "exit\nEnd the terminal session.",
+        "find": "find <term>\nAlias for grep.",
+        "grep": "grep <term>\nSearch terms in about and projects.",
         "gui": "gui\nSwitch to GUI mode.",
         "exit-gui": "exit-gui\nLeave GUI mode.",
         "terminal": "terminal\nAlias for exit-gui.",
@@ -323,7 +338,8 @@
         "ls": "ls [path]\nList files and directories.",
         "cd": "cd [path]\nChange current directory.",
         "cat": "cat <file>\nShow file contents.",
-        "me": "me [message]\nChat with the portfolio assistant."
+        "me": "me [message]\nChat with the portfolio assistant.",
+        "snake": "snake\nOpen the snake game in the GUI."
       }
     }
   }
