@@ -19,6 +19,10 @@
         "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
         "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
       ],
+      "bannerMobile": [
+        "\u001b[33mMatheus Saragoca\u001b[0m",
+        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
+      ],
       "about": [
         "Sou desenvolvedor de software com forte base em programacao competitiva, ciencia de dados e inteligencia artificial. Atuo de forma organizada e proativa, com foco em resolucao de problemas, qualidade de codigo e melhoria continua de processos. Tenho experiencia no desenvolvimento de sistemas web e back-end, automacao e analise de dados, alem da construcao e treinamento de modelos de aprendizado de maquina e aprendizado profundo.",
         "Participo de projetos de software cientifico voltados a pesquisa, incluindo classificacao de imagens medicas com redes neurais convolucionais, integracao de dados clinicos e geracao de relatorios tecnicos e metricas de desempenho. Possuo dominio pratico de Python, SQL, C++, Java, JavaScript e Kotlin, bem como de frameworks e bibliotecas como Django, Flask, React, Pandas, NumPy, TensorFlow, PyTorch e Scikit-learn.",
@@ -175,6 +179,10 @@
         "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
         "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
         "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
+        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m"
+      ],
+      "bannerMobile": [
+        "\u001b[33mMatheus Saragoca\u001b[0m",
         "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m"
       ],
       "about": [

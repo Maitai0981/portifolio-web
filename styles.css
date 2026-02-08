@@ -85,6 +85,7 @@ html, body {
 body {
   font-family: "Fira Code", "Cascadia Code", "Consolas", monospace;
   color: var(--terminal-fg);
+  -webkit-text-size-adjust: 100%;
 }
 
 #app {
@@ -208,6 +209,16 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 2000;
+}
+
+button,
+.desktop-icon,
+#start-button,
+#start-menu li,
+.task-button,
+.window-btn,
+.command-item {
+  touch-action: manipulation;
 }
 
 .command-menu-panel {
@@ -649,14 +660,64 @@ body {
 
 @media (max-width: 700px) {
   #terminal {
-    padding: 16px;
+    padding: 14px 14px 72px;
+    font-size: 14px;
+  }
+
+  #terminal-input-line {
+    position: sticky;
+    bottom: 0;
+    padding: 10px 0 6px;
+    background: linear-gradient(180deg, rgba(11, 13, 16, 0) 0%, var(--terminal-bg) 40%);
+  }
+
+  #terminal-input {
+    min-height: 36px;
   }
 
   .window {
-    width: 280px;
+    width: 92vw;
+    max-height: calc(100vh - 120px);
+    left: 4vw !important;
+    top: 56px !important;
+  }
+
+  .window-content {
+    max-height: calc(100vh - 200px);
+  }
+
+  #desktop-icons {
+    width: 96vw;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 18px;
+  }
+
+  .desktop-icon {
+    width: 110px;
+  }
+
+  .icon-glyph {
+    width: 56px;
+    height: 56px;
+  }
+
+  .icon-label {
+    font-size: 13px;
   }
 
   #taskbar {
-    height: 44px;
+    height: 48px;
+  }
+
+  #start-button {
+    height: 32px;
+  }
+
+  .task-button {
+    height: 30px;
+  }
+
+  #command-list {
+    max-height: 200px;
   }
 }

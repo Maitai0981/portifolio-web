@@ -517,6 +517,18 @@
     };
   }
 
+  function isMobileViewport() {
+    return window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
+  }
+
+  function getBannerLines() {
+    const content = getContent();
+    if (isMobileViewport() && Array.isArray(content.bannerMobile)) {
+      return content.bannerMobile;
+    }
+    return content.banner || [];
+  }
+
   function getUi() {
     return getContent().ui || DEFAULT_I18N[state.language]?.ui || DEFAULT_I18N.pt.ui;
   }
@@ -741,7 +753,7 @@
   function initTerminal() {
     updatePrompt();
     clearOutput();
-    appendOutputLines(getContent().banner || []);
+    appendOutputLines(getBannerLines());
     focusInput();
   }
 
@@ -1084,7 +1096,7 @@
       case "email":
         return { lines: content?.email || [] };
       case "banner":
-        return { lines: content?.banner || [] };
+        return { lines: getBannerLines() };
       case "date":
         return { lines: [new Date().toLocaleString(state.locale)] };
       case "neofetch":
