@@ -3533,9 +3533,11 @@
       return;
     }
 
+    const normalizedUrl = normalizeResumeUrl(resumeUrl);
+    const embedUrl = buildResumeEmbedUrl(normalizedUrl);
     const frame = document.createElement("iframe");
     frame.className = "resume-frame";
-    frame.src = resumeUrl;
+    frame.src = embedUrl;
     frame.title = "Curriculo";
     frame.loading = "lazy";
     frame.setAttribute("referrerpolicy", "no-referrer");
@@ -3565,6 +3567,34 @@
       }
     }
     return "";
+  }
+
+  function normalizeResumeUrl(url) {
+    if (!url) return "";
+    const driveMatch = url.match(
+      /^https?:\/\/drive\.google\.com\/file\/d\/([^/]+)\/(view|preview).*$/
+    );
+    if (driveMatch) {
+      const fileId = driveMatch[1];
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+    const match = url.match(
+      /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/
+    );
+    if (match) {
+      const [, owner, repo, branch, path] = match;
+      return `https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf`;
+    }
+    return url;
+  }
+
+  function buildResumeEmbedUrl(url) {
+    if (!url) return "";
+    if (url.includes("drive.google.com/file/d/") && url.includes("/preview")) {
+      return url;
+    }
+    if (url.includes("docs.google.com/gview")) return url;
+    return `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(url)}`;
   }
 
   function appendEducationContent(wrapper, lines = []) {
