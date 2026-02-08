@@ -91,9 +91,9 @@
   ],
   "help": [
     "Comandos internos definidos. Use `help <comando>` para detalhes.",
-    "about   banner  clear  email   exit   exit-gui",
-    "gui     help    history projects reload curriculum",
-    "social  terminal theme",
+    "about   banner  clear  cowsay  date   email",
+    "exit    exit-gui gui    help   history neofetch",
+    "projects reload curriculum social terminal theme",
     "Atalhos: Ctrl+L limpar, Ctrl+K menu, Alt+G alternar GUI/CLI, Tab autocomplete"
   ],
   "commandHelp": {
@@ -114,5 +114,8 @@
     "exit-gui": "exit-gui\nSai do modo grafico.",
     "terminal": "terminal\nSinonimo de exit-gui.",
     "theme": "theme [dark|light|hacker|retro]\nAltera o tema do terminal."
+    ,"date": "date\nMostra data e hora atuais."
+    ,"neofetch": "neofetch\nMostra informacoes do sistema."
+    ,"cowsay": "cowsay [mensagem]\nExibe uma vaca falando."
   }
 }

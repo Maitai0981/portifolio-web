@@ -8,6 +8,7 @@
     secretUnlocked: false,
     commandMenuOpen: false,
     commandMenuIndex: 0,
+    clockInterval: null,
     options: {
       typing: false,
       typingSpeed: 14
@@ -35,7 +36,8 @@
     desktop: null,
     startButton: null,
     startMenu: null,
-    taskButtons: null
+    taskButtons: null,
+    taskbarClock: null
   };
 
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
@@ -52,6 +54,9 @@
     "curriculum",
     "email",
     "banner",
+    "date",
+    "neofetch",
+    "cowsay",
     "history",
     "clear",
     "cls",
@@ -62,6 +67,8 @@
     "terminal",
     "theme"
   ];
+
+  // const TRANSITION_MS = 120;
 
   const audioState = {
     context: null,
@@ -235,6 +242,7 @@
     dom.startButton = document.getElementById("start-button");
     dom.startMenu = document.getElementById("start-menu");
     dom.taskButtons = document.getElementById("task-buttons");
+    dom.taskbarClock = document.getElementById("taskbar-clock");
   }
 
   function bindEvents() {
@@ -619,6 +627,12 @@
         return { lines: content?.email || [] };
       case "banner":
         return { lines: content?.banner || [] };
+      case "date":
+        return { lines: [new Date().toString()] };
+      case "neofetch":
+        return { lines: formatNeofetch() };
+      case "cowsay":
+        return { lines: formatCowsay(args) };
       case "history":
         return { lines: formatHistory() };
       case "theme":
@@ -665,6 +679,36 @@
       }
     });
     return lines;
+  }
+
+  function formatNeofetch() {
+    const content = state.content;
+    const uptime = Math.floor(performance.now() / 1000);
+    return [
+      "OS: Portfolio Terminal v1.0",
+      `Host: ${content?.meta?.machine || "saragoca"}`,
+      "Kernel: JavaScript ES6+",
+      "Shell: Custom Shell",
+      `Theme: ${state.theme}`,
+      `Terminal: ${state.mode}`,
+      `Uptime: ${uptime}s`
+    ];
+  }
+
+  function formatCowsay(args) {
+    const message = args.length ? args.join(" ") : "Moo!";
+    const border = "_".repeat(message.length + 2);
+    const underline = "-".repeat(message.length + 2);
+    return [
+      ` ${border}`,
+      `< ${message} >`,
+      ` ${underline}`,
+      "        \\   ^__^",
+      "         \\  (oo)\\_______",
+      "            (__)\\       )\\/\\",
+      "                ||----w |",
+      "                ||     ||"
+    ];
   }
 
   function handleThemeCommand(args) {
@@ -722,12 +766,12 @@
   function setMode(mode) {
     state.mode = mode;
     if (mode === "gui") {
-      dom.terminal.classList.add("hidden");
-      dom.gui.classList.remove("hidden");
+      hideMode(dom.terminal);
+      showMode(dom.gui);
       closeCommandMenu();
     } else {
-      dom.gui.classList.add("hidden");
-      dom.terminal.classList.remove("hidden");
+      hideMode(dom.gui);
+      showMode(dom.terminal);
       dom.startMenu.classList.add("hidden");
       focusInput();
     }
@@ -736,6 +780,32 @@
   function toggleStartMenu(event) {
     event.stopPropagation();
     dom.startMenu.classList.toggle("hidden");
+  }
+
+  function showMode(element) {
+    if (!element) return;
+    // if (element._hideTimeout) {
+    //   clearTimeout(element._hideTimeout);
+    //   element._hideTimeout = null;
+    // }
+    element.classList.remove("hidden");
+    // requestAnimationFrame(() => {
+    //   element.classList.remove("mode-hidden");
+    // });
+    element.classList.remove("mode-hidden");
+  }
+
+  function hideMode(element) {
+    if (!element) return;
+    // element.classList.add("mode-hidden");
+    // if (element._hideTimeout) {
+    //   clearTimeout(element._hideTimeout);
+    // }
+    // element._hideTimeout = setTimeout(() => {
+    //   element.classList.add("hidden");
+    // }, TRANSITION_MS);
+    element.classList.add("mode-hidden");
+    element.classList.add("hidden");
   }
 
   function handleStartMenuClick(event) {
@@ -1109,6 +1179,22 @@
     state.matrix.animationId = requestAnimationFrame(runMatrix);
   }
 
+  function startClock() {
+    const update = () => {
+      const now = new Date();
+      if (!dom.taskbarClock) return;
+      dom.taskbarClock.textContent = now.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    };
+    update();
+    if (state.clockInterval) {
+      clearInterval(state.clockInterval);
+    }
+    state.clockInterval = setInterval(update, 1000);
+  }
+
   function ensureAudio() {
     if (!audioState.context) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1331,6 +1417,15 @@
     dom.terminal.scrollTop = dom.terminal.scrollHeight;
   }
 
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .catch(() => {
+        // silencioso
+      });
+  }
+
   async function init() {
     cacheDom();
     bindEvents();
@@ -1338,6 +1433,8 @@
     setTheme(state.theme);
     renderCommandMenu("");
     initTerminal();
+    startClock();
+    registerServiceWorker();
   }
 
   init();

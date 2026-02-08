@@ -1,0 +1,20 @@
+{
+  "name": "Portfolio Terminal + GUI",
+  "short_name": "Portfolio",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "assets/pessoa.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
