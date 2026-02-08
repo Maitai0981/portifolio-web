@@ -68,7 +68,7 @@
     "theme"
   ];
 
-  // const TRANSITION_MS = 120;
+  const TRANSITION_MS = 120;
 
   const audioState = {
     context: null,
