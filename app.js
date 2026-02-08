@@ -789,23 +789,22 @@
       element._hideTimeout = null;
     }
     element.classList.remove("hidden");
+    element.setAttribute("aria-hidden", "false");
     requestAnimationFrame(() => {
       element.classList.remove("mode-hidden");
     });
-    element.classList.remove("mode-hidden");
   }
 
   function hideMode(element) {
     if (!element) return;
     element.classList.add("mode-hidden");
+    element.setAttribute("aria-hidden", "true");
     if (element._hideTimeout) {
       clearTimeout(element._hideTimeout);
     }
     element._hideTimeout = setTimeout(() => {
       element.classList.add("hidden");
     }, TRANSITION_MS);
-    element.classList.add("mode-hidden");
-    element.classList.add("hidden");
   }
 
   function handleStartMenuClick(event) {
@@ -1421,9 +1420,27 @@
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker
       .register("./service-worker.js")
+      .then((registration) => {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              worker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
       .catch(() => {
         // silencioso
       });
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
   }
 
   async function init() {
