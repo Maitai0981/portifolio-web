@@ -114,6 +114,17 @@ body {
   display: none !important;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 /* Terminal */
 #terminal {
   display: flex;
@@ -138,14 +149,24 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--terminal-fg);
+  animation: slideIn 0.2s ease-out;
 }
 
 .terminal-line.error {
   color: var(--terminal-error);
 }
 
+.terminal-line.info {
+  color: var(--terminal-accent);
+}
+
 .terminal-line.command-echo {
   color: var(--terminal-dim);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 #terminal-input-line {

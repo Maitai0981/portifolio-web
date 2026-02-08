@@ -9,6 +9,17 @@
     commandMenuOpen: false,
     commandMenuIndex: 0,
     clockInterval: null,
+    language: "pt",
+    locale: "pt-BR",
+    me: {
+      active: false,
+      history: [],
+      lastProject: null
+    },
+    shell: {
+      cwd: "~"
+    },
+
     options: {
       typing: false,
       typingSpeed: 14
@@ -47,6 +58,8 @@
   const THEMES = ["dark", "light", "hacker", "retro"];
   const COMMANDS = [
     "help",
+    "lang",
+    "me",
     "about",
     "social",
     "projects",
@@ -57,7 +70,11 @@
     "date",
     "neofetch",
     "cowsay",
+    "sudo",
     "history",
+    "ls",
+    "cd",
+    "cat",
     "clear",
     "cls",
     "reload",
@@ -70,6 +87,232 @@
 
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
+  const SUPPORTED_LANGS = ["pt", "en"];
+
+  const DEFAULT_I18N = {
+    pt: {
+      ui: {
+        commandMenuTitle: "Menu de comandos",
+        commandMenuPlaceholder: "Digite um comando...",
+        commandMenuHint: "Enter para executar • Esc para fechar",
+        commandMenuAriaLabel: "Menu de comandos",
+        startMenuHeader: "Iniciar",
+        startButton: "Iniciar",
+        desktopAriaLabel: "Atalhos do desktop",
+        labels: {
+          about: "Sobre",
+          social: "Social",
+          projects: "Projetos",
+          resume: "Curriculo",
+          email: "Email",
+          terminal: "Terminal"
+        },
+        windowTitles: {
+          about: "Sobre",
+          social: "Social",
+          projects: "Projetos",
+          resume: "Curriculo",
+          email: "Email"
+        },
+        profileLabel: "Perfil",
+        noContent: "Sem conteudo.",
+        noProjects: "Nenhum projeto listado.",
+        offline: "Offline",
+        languageLabels: {
+          pt: "Portugues (pt)",
+          en: "English (en)"
+        },
+        modeLabels: {
+          cli: "terminal",
+          gui: "gui"
+        }
+      },
+      messages: {
+        loading: "Carregando portfolio...",
+        loadError: "Erro ao carregar conteudo. Usando dados fallback.",
+        helpNotFound: "help: nenhum topico corresponde a `{{topic}}`",
+        commandNotFound: "Comando nao encontrado: {{command}}",
+        sessionEnded: "Sessao encerrada.",
+        switchGui: "Alternando para modo grafico...",
+        alreadyTerminal: "Voce ja esta no terminal.",
+        backToTerminal: "Voltando ao terminal...",
+        possibleCommands: "Possiveis comandos: {{commands}}",
+        historyEmpty: "Historico vazio.",
+        meIntro: [
+          "Oi! Sou o Matheus AI, seu guia do portfolio.",
+          "Pergunte sobre projetos, tecnologias ou perfil.",
+          "Exemplos: me fale sobre SupaSport | me links do PIBIC Dermatologia | me stack do CRUD",
+          "Para encerrar a conversa: me exit"
+        ],
+        meExit: "Conversa encerrada.",
+        meHelp: [
+          "Use `me <pergunta>` para conversar.",
+          "Exemplos: `me fale sobre SupaSport`, `me links do CRUD`, `me stack do PIBIC`."
+        ],
+        meProfilePrefix: "Sou {{profile}}.",
+        meProfileFallback: "Sou o Matheus AI, seu assistente de portfolio.",
+        meProfileDetails: "Posso explicar projetos, tecnologias e objetivos.",
+        meProjectsNone: "Ainda nao tenho projetos cadastrados.",
+        meProjectsIntro: "Aqui estao meus projetos:",
+        meNoMatchIntro: "Nao entendi a pergunta. Posso falar sobre:",
+        meUnknown: "Nao entendi a pergunta. Pergunte sobre meus projetos ou perfil.",
+        projectNoDescription: "Sem descricao.",
+        projectNoDetails: "Sem detalhes cadastrados.",
+        projectNoStack: "Nao informada.",
+        projectLinksLabel: "Links",
+        projectStackLabel: "Stack",
+        projectDefaultName: "Projeto",
+        noProjectsListed: "Nenhum projeto listado.",
+        themeCurrent: "Tema atual: {{theme}}",
+        themeAvailable: "Disponiveis: {{themes}}",
+        themeInvalid: "Tema invalido: {{theme}}",
+        themeChanged: "Tema alterado para: {{theme}}",
+        themeUsage: "Use: theme {{themes}}",
+        neofetch: {
+          os: "OS",
+          host: "Host",
+          kernel: "Kernel",
+          shell: "Shell",
+          theme: "Tema",
+          terminal: "Terminal",
+          uptime: "Uptime",
+          osValue: "Portfolio Terminal v1.0",
+          kernelValue: "JavaScript ES6+",
+          shellValue: "Shell custom"
+        },
+        langUsage: "Use: lang pt | en",
+        langInvalid: "Idioma invalido: {{lang}}",
+        langChanged: "Idioma alterado para: {{lang}}",
+        langCurrent: "Idioma atual: {{lang}}",
+        sudoMessages: [
+          "sudo: voce realmente achou que tinha permissoes?",
+          "sudo: melhor nao.",
+          "sudo: acesso negado. tente novamente amanha.",
+          "sudo: suas credenciais foram... brincadeira.",
+          "sudo: nao ha cafe suficiente para isso."
+        ],
+        fsCatUsage: "Uso: cat <arquivo>",
+        fsNotFound: "Arquivo ou diretorio nao encontrado: {{path}}",
+        fsNotDir: "Nao e um diretorio: {{path}}",
+        fsIsDir: "E um diretorio: {{path}}",
+        fsEmpty: "Pasta vazia.",
+        fsCwd: "Diretorio atual: {{path}}",
+        a11yMode: "Modo {{mode}} ativado.",
+        a11yLang: "Idioma definido para {{lang}}."
+      }
+    },
+    en: {
+      ui: {
+        commandMenuTitle: "Command menu",
+        commandMenuPlaceholder: "Type a command...",
+        commandMenuHint: "Enter to run • Esc to close",
+        commandMenuAriaLabel: "Command menu",
+        startMenuHeader: "Start",
+        startButton: "Start",
+        desktopAriaLabel: "Desktop shortcuts",
+        labels: {
+          about: "About",
+          social: "Social",
+          projects: "Projects",
+          resume: "Resume",
+          email: "Email",
+          terminal: "Terminal"
+        },
+        windowTitles: {
+          about: "About",
+          social: "Social",
+          projects: "Projects",
+          resume: "Resume",
+          email: "Email"
+        },
+        profileLabel: "Profile",
+        noContent: "No content.",
+        noProjects: "No projects listed.",
+        offline: "Offline",
+        languageLabels: {
+          pt: "Portugues (pt)",
+          en: "English (en)"
+        },
+        modeLabels: {
+          cli: "terminal",
+          gui: "gui"
+        }
+      },
+      messages: {
+        loading: "Loading portfolio...",
+        loadError: "Failed to load content. Using fallback data.",
+        helpNotFound: "help: no help topics match `{{topic}}`",
+        commandNotFound: "Command not found: {{command}}",
+        sessionEnded: "Session ended.",
+        switchGui: "Switching to GUI mode...",
+        alreadyTerminal: "You are already in the terminal.",
+        backToTerminal: "Returning to the terminal...",
+        possibleCommands: "Possible commands: {{commands}}",
+        historyEmpty: "History is empty.",
+        meIntro: [
+          "Hi! I'm Matheus AI, your portfolio guide.",
+          "Ask about projects, technologies, or profile.",
+          "Examples: me tell me about SupaSport | me links for PIBIC Dermatologia | me stack for the CRUD",
+          "To end the conversation: me exit"
+        ],
+        meExit: "Conversation ended.",
+        meHelp: [
+          "Use `me <question>` to chat.",
+          "Examples: `me tell me about SupaSport`, `me links for the CRUD`, `me stack for PIBIC`."
+        ],
+        meProfilePrefix: "I am {{profile}}.",
+        meProfileFallback: "I'm Matheus AI, your portfolio assistant.",
+        meProfileDetails: "I can explain projects, technologies, and goals.",
+        meProjectsNone: "I don't have projects listed yet.",
+        meProjectsIntro: "Here are my projects:",
+        meNoMatchIntro: "I didn't get the question. I can talk about:",
+        meUnknown: "I didn't get the question. Ask about my projects or profile.",
+        projectNoDescription: "No description.",
+        projectNoDetails: "No details provided.",
+        projectNoStack: "Not provided.",
+        projectLinksLabel: "Links",
+        projectStackLabel: "Stack",
+        projectDefaultName: "Project",
+        noProjectsListed: "No projects listed.",
+        themeCurrent: "Current theme: {{theme}}",
+        themeAvailable: "Available: {{themes}}",
+        themeInvalid: "Invalid theme: {{theme}}",
+        themeChanged: "Theme set to: {{theme}}",
+        themeUsage: "Use: theme {{themes}}",
+        neofetch: {
+          os: "OS",
+          host: "Host",
+          kernel: "Kernel",
+          shell: "Shell",
+          theme: "Theme",
+          terminal: "Terminal",
+          uptime: "Uptime",
+          osValue: "Portfolio Terminal v1.0",
+          kernelValue: "JavaScript ES6+",
+          shellValue: "Custom shell"
+        },
+        langUsage: "Use: lang pt | en",
+        langInvalid: "Invalid language: {{lang}}",
+        langChanged: "Language set to: {{lang}}",
+        langCurrent: "Current language: {{lang}}",
+        sudoMessages: [
+          "sudo: nice try, but no permissions.",
+          "sudo: nope.",
+          "sudo: access denied. maybe tomorrow.",
+          "sudo: credentials accepted... just kidding.",
+          "sudo: not enough coffee for that."
+        ],
+        fsCatUsage: "Usage: cat <file>",
+        fsNotFound: "File or directory not found: {{path}}",
+        fsNotDir: "Not a directory: {{path}}",
+        fsIsDir: "Is a directory: {{path}}",
+        fsEmpty: "Empty directory.",
+        fsCwd: "Current directory: {{path}}",
+        a11yMode: "Mode {{mode}} active.",
+        a11yLang: "Language set to {{lang}}."
+      }
+    }
+  };
 
   const audioState = {
     context: null,
@@ -147,6 +390,7 @@
       const winData = {
         id,
         element: win,
+        titleEl,
         contentEl: content,
         taskButton,
         minimized: false,
@@ -230,6 +474,212 @@
     }
   };
 
+  function normalizeLanguage(input) {
+    const value = String(input || "")
+      .trim()
+      .toLowerCase()
+      .replace("_", "-");
+    if (!value) return null;
+    if (value === "pt" || value.startsWith("pt-") || value === "ptbr") return "pt";
+    if (value === "en" || value.startsWith("en-")) return "en";
+    return SUPPORTED_LANGS.includes(value) ? value : null;
+  }
+
+  function getLocaleForLanguage(lang) {
+    return lang === "en" ? "en-US" : "pt-BR";
+  }
+
+  function resolveInitialLanguage() {
+    const stored = normalizeLanguage(localStorage.getItem("portfolioLang"));
+    if (stored) return stored;
+    const navigatorLang = normalizeLanguage(navigator.language || navigator.userLanguage || "");
+    return navigatorLang || "pt";
+  }
+
+  function getContent() {
+    const base = state.content || {};
+    const fallback = DEFAULT_I18N[state.language] || DEFAULT_I18N.pt;
+    const translations = base.translations;
+    if (translations) {
+      const selected = translations[state.language] || translations.pt || translations.en || {};
+      return {
+        ...selected,
+        meta: { ...(base.meta || {}), ...(selected.meta || {}) },
+        ui: { ...fallback.ui, ...(selected.ui || {}) },
+        messages: { ...fallback.messages, ...(selected.messages || {}) }
+      };
+    }
+    return {
+      ...base,
+      meta: { ...(base.meta || {}) },
+      ui: { ...fallback.ui, ...(base.ui || {}) },
+      messages: { ...fallback.messages, ...(base.messages || {}) }
+    };
+  }
+
+  function getUi() {
+    return getContent().ui || DEFAULT_I18N[state.language]?.ui || DEFAULT_I18N.pt.ui;
+  }
+
+  function getMessages() {
+    return getContent().messages || DEFAULT_I18N[state.language]?.messages || DEFAULT_I18N.pt.messages;
+  }
+
+  function getLanguageLabel(lang) {
+    const ui = getUi();
+    const labels = ui.languageLabels || {};
+    return labels[lang] || lang;
+  }
+
+  function formatTemplate(template, vars = {}) {
+    return String(template || "").replace(/\{\{(\w+)\}\}/g, (_match, key) => {
+      const value = vars[key];
+      return value === undefined || value === null ? "" : String(value);
+    });
+  }
+
+  function ensureAnnouncer() {
+    let announcer = document.getElementById("sr-announcer");
+    if (announcer) return announcer;
+    announcer = document.createElement("div");
+    announcer.id = "sr-announcer";
+    announcer.className = "sr-only";
+    announcer.setAttribute("role", "status");
+    announcer.setAttribute("aria-live", "polite");
+    document.body.append(announcer);
+    return announcer;
+  }
+
+  function announceToScreenReader(message) {
+    if (!message) return;
+    const announcer = ensureAnnouncer();
+    announcer.textContent = "";
+    window.setTimeout(() => {
+      announcer.textContent = message;
+    }, 20);
+  }
+
+  function getCommandLabel(commandKey) {
+    const ui = getUi();
+    return ui.labels?.[commandKey] || ui.windowTitles?.[commandKey] || commandKey;
+  }
+
+  function getWindowTitle(commandKey) {
+    const ui = getUi();
+    return ui.windowTitles?.[commandKey] || getCommandLabel(commandKey);
+  }
+
+  function updateUiText() {
+    const ui = getUi();
+    const header = dom.commandMenu?.querySelector(".command-menu-header");
+    if (header && ui.commandMenuTitle) header.textContent = ui.commandMenuTitle;
+    if (dom.commandSearch && ui.commandMenuPlaceholder) {
+      dom.commandSearch.placeholder = ui.commandMenuPlaceholder;
+    }
+    const hint = dom.commandMenu?.querySelector(".command-menu-hint");
+    if (hint && ui.commandMenuHint) hint.textContent = ui.commandMenuHint;
+    const panel = dom.commandMenu?.querySelector(".command-menu-panel");
+    if (panel && ui.commandMenuAriaLabel) panel.setAttribute("aria-label", ui.commandMenuAriaLabel);
+    const desktopIcons = document.getElementById("desktop-icons");
+    if (desktopIcons && ui.desktopAriaLabel) {
+      desktopIcons.setAttribute("aria-label", ui.desktopAriaLabel);
+    }
+    if (dom.startButton && ui.startButton) dom.startButton.textContent = ui.startButton;
+    const startHeader = dom.startMenu?.querySelector(".start-menu-header");
+    if (startHeader && ui.startMenuHeader) startHeader.textContent = ui.startMenuHeader;
+
+    document.querySelectorAll(".desktop-icon").forEach((icon) => {
+      const label = getCommandLabel(icon.dataset.command);
+      const labelEl = icon.querySelector(".icon-label");
+      if (labelEl) labelEl.textContent = label;
+    });
+
+    dom.startMenu?.querySelectorAll("li[data-command]").forEach((item) => {
+      const label = getCommandLabel(item.dataset.command);
+      const labelEl = item.querySelector(".start-label");
+      if (labelEl) labelEl.textContent = label;
+    });
+
+    if (ui.pageTitle) {
+      document.title = ui.pageTitle;
+    }
+  }
+
+  function refreshOpenWindows() {
+    windowManager.windows.forEach((winData) => {
+      const title = getWindowTitle(winData.commandKey);
+      if (winData.titleEl) winData.titleEl.textContent = title;
+      winData.taskButton.textContent = title;
+      winData.contentEl.innerHTML = "";
+      winData.contentEl.append(buildGuiContent(winData.commandKey));
+    });
+  }
+
+  function applyLanguage(lang, options = {}) {
+    const normalized = normalizeLanguage(lang) || state.language || "pt";
+    state.language = normalized;
+    state.locale = getLocaleForLanguage(normalized);
+    if (options.persist) {
+      localStorage.setItem("portfolioLang", normalized);
+    }
+    document.documentElement.lang = normalized === "pt" ? "pt-BR" : "en";
+    updateUiText();
+    renderCommandMenu(dom.commandSearch?.value || "");
+    updatePrompt();
+    refreshOpenWindows();
+    startClock();
+    if (options.announce) {
+      const messages = getMessages();
+      const label = getLanguageLabel(normalized);
+      announceToScreenReader(formatTemplate(messages.a11yLang, { lang: label }));
+    }
+  }
+
+  function buildFallbackContent() {
+    return {
+      meta: {
+        user: "Matheus",
+        machine: "saragoca"
+      },
+      translations: {
+        pt: {
+          meta: {
+            name: "Matheus Saragoca",
+            role: "Desenvolvedor de Software",
+            location: "Brasil"
+          },
+          banner: ["Falha ao carregar conteudo."],
+          help: ["help"],
+          about: [],
+          aboutKeywords: [],
+          social: [],
+          projects: [],
+          resume: [],
+          email: [],
+          ui: DEFAULT_I18N.pt.ui,
+          messages: DEFAULT_I18N.pt.messages
+        },
+        en: {
+          meta: {
+            name: "Matheus Saragoca",
+            role: "Software Developer",
+            location: "Brazil"
+          },
+          banner: ["Failed to load content."],
+          help: ["help"],
+          about: [],
+          aboutKeywords: [],
+          social: [],
+          projects: [],
+          resume: [],
+          email: [],
+          ui: DEFAULT_I18N.en.ui,
+          messages: DEFAULT_I18N.en.messages
+        }
+      }
+    };
+  }
+
   function cacheDom() {
     dom.terminal = document.getElementById("terminal");
     dom.terminalOutput = document.getElementById("terminal-output");
@@ -260,37 +710,38 @@
   }
 
   async function loadContent() {
+    const messages = getMessages();
+    appendOutputLine(messages.loading, "info");
+    announceToScreenReader(messages.loading);
     try {
       const response = await fetch(`./data.json?v=${APP_VERSION}`, { cache: "no-store" });
       if (!response.ok) {
-        throw new Error("Falha ao carregar data.json");
+        throw new Error("Failed to load data.json");
       }
       state.content = await response.json();
     } catch (error) {
-      state.content = {
-        meta: { user: "Matheus", machine: "saragoca" },
-        banner: ["Falha ao carregar conteudo."],
-        help: ["help"],
-        about: [],
-        social: [],
-        projects: [],
-        resume: [],
-        email: []
-      };
-      appendOutputLine("Erro ao carregar conteudo. Usando dados fallback.", "error");
+      state.content = buildFallbackContent();
+      appendOutputLine(messages.loadError, "error");
+      announceToScreenReader(messages.loadError);
     }
   }
 
+  function formatPromptPath() {
+    return state.shell.cwd || "~";
+  }
+
   function updatePrompt() {
-    const user = state.content?.meta?.user || "Matheus";
-    const machine = state.content?.meta?.machine || "saragoca";
-    dom.prompt.textContent = `${user}@${machine}:~$`;
+    const meta = getContent().meta || {};
+    const user = meta.user || "Matheus";
+    const machine = meta.machine || "saragoca";
+    const path = formatPromptPath();
+    dom.prompt.textContent = `${user}@${machine}:${path}$`;
   }
 
   function initTerminal() {
     updatePrompt();
     clearOutput();
-    appendOutputLines(state.content?.banner || []);
+    appendOutputLines(getContent().banner || []);
     focusInput();
   }
 
@@ -450,7 +901,7 @@
 
   function renderCommandMenu(filter) {
     const query = (filter || "").toLowerCase().trim();
-    const helpMap = state.content?.commandHelp || {};
+    const helpMap = getContent().commandHelp || {};
     const items = COMMANDS.map((command) => ({
       command,
       description: helpMap[command]?.split("\n")[0] || ""
@@ -558,7 +1009,8 @@
       return;
     }
     if (matches.length > 1) {
-      appendOutputLine(`Possiveis comandos: ${matches.join(" ")}`);
+      const messages = getMessages();
+      appendOutputLine(formatTemplate(messages.possibleCommands, { commands: matches.join(" ") }));
     }
   }
 
@@ -600,7 +1052,8 @@
   }
 
   function getCommandResult(command, args) {
-    const content = state.content;
+    const content = getContent();
+    const messages = getMessages();
     switch (command) {
       case "help":
         if (args.length > 0) {
@@ -608,12 +1061,16 @@
           const helpMap = content?.commandHelp || {};
           const entry = helpMap[topic];
           if (!entry) {
-            return { lines: [`help: no help topics match \`${topic}\``] };
+            return { lines: [formatTemplate(messages.helpNotFound, { topic })] };
           }
           const lines = String(entry).split("\n");
           return { lines };
         }
         return { lines: content?.help || [] };
+      case "lang":
+        return handleLangCommand(args);
+      case "me":
+        return handleMeCommand(args);
       case "about":
         return { lines: highlightLinesWithAnsi(content?.about || [], content?.aboutKeywords || []) };
       case "social":
@@ -629,13 +1086,21 @@
       case "banner":
         return { lines: content?.banner || [] };
       case "date":
-        return { lines: [new Date().toString()] };
+        return { lines: [new Date().toLocaleString(state.locale)] };
       case "neofetch":
         return { lines: formatNeofetch() };
       case "cowsay":
         return { lines: formatCowsay(args) };
+      case "sudo":
+        return handleSudoCommand(args);
       case "history":
         return { lines: formatHistory() };
+      case "ls":
+        return handleLsCommand(args);
+      case "cd":
+        return handleCdCommand(args);
+      case "cat":
+        return handleCatCommand(args);
       case "theme":
         return handleThemeCommand(args);
       case "clear":
@@ -644,36 +1109,454 @@
       case "reload":
         return { action: "reload" };
       case "exit":
-        return { lines: ["Sessao encerrada."], action: "exit" };
+        return { lines: [messages.sessionEnded], action: "exit" };
       case "gui":
-        return { lines: ["Alternando para modo grafico..."], action: "gui" };
+        return { lines: [messages.switchGui], action: "gui" };
       case "exit-gui":
       case "terminal":
         if (state.mode === "cli") {
-          return { lines: ["Voce ja esta no terminal."] };
+          return { lines: [messages.alreadyTerminal] };
         }
-        return { lines: ["Voltando ao terminal..."], action: "terminal" };
+        return { lines: [messages.backToTerminal], action: "terminal" };
       default:
-        return { error: `Comando nao encontrado: ${command}` };
+        return { error: formatTemplate(messages.commandNotFound, { command }) };
     }
   }
 
   function formatHistory() {
+    const messages = getMessages();
     if (state.history.length === 0) {
-      return ["Historico vazio."];
+      return [messages.historyEmpty];
     }
     return state.history.map((entry, index) => `${index + 1}  ${entry}`);
   }
 
+  function getRandomItem(items) {
+    if (!Array.isArray(items) || items.length === 0) return "";
+    return items[Math.floor(Math.random() * items.length)];
+  }
+
+  function handleLangCommand(args) {
+    const messages = getMessages();
+    if (!args || args.length === 0) {
+      const label = getLanguageLabel(state.language);
+      return {
+        lines: [formatTemplate(messages.langCurrent, { lang: label }), messages.langUsage]
+      };
+    }
+    const normalized = normalizeLanguage(args[0]);
+    if (!normalized) {
+      return {
+        lines: [
+          formatTemplate(messages.langInvalid, { lang: args[0] }),
+          messages.langUsage
+        ]
+      };
+    }
+    applyLanguage(normalized, { persist: true, announce: true });
+    const label = getLanguageLabel(normalized);
+    return { lines: [formatTemplate(messages.langChanged, { lang: label })] };
+  }
+
+  function handleSudoCommand() {
+    const messages = getMessages();
+    const fallbackList = DEFAULT_I18N[state.language]?.messages?.sudoMessages || [];
+    const list = messages.sudoMessages || fallbackList;
+    return { lines: [getRandomItem(list) || "sudo: nope."] };
+  }
+
+  function buildVirtualFs(content) {
+    const messages = getMessages();
+    const projects = content.projects || [];
+    const projectDir = {
+      type: "dir",
+      children: {}
+    };
+
+    projects.forEach((project, index) => {
+      const name = project.name || `${messages.projectDefaultName} ${index + 1}`;
+      const fileName = `${slugify(name) || `project-${index + 1}`}.txt`;
+      projectDir.children[fileName] = {
+        type: "file",
+        content: buildProjectFile(project, messages)
+      };
+    });
+
+    return {
+      type: "dir",
+      children: {
+        "about.txt": { type: "file", content: content.about || [] },
+        "projects.txt": { type: "file", content: formatProjects(projects) },
+        "social.txt": { type: "file", content: content.social || [] },
+        "resume.txt": { type: "file", content: content.resume || [] },
+        "email.txt": { type: "file", content: content.email || [] },
+        "help.txt": { type: "file", content: content.help || [] },
+        projects: projectDir
+      }
+    };
+  }
+
+  function buildProjectFile(project, messages) {
+    const lines = [];
+    const name = project.name || messages.projectDefaultName;
+    const description = project.description || messages.projectNoDescription;
+    const details = project.details && project.details !== project.description ? project.details : "";
+    lines.push(name);
+    if (description) lines.push(description);
+    if (details) lines.push(details);
+    if (Array.isArray(project.stack) && project.stack.length) {
+      lines.push(`${messages.projectStackLabel}: ${project.stack.join(", ")}`);
+    }
+    if (Array.isArray(project.links) && project.links.length) {
+      lines.push(`${messages.projectLinksLabel}: ${project.links.join(" | ")}`);
+    }
+    return lines;
+  }
+
+  function slugify(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+  }
+
+  function resolvePath(input) {
+    const raw = String(input || "").trim();
+    if (!raw) return state.shell.cwd;
+    const current = state.shell.cwd === "~" ? [] : state.shell.cwd.slice(2).split("/").filter(Boolean);
+    let parts = [];
+
+    if (raw.startsWith("~")) {
+      parts = raw.slice(1).split("/").filter(Boolean);
+    } else if (raw.startsWith("/")) {
+      parts = raw.slice(1).split("/").filter(Boolean);
+    } else {
+      parts = current.concat(raw.split("/").filter(Boolean));
+    }
+
+    const resolved = [];
+    parts.forEach((part) => {
+      if (part === ".") return;
+      if (part === "..") {
+        resolved.pop();
+        return;
+      }
+      resolved.push(part);
+    });
+
+    return resolved.length ? `~/${resolved.join("/")}` : "~";
+  }
+
+  function getNodeAtPath(root, path) {
+    const segments = path === "~" ? [] : path.slice(2).split("/").filter(Boolean);
+    let node = root;
+    for (const segment of segments) {
+      if (!node || node.type !== "dir" || !node.children || !node.children[segment]) {
+        return null;
+      }
+      node = node.children[segment];
+    }
+    return node;
+  }
+
+  function listDirectory(node) {
+    if (!node || node.type !== "dir") return [];
+    const entries = Object.keys(node.children || {});
+    return entries
+      .map((entry) => (node.children[entry].type === "dir" ? `${entry}/` : entry))
+      .sort();
+  }
+
+  function handleLsCommand(args) {
+    const messages = getMessages();
+    const content = getContent();
+    const fs = buildVirtualFs(content);
+    const targetPath = resolvePath(args[0]);
+    const node = getNodeAtPath(fs, targetPath);
+    if (!node) {
+      return { lines: [formatTemplate(messages.fsNotFound, { path: targetPath })] };
+    }
+    if (node.type === "file") {
+      return { lines: [targetPath.split("/").pop()] };
+    }
+    const entries = listDirectory(node);
+    if (!entries.length) {
+      return { lines: [messages.fsEmpty] };
+    }
+    return { lines: [entries.join("  ")] };
+  }
+
+  function handleCdCommand(args) {
+    const messages = getMessages();
+    const content = getContent();
+    const fs = buildVirtualFs(content);
+    const targetPath = resolvePath(args[0] || "~");
+    const node = getNodeAtPath(fs, targetPath);
+    if (!node) {
+      return { lines: [formatTemplate(messages.fsNotFound, { path: targetPath })] };
+    }
+    if (node.type !== "dir") {
+      return { lines: [formatTemplate(messages.fsNotDir, { path: targetPath })] };
+    }
+    state.shell.cwd = targetPath;
+    updatePrompt();
+    return { lines: [formatTemplate(messages.fsCwd, { path: targetPath })] };
+  }
+
+  function handleCatCommand(args) {
+    const messages = getMessages();
+    if (!args || args.length === 0) {
+      return { lines: [messages.fsCatUsage || messages.langUsage] };
+    }
+    const content = getContent();
+    const fs = buildVirtualFs(content);
+    const targetPath = resolvePath(args[0]);
+    const node = getNodeAtPath(fs, targetPath);
+    if (!node) {
+      return { lines: [formatTemplate(messages.fsNotFound, { path: targetPath })] };
+    }
+    if (node.type === "dir") {
+      return { lines: [formatTemplate(messages.fsIsDir, { path: targetPath })] };
+    }
+    const lines = Array.isArray(node.content) ? node.content : [String(node.content)];
+    return { lines };
+  }
+
+  function handleMeCommand(args) {
+    const messages = getMessages();
+    const message = args.join(" ").trim();
+    if (!message) {
+      state.me.active = true;
+      return {
+        lines: prefixAgentLines(messages.meIntro || [])
+      };
+    }
+
+    if (isMeExit(message)) {
+      state.me.active = false;
+      state.me.lastProject = null;
+      return { lines: prefixAgentLines([messages.meExit]) };
+    }
+
+    state.me.active = true;
+    const response = buildMeResponse(message);
+    state.me.history.push({ role: "user", text: message });
+    state.me.history.push({ role: "assistant", text: response.join("\n") });
+    return { lines: prefixAgentLines(response) };
+  }
+
+  function isMeExit(message) {
+    const normalized = normalizeText(message);
+    return ["exit", "sair", "quit", "tchau", "bye", "/exit", ":q"].some((word) =>
+      normalized === word || normalized.endsWith(` ${word}`)
+    );
+  }
+
+  function buildMeResponse(message) {
+    const content = getContent();
+    const messages = getMessages();
+    const normalized = normalizeText(message);
+
+    if (hasAny(normalized, ["ajuda", "help", "comandos", "como usar"])) {
+      return messages.meHelp || [];
+    }
+
+    if (
+      hasAny(normalized, [
+        "quem e voce",
+        "quem é voce",
+        "sobre voce",
+        "sobre você",
+        "apresenta",
+        "who are you",
+        "about you",
+        "introduce yourself"
+      ])
+    ) {
+      const meta = content.meta || {};
+      const parts = [meta.name, meta.role, meta.location].filter(Boolean).join(" - ");
+      return [
+        parts
+          ? formatTemplate(messages.meProfilePrefix, { profile: parts })
+          : messages.meProfileFallback,
+        messages.meProfileDetails
+      ];
+    }
+
+    if (hasAny(normalized, ["projetos", "projects", "portfolio", "portifolio", "portfólio", "lista"])) {
+      const projects = content.projects || [];
+      if (!projects.length) {
+        return [messages.meProjectsNone];
+      }
+      return [
+        messages.meProjectsIntro,
+        ...projects.map(
+          (project) => `- ${project.name}: ${project.description || messages.projectNoDescription}`
+        )
+      ];
+    }
+
+    const project = findProjectMatch(normalized, content.projects || []);
+    if (project) {
+      state.me.lastProject = project.name || null;
+      return buildProjectResponse(project, normalized);
+    }
+
+    if (state.me.lastProject) {
+      const last = (content.projects || []).find(
+        (proj) => normalizeText(proj.name || "") === normalizeText(state.me.lastProject || "")
+      );
+      if (last) {
+        return buildProjectResponse(last, normalized);
+      }
+    }
+
+    const available = (content.projects || []).map((project) => project.name).filter(Boolean);
+    if (available.length) {
+      return [
+        messages.meNoMatchIntro,
+        ...available.map((name) => `- ${name}`)
+      ];
+    }
+    return [messages.meUnknown];
+  }
+
+  function buildProjectResponse(project, normalizedMessage) {
+    const messages = getMessages();
+    const wantLinks = hasAny(normalizedMessage, [
+      "link",
+      "links",
+      "github",
+      "repo",
+      "repositorio",
+      "repositório"
+    ]);
+    const wantStack = hasAny(normalizedMessage, [
+      "stack",
+      "tecnologia",
+      "tecnologias",
+      "tech",
+      "framework",
+      "linguagem"
+    ]);
+    const wantDetails = hasAny(normalizedMessage, [
+      "detalhe",
+      "detalhes",
+      "sobre",
+      "objetivo",
+      "faz",
+      "funciona",
+      "descricao",
+      "descrição",
+      "details",
+      "about",
+      "objective",
+      "does",
+      "description"
+    ]);
+
+    const lines = [];
+    const name = project.name || messages.projectDefaultName;
+    const description =
+      project.details || project.description || messages.projectNoDetails;
+    const stack = Array.isArray(project.stack) && project.stack.length ? project.stack.join(", ") : null;
+    const links = Array.isArray(project.links) ? project.links : [];
+
+    if (wantLinks && links.length) {
+      lines.push(`${name} - ${messages.projectLinksLabel}: ${links.join(" | ")}`);
+      if (wantDetails) {
+        lines.push(description);
+      }
+      return lines;
+    }
+
+    if (wantStack) {
+      lines.push(`${name} - ${messages.projectStackLabel}: ${stack || messages.projectNoStack}`);
+      if (wantDetails) {
+        lines.push(description);
+      }
+      if (wantLinks && links.length) {
+        lines.push(`${messages.projectLinksLabel}: ${links.join(" | ")}`);
+      }
+      return lines;
+    }
+
+    lines.push(`${name}: ${description}`);
+    if (stack) {
+      lines.push(`${messages.projectStackLabel}: ${stack}`);
+    }
+    if (wantLinks && links.length) {
+      lines.push(`${messages.projectLinksLabel}: ${links.join(" | ")}`);
+    }
+    return lines;
+  }
+
+  function findProjectMatch(normalizedMessage, projects) {
+    if (!projects || projects.length === 0) return null;
+    const messageTokens = new Set(tokenize(normalizedMessage));
+    let best = null;
+    let bestScore = 0;
+
+    projects.forEach((project) => {
+      const candidates = [project.name, ...(project.aliases || []), ...(project.tags || [])].filter(Boolean);
+      candidates.forEach((candidate) => {
+        const normalized = normalizeText(candidate);
+        if (!normalized) return;
+        if (normalizedMessage.includes(normalized)) {
+          const score = normalized.length + 10;
+          if (score > bestScore) {
+            bestScore = score;
+            best = project;
+          }
+          return;
+        }
+        const tokens = tokenize(normalized);
+        const matchCount = tokens.reduce((count, token) => count + (messageTokens.has(token) ? 1 : 0), 0);
+        if (matchCount > bestScore) {
+          bestScore = matchCount;
+          best = project;
+        }
+      });
+    });
+
+    return bestScore > 0 ? best : null;
+  }
+
+  function prefixAgentLines(lines) {
+    return lines.map((line) => `\u001b[36mMatheus AI:\u001b[0m ${line}`);
+  }
+
+  function normalizeText(text) {
+    return String(text || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function tokenize(text) {
+    return normalizeText(text)
+      .split(/[^a-z0-9]+/g)
+      .filter(Boolean);
+  }
+
+  function hasAny(text, candidates) {
+    return candidates.some((candidate) => text.includes(normalizeText(candidate)));
+  }
+
   function formatProjects(projects) {
+    const messages = getMessages();
     if (!projects.length) {
-      return ["Nenhum projeto listado."];
+      return [messages.noProjectsListed];
     }
     const lines = [];
     projects.forEach((project, index) => {
       lines.push(`${index + 1}. ${project.name}`);
       if (project.description) {
         lines.push(`   ${project.description}`);
+      } else if (messages.projectNoDescription) {
+        lines.push(`   ${messages.projectNoDescription}`);
       }
       if (Array.isArray(project.links)) {
         project.links.forEach((link) => lines.push(`   ${link}`));
@@ -683,16 +1566,17 @@
   }
 
   function formatNeofetch() {
-    const content = state.content;
+    const content = getContent();
+    const labels = getMessages().neofetch || {};
     const uptime = Math.floor(performance.now() / 1000);
     return [
-      "OS: Portfolio Terminal v1.0",
-      `Host: ${content?.meta?.machine || "saragoca"}`,
-      "Kernel: JavaScript ES6+",
-      "Shell: Custom Shell",
-      `Theme: ${state.theme}`,
-      `Terminal: ${state.mode}`,
-      `Uptime: ${uptime}s`
+      `${labels.os || "OS"}: ${labels.osValue || "Portfolio Terminal v1.0"}`,
+      `${labels.host || "Host"}: ${content?.meta?.machine || "saragoca"}`,
+      `${labels.kernel || "Kernel"}: ${labels.kernelValue || "JavaScript ES6+"}`,
+      `${labels.shell || "Shell"}: ${labels.shellValue || "Custom shell"}`,
+      `${labels.theme || "Theme"}: ${state.theme}`,
+      `${labels.terminal || "Terminal"}: ${state.mode}`,
+      `${labels.uptime || "Uptime"}: ${uptime}s`
     ];
   }
 
@@ -713,17 +1597,28 @@
   }
 
   function handleThemeCommand(args) {
+    const messages = getMessages();
     if (!args || args.length === 0) {
       const available = THEMES.join(" | ");
       const current = state.theme;
-      return { lines: [`Tema atual: ${current}`, `Disponiveis: ${available}`] };
+      return {
+        lines: [
+          formatTemplate(messages.themeCurrent, { theme: current }),
+          formatTemplate(messages.themeAvailable, { themes: available })
+        ]
+      };
     }
     const choice = args[0].toLowerCase();
     const success = setTheme(choice);
     if (!success) {
-      return { lines: [`Tema invalido: ${choice}`, `Use: theme ${THEMES.join(" | ")}`] };
+      return {
+        lines: [
+          formatTemplate(messages.themeInvalid, { theme: choice }),
+          formatTemplate(messages.themeUsage, { themes: THEMES.join(" | ") })
+        ]
+      };
     }
-    return { lines: [`Tema alterado para: ${choice}`] };
+    return { lines: [formatTemplate(messages.themeChanged, { theme: choice })] };
   }
 
   function applyAction(action, origin) {
@@ -759,6 +1654,10 @@
     state.sessionActive = true;
     state.history = [];
     state.historyIndex = -1;
+    state.me.active = false;
+    state.me.history = [];
+    state.me.lastProject = null;
+    state.shell.cwd = "~";
     dom.terminalInput.removeAttribute("disabled");
     closeCommandMenu();
     setMode("cli");
@@ -776,6 +1675,10 @@
       dom.startMenu.classList.add("hidden");
       focusInput();
     }
+    const messages = getMessages();
+    const ui = getUi();
+    const modeLabel = ui.modeLabels?.[mode] || mode;
+    announceToScreenReader(formatTemplate(messages.a11yMode, { mode: modeLabel }));
   }
 
   function toggleStartMenu(event) {
@@ -834,7 +1737,7 @@
   }
 
   function openGuiWindow(command) {
-    const title = command.charAt(0).toUpperCase() + command.slice(1);
+    const title = getWindowTitle(command);
     windowManager.createWindow({
       title,
       commandKey: command,
@@ -908,6 +1811,9 @@
       lineEl.classList.add("error");
       lineEl.textContent = line;
     } else {
+      if (type) {
+        lineEl.classList.add(type);
+      }
       renderLineContent(lineEl, line);
     }
     dom.terminalOutput.append(lineEl);
@@ -916,7 +1822,7 @@
 
   function renderLines(container, lines, options = {}) {
     if (!lines || lines.length === 0) {
-      container.textContent = "Sem conteudo.";
+      container.textContent = getUi().noContent;
       return;
     }
     lines.forEach((line) => {
@@ -1183,7 +2089,7 @@
     const update = () => {
       const now = new Date();
       if (!dom.taskbarClock) return;
-      dom.taskbarClock.textContent = now.toLocaleTimeString("pt-BR", {
+      dom.taskbarClock.textContent = now.toLocaleTimeString(state.locale || "pt-BR", {
         hour: "2-digit",
         minute: "2-digit"
       });
@@ -1275,7 +2181,7 @@
   }
 
   function buildGuiContent(commandKey) {
-    const content = state.content || {};
+    const content = getContent();
     const wrapper = document.createElement("div");
     wrapper.className = "gui-content";
 
@@ -1296,7 +2202,7 @@
         appendProjectCards(wrapper, content.projects || []);
         break;
       default:
-        wrapper.textContent = "Sem conteudo.";
+        wrapper.textContent = getUi().noContent;
         break;
     }
 
@@ -1311,7 +2217,7 @@
       metaLine.className = "gui-row";
       const label = document.createElement("div");
       label.className = "gui-row-label";
-      label.textContent = "Perfil";
+      label.textContent = getUi().profileLabel;
       const value = document.createElement("div");
       const parts = [meta.name, meta.role, meta.location].filter(Boolean).join(" - ");
       value.textContent = parts;
@@ -1329,7 +2235,7 @@
   function appendRowsFromLines(wrapper, lines = []) {
     if (!lines.length) {
       const empty = document.createElement("div");
-      empty.textContent = "Sem conteudo.";
+      empty.textContent = getUi().noContent;
       wrapper.append(empty);
       return;
     }
@@ -1357,9 +2263,11 @@
   }
 
   function appendProjectCards(wrapper, projects) {
+    const ui = getUi();
+    const messages = getMessages();
     if (!projects.length) {
       const empty = document.createElement("div");
-      empty.textContent = "Nenhum projeto listado.";
+      empty.textContent = ui.noProjects;
       wrapper.append(empty);
       return;
     }
@@ -1368,7 +2276,7 @@
       const card = document.createElement("div");
       card.className = "gui-card";
       const title = document.createElement("h4");
-      title.textContent = project.name || "Projeto";
+      title.textContent = project.name || messages.projectDefaultName;
       card.append(title);
 
       if (project.description) {
@@ -1417,44 +2325,26 @@
     dom.terminal.scrollTop = dom.terminal.scrollHeight;
   }
 
-  function registerServiceWorker() {
+  function unregisterServiceWorkers() {
     if (!("serviceWorker" in navigator)) return;
-    const swUrl = `./service-worker.js?v=${APP_VERSION}`;
-    navigator.serviceWorker
-      .register(swUrl, { updateViaCache: "none" })
-      .then((registration) => {
-        registration.update();
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
-        registration.addEventListener("updatefound", () => {
-          const worker = registration.installing;
-          if (!worker) return;
-          worker.addEventListener("statechange", () => {
-            if (worker.state === "installed" && navigator.serviceWorker.controller) {
-              worker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-      })
-      .catch(() => {
-        // silencioso
-      });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => registration.unregister());
     });
+    if ("caches" in window) {
+      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+    }
   }
 
   async function init() {
     cacheDom();
     bindEvents();
+    state.language = resolveInitialLanguage();
+    state.locale = getLocaleForLanguage(state.language);
+    unregisterServiceWorkers();
     await loadContent();
+    applyLanguage(state.language, { persist: false, announce: false });
     setTheme(state.theme);
-    renderCommandMenu("");
     initTerminal();
-    startClock();
-    registerServiceWorker();
   }
 
   init();

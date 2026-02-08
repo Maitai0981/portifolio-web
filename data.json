@@ -1,121 +1,324 @@
 {
   "meta": {
     "user": "Matheus",
-    "machine": "saragoca",
-    "name": "Matheus Saragoca",
-    "role": "Desenvolvedor de Software",
-    "location": "Brasil"
+    "machine": "saragoca"
   },
-  "banner": [
-    "\u001b[33m██████╗  ██████╗ ██████╗ ████████╗███████╗ ██████╗ ██╗     ██╗ ██████╗\u001b[0m",
-    "\u001b[33m██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔═══██╗██║     ██║██╔═══██╗\u001b[0m",
-    "\u001b[33m██████╔╝██║   ██║██████╔╝   ██║   █████╗  ██║   ██║██║     ██║██║   ██║\u001b[0m",
-    "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
-    "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
-    "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
-    "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
-  ],
-  "about": [
-    "Sou desenvolvedor de software com forte base em programação competitiva, ciência de dados e inteligência artificial. Atuo de forma organizada e proativa, com foco em resolução de problemas, qualidade de código e melhoria contínua de processos. Tenho experiência no desenvolvimento de sistemas web e back-end, automação e análise de dados, além da construção e treinamento de modelos de aprendizado de máquina e aprendizado profundo.",
-    "Participo de projetos de software científico voltados à pesquisa, incluindo classificação de imagens médicas com redes neurais convolucionais, integração de dados clínicos e geração de relatórios técnicos e métricas de desempenho. Possuo domínio prático de Python, SQL, C++, Java, JavaScript e Kotlin, bem como de frameworks e bibliotecas como Django, Flask, React, Pandas, NumPy, TensorFlow, PyTorch e Scikit-learn.",
-    "Tenho facilidade para trabalhar em equipe, boa comunicação interpessoal e disciplina no cumprimento de prazos e padrões técnicos. Busco aprendizado contínuo e aprimoramento profissional, com interesse especial em algoritmos, estruturas de dados, desenvolvimento de sistemas inteligentes e aplicações de IA em contextos científicos e educacionais.",
-    "Este portfolio demonstra um terminal Ubuntu no browser e uma GUI retro inspirada no Windows 95."
-  ],
-  "aboutKeywords": [
-    "programação competitiva",
-    "ciência de dados",
-    "inteligência artificial",
-    "aprendizado de máquina",
-    "aprendizado profundo",
-    "redes neurais convolucionais",
-    "Python",
-    "SQL",
-    "C++",
-    "Java",
-    "JavaScript",
-    "Kotlin",
-    "Django",
-    "Flask",
-    "React",
-    "Pandas",
-    "NumPy",
-    "TensorFlow",
-    "PyTorch",
-    "Scikit-learn",
-    "algoritmos",
-    "estruturas de dados",
-    "IA"
-  ],
-  "social": [
-    "GitHub: https://github.com/Maitai0981",
-    "LinkedIn: https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/",
-    "Instagram: https://www.instagram.com/math_sara.cpp/",
-    "Codeforces: https://codeforces.com/profile/Matheus2081",
-    "Beecrowd: https://judge.beecrowd.com/pt/profile/999543"
-  ],
-  "projects": [
-    {
-      "name": "SupaSport",
-      "description": "O objetivo do projeto é oferecer uma plataforma completa para que usuários possam encontrar, reservar e pagar por horários em estabelecimentos esportivos, como quadras e ginásios. Proprietários de estabelecimentos também podem cadastrar e gerenciar seus locais de forma simples e intuitiva.",
-      "links": [
-        "https://github.com/Maitai0981/pdm-001"
-      ]
+  "translations": {
+    "pt": {
+      "meta": {
+        "name": "Matheus Saragoca",
+        "role": "Desenvolvedor de Software",
+        "location": "Brasil"
+      },
+      "banner": [
+        "\u001b[33m██████╗  ██████╗ ██████╗ ████████╗███████╗ ██████╗ ██╗     ██╗ ██████╗\u001b[0m",
+        "\u001b[33m██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔═══██╗██║     ██║██╔═══██╗\u001b[0m",
+        "\u001b[33m██████╔╝██║   ██║██████╔╝   ██║   █████╗  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+        "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+        "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
+        "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
+        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
+      ],
+      "about": [
+        "Sou desenvolvedor de software com forte base em programacao competitiva, ciencia de dados e inteligencia artificial. Atuo de forma organizada e proativa, com foco em resolucao de problemas, qualidade de codigo e melhoria continua de processos. Tenho experiencia no desenvolvimento de sistemas web e back-end, automacao e analise de dados, alem da construcao e treinamento de modelos de aprendizado de maquina e aprendizado profundo.",
+        "Participo de projetos de software cientifico voltados a pesquisa, incluindo classificacao de imagens medicas com redes neurais convolucionais, integracao de dados clinicos e geracao de relatorios tecnicos e metricas de desempenho. Possuo dominio pratico de Python, SQL, C++, Java, JavaScript e Kotlin, bem como de frameworks e bibliotecas como Django, Flask, React, Pandas, NumPy, TensorFlow, PyTorch e Scikit-learn.",
+        "Tenho facilidade para trabalhar em equipe, boa comunicacao interpessoal e disciplina no cumprimento de prazos e padroes tecnicos. Busco aprendizado continuo e aprimoramento profissional, com interesse especial em algoritmos, estruturas de dados, desenvolvimento de sistemas inteligentes e aplicacoes de IA em contextos cientificos e educacionais.",
+        "Este portfolio demonstra um terminal Ubuntu no browser e uma GUI retro inspirada no Windows 95."
+      ],
+      "aboutKeywords": [
+        "programacao competitiva",
+        "ciencia de dados",
+        "inteligencia artificial",
+        "aprendizado de maquina",
+        "aprendizado profundo",
+        "redes neurais convolucionais",
+        "Python",
+        "SQL",
+        "C++",
+        "Java",
+        "JavaScript",
+        "Kotlin",
+        "Django",
+        "Flask",
+        "React",
+        "Pandas",
+        "NumPy",
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "algoritmos",
+        "estruturas de dados",
+        "IA"
+      ],
+      "social": [
+        "GitHub: https://github.com/Maitai0981",
+        "LinkedIn: https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/",
+        "Instagram: https://www.instagram.com/math_sara.cpp/",
+        "Codeforces: https://codeforces.com/profile/Matheus2081",
+        "Beecrowd: https://judge.beecrowd.com/pt/profile/999543"
+      ],
+      "projects": [
+        {
+          "name": "SupaSport",
+          "description": "O objetivo do projeto e oferecer uma plataforma completa para que usuarios possam encontrar, reservar e pagar por horarios em estabelecimentos esportivos, como quadras e ginasios. Proprietarios de estabelecimentos tambem podem cadastrar e gerenciar seus locais de forma simples e intuitiva.",
+          "details": "Plataforma de reservas esportivas com foco em descoberta de locais, agendamento e pagamento. Inclui area do proprietario para cadastro e administracao de quadras e horarios.",
+          "aliases": ["supasport", "reservas esportivas", "quadras"],
+          "links": [
+            "https://github.com/Maitai0981/pdm-001"
+          ]
+        },
+        {
+          "name": "PIBIC Dermatologia",
+          "description": "E um aplicativo movel desenvolvido em React Native/Expo com o objetivo de auxiliar na analise preliminar de lesoes de pele.",
+          "details": "Aplicativo mobile voltado a triagem de lesoes de pele, com foco em uma experiencia simples para coleta de informacoes e suporte a pesquisa.",
+          "stack": ["React Native", "Expo"],
+          "aliases": ["pibic", "dermatologia", "lesoes de pele"],
+          "links": [
+            "https://github.com/Maitai0981/pibic_02"
+          ]
+        },
+        {
+          "name": "Sistema de cadastro de alunos",
+          "description": "Sistema CRUD para cadastro de alunos com upload de imagens, desenvolvido em Django REST Framework.",
+          "details": "API REST para cadastro de alunos com suporte a upload de imagens e operacoes CRUD completas.",
+          "stack": ["Python", "Django REST Framework"],
+          "aliases": ["cadastro de alunos", "alunos", "crud alunos", "django"],
+          "links": [
+            "https://github.com/Maitai0981/Aula_crud_aluno"
+          ]
+        },
+        {
+          "name": "Crud de um banco de dados em python",
+          "description": "Um pequeno CRUD de banco de dados em Python.",
+          "details": "Projeto simples de CRUD em Python para operacoes basicas em banco de dados.",
+          "stack": ["Python"],
+          "aliases": ["crud python", "banco de dados", "crud bd"],
+          "links": [
+            "https://github.com/Maitai0981/Crud_BD_02"
+          ]
+        }
+      ],
+      "resume": [
+        "Curriculo: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
+      ],
+      "email": [
+        "Contato: matheussaragoca2017@gmail.com"
+      ],
+      "help": [
+        "Comandos disponiveis:",
+        "about - resumo profissional",
+        "banner - mostra o banner inicial",
+        "cat - mostra o conteudo de um arquivo",
+        "cd - muda o diretorio atual",
+        "clear - limpa o terminal",
+        "cls - alias de clear",
+        "cowsay - exibe uma vaca falando",
+        "date - mostra data e hora atuais",
+        "email - contato por email",
+        "exit - encerra a sessao do terminal",
+        "gui - alterna para o modo grafico",
+        "help - lista comandos ou detalhes de um comando",
+        "history - mostra o historico da sessao",
+        "lang - altera o idioma da interface",
+        "ls - lista arquivos e diretorios",
+        "me - conversa com o assistente do portfolio",
+        "neofetch - mostra informacoes do sistema",
+        "projects - lista de projetos",
+        "reload - reinicia o estado da sessao",
+        "resume - link do curriculo",
+        "social - links para redes sociais",
+        "sudo - tenta executar um comando com permissao elevada",
+        "terminal - sinonimo de exit-gui",
+        "theme - altera o tema do terminal",
+        "",
+        "Atalhos: Ctrl+L limpar, Ctrl+K menu, Alt+G alternar GUI/CLI, Tab autocomplete"
+      ],
+      "commandHelp": {
+        "help": "help [comando]\nMostra a lista de comandos ou detalhes do comando informado.",
+        "lang": "lang [pt|en]\nAltera o idioma da interface.",
+        "about": "about\nResumo profissional.",
+        "social": "social\nLinks para redes sociais.",
+        "projects": "projects\nLista de projetos.",
+        "resume": "resume\nLink do curriculo.",
+        "curriculum": "curriculum\nAlias de resume.",
+        "email": "email\nContato por email.",
+        "banner": "banner\nMostra o banner inicial.",
+        "history": "history\nMostra o historico da sessao.",
+        "clear": "clear\nLimpa o terminal.",
+        "cls": "cls\nAlias de clear.",
+        "reload": "reload\nReinicia o estado da sessao.",
+        "exit": "exit\nEncerra a sessao do terminal.",
+        "gui": "gui\nAlterna para o modo grafico.",
+        "exit-gui": "exit-gui\nSai do modo grafico.",
+        "terminal": "terminal\nSinonimo de exit-gui.",
+        "theme": "theme [dark|light|hacker|retro]\nAltera o tema do terminal.",
+        "date": "date\nMostra data e hora atuais.",
+        "neofetch": "neofetch\nMostra informacoes do sistema.",
+        "cowsay": "cowsay [mensagem]\nExibe uma vaca falando.",
+        "sudo": "sudo\nTenta executar um comando com permissao elevada.",
+        "ls": "ls [caminho]\nLista arquivos e diretorios.",
+        "cd": "cd [caminho]\nMuda o diretorio atual.",
+        "cat": "cat <arquivo>\nMostra o conteudo de um arquivo.",
+        "me": "me [mensagem]\nConversa com o assistente do portfolio."
+      }
     },
-    {
-      "name": "PIBIC Dermatologia",
-      "description": "É um aplicativo móvel desenvolvido em React Native/Expo com o objetivo de auxiliar na análise preliminar de lesões de pele.",
-      "links": [
-        "https://github.com/Maitai0981/pibic_02"
-      ]
-    },
-    {
-      "name": "Sistema de cadastro de alunos",
-      "description": "Sistema CRUD para cadastro de alunos com upload de imagens, desenvolvido em Django REST Framework.",
-      "links": [
-        "https://github.com/Maitai0981/Aula_crud_aluno"
-      ]
-    },
-    {
-      "name": "Crud de um banco de dados em python",
-      "description": "um pequeno crud de Banco de dados em python",
-      "links": [
-        "https://github.com/Maitai0981/Crud_BD_02"
-      ]
+    "en": {
+      "meta": {
+        "name": "Matheus Saragoca",
+        "role": "Software Developer",
+        "location": "Brazil"
+      },
+      "banner": [
+        "\u001b[33m██████╗  ██████╗ ██████╗ ████████╗███████╗ ██████╗ ██╗     ██╗ ██████╗\u001b[0m",
+        "\u001b[33m██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝██╔════╝██╔═══██╗██║     ██║██╔═══██╗\u001b[0m",
+        "\u001b[33m██████╔╝██║   ██║██████╔╝   ██║   █████╗  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+        "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
+        "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
+        "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
+        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m"
+      ],
+      "about": [
+        "I am a software developer with a strong background in competitive programming, data science, and artificial intelligence. I work in an organized and proactive way, focusing on problem solving, code quality, and continuous process improvement. I have experience developing web and back-end systems, automation, and data analysis, as well as building and training machine learning and deep learning models.",
+        "I participate in scientific software projects aimed at research, including medical image classification with convolutional neural networks, clinical data integration, and generation of technical reports and performance metrics. I have practical experience with Python, SQL, C++, Java, JavaScript, and Kotlin, as well as frameworks and libraries such as Django, Flask, React, Pandas, NumPy, TensorFlow, PyTorch, and Scikit-learn.",
+        "I work well in teams, communicate clearly, and stay disciplined with deadlines and technical standards. I pursue continuous learning and professional growth, with a special interest in algorithms, data structures, intelligent systems development, and AI applications in scientific and educational contexts.",
+        "This portfolio demonstrates an Ubuntu-like terminal in the browser and a retro GUI inspired by Windows 95."
+      ],
+      "aboutKeywords": [
+        "competitive programming",
+        "data science",
+        "artificial intelligence",
+        "machine learning",
+        "deep learning",
+        "convolutional neural networks",
+        "Python",
+        "SQL",
+        "C++",
+        "Java",
+        "JavaScript",
+        "Kotlin",
+        "Django",
+        "Flask",
+        "React",
+        "Pandas",
+        "NumPy",
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "algorithms",
+        "data structures",
+        "AI"
+      ],
+      "social": [
+        "GitHub: https://github.com/Maitai0981",
+        "LinkedIn: https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/",
+        "Instagram: https://www.instagram.com/math_sara.cpp/",
+        "Codeforces: https://codeforces.com/profile/Matheus2081",
+        "Beecrowd: https://judge.beecrowd.com/pt/profile/999543"
+      ],
+      "projects": [
+        {
+          "name": "SupaSport",
+          "description": "The project aims to provide a complete platform for users to find, book, and pay for time slots at sports facilities such as courts and gyms. Facility owners can also register and manage their locations in a simple and intuitive way.",
+          "details": "Sports booking platform focused on discovery, scheduling, and payments. Includes an owner area to register and manage courts and time slots.",
+          "aliases": ["supasport", "sports booking", "courts"],
+          "links": [
+            "https://github.com/Maitai0981/pdm-001"
+          ]
+        },
+        {
+          "name": "PIBIC Dermatologia",
+          "description": "A mobile app built with React Native/Expo to assist in the preliminary analysis of skin lesions.",
+          "details": "Mobile app focused on skin lesion screening with a simple experience for data collection and research support.",
+          "stack": ["React Native", "Expo"],
+          "aliases": ["pibic", "dermatology", "skin lesions"],
+          "links": [
+            "https://github.com/Maitai0981/pibic_02"
+          ]
+        },
+        {
+          "name": "Student registration system",
+          "description": "CRUD system for student registration with image upload, built with Django REST Framework.",
+          "details": "REST API for student registration with image upload support and full CRUD operations.",
+          "stack": ["Python", "Django REST Framework"],
+          "aliases": ["students", "crud students", "django"],
+          "links": [
+            "https://github.com/Maitai0981/Aula_crud_aluno"
+          ]
+        },
+        {
+          "name": "Database CRUD in Python",
+          "description": "A small database CRUD in Python.",
+          "details": "Simple Python CRUD project for basic database operations.",
+          "stack": ["Python"],
+          "aliases": ["crud python", "database", "crud db"],
+          "links": [
+            "https://github.com/Maitai0981/Crud_BD_02"
+          ]
+        }
+      ],
+      "resume": [
+        "Resume: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
+      ],
+      "email": [
+        "Contact: matheussaragoca2017@gmail.com"
+      ],
+      "help": [
+        "Available commands:",
+        "about - professional summary",
+        "banner - show startup banner",
+        "cat - show file contents",
+        "cd - change current directory",
+        "clear - clear the terminal",
+        "cls - alias for clear",
+        "cowsay - display a talking cow",
+        "date - show current date and time",
+        "email - email contact",
+        "exit - end the terminal session",
+        "gui - switch to GUI mode",
+        "help - list commands or show details for a command",
+        "history - show session history",
+        "lang - switch interface language",
+        "ls - list files and directories",
+        "me - chat with the portfolio assistant",
+        "neofetch - show system info",
+        "projects - project list",
+        "reload - reset session state",
+        "resume - resume link",
+        "social - social links",
+        "sudo - attempt to run a command with elevated permissions",
+        "terminal - alias for exit-gui",
+        "theme - change terminal theme",
+        "",
+        "Shortcuts: Ctrl+L clear, Ctrl+K menu, Alt+G toggle GUI/CLI, Tab autocomplete"
+      ],
+      "commandHelp": {
+        "help": "help [command]\nList commands or show details for a specific command.",
+        "lang": "lang [pt|en]\nSwitch interface language.",
+        "about": "about\nProfessional summary.",
+        "social": "social\nSocial links.",
+        "projects": "projects\nProject list.",
+        "resume": "resume\nResume link.",
+        "curriculum": "curriculum\nAlias for resume.",
+        "email": "email\nEmail contact.",
+        "banner": "banner\nShow the startup banner.",
+        "history": "history\nShow session history.",
+        "clear": "clear\nClear the terminal.",
+        "cls": "cls\nAlias for clear.",
+        "reload": "reload\nReset session state.",
+        "exit": "exit\nEnd the terminal session.",
+        "gui": "gui\nSwitch to GUI mode.",
+        "exit-gui": "exit-gui\nLeave GUI mode.",
+        "terminal": "terminal\nAlias for exit-gui.",
+        "theme": "theme [dark|light|hacker|retro]\nChange terminal theme.",
+        "date": "date\nShow current date and time.",
+        "neofetch": "neofetch\nShow system info.",
+        "cowsay": "cowsay [message]\nDisplay a talking cow.",
+        "sudo": "sudo\nAttempt to run a command with elevated permissions.",
+        "ls": "ls [path]\nList files and directories.",
+        "cd": "cd [path]\nChange current directory.",
+        "cat": "cat <file>\nShow file contents.",
+        "me": "me [message]\nChat with the portfolio assistant."
+      }
     }
-  ],
-  "resume": [
-    "Curriculo: https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf"
-  ],
-  "email": [
-    "Contato: matheussaragoca2017@gmail.com"
-  ],
-  "help": [
-    "Comandos internos definidos. Use `help <comando>` para detalhes.",
-    "about   banner  clear  cowsay  date   email",
-    "exit    exit-gui gui    help   history neofetch",
-    "projects reload curriculum social terminal theme",
-    "Atalhos: Ctrl+L limpar, Ctrl+K menu, Alt+G alternar GUI/CLI, Tab autocomplete"
-  ],
-  "commandHelp": {
-    "help": "help [comando]\nMostra a lista de comandos ou detalhes do comando informado.",
-    "about": "about\nResumo profissional.",
-    "social": "social\nLinks para redes sociais.",
-    "projects": "projects\nLista de projetos.",
-    "resume": "resume\nLink do curriculo.",
-    "curriculum": "curriculum\nAlias de resume.",
-    "email": "email\nContato por email.",
-    "banner": "banner\nMostra o banner inicial.",
-    "history": "history\nMostra o historico da sessao.",
-    "clear": "clear\nLimpa o terminal.",
-    "cls": "cls\nAlias de clear.",
-    "reload": "reload\nReinicia o estado da sessao.",
-    "exit": "exit\nEncerra a sessao do terminal.",
-    "gui": "gui\nAlterna para o modo grafico.",
-    "exit-gui": "exit-gui\nSai do modo grafico.",
-    "terminal": "terminal\nSinonimo de exit-gui.",
-    "theme": "theme [dark|light|hacker|retro]\nAltera o tema do terminal."
-    ,"date": "date\nMostra data e hora atuais."
-    ,"neofetch": "neofetch\nMostra informacoes do sistema."
-    ,"cowsay": "cowsay [mensagem]\nExibe uma vaca falando."
   }
 }
