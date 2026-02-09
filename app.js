@@ -2695,6 +2695,7 @@
         appendAboutContent(wrapper, content);
         break;
       case "social":
+        wrapper.classList.add("gui-social");
         appendRowsFromLines(wrapper, content.social);
         break;
       case "resume":

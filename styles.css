@@ -698,6 +698,50 @@ button,
   color: #2a2a2a;
 }
 
+.gui-social .gui-row {
+  grid-template-columns: minmax(72px, auto) 1fr;
+  align-items: center;
+  padding: 6px 8px;
+  border: 2px solid var(--gui-border-light);
+  border-right-color: var(--gui-border-dark);
+  border-bottom-color: var(--gui-border-dark);
+  background: #f4f4f4;
+  box-shadow: 1px 1px 0 var(--gui-border-dark);
+}
+
+.gui-social .gui-row-label {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 11px;
+  color: #1f1f1f;
+}
+
+.gui-social .gui-row > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.gui-social .link {
+  border-bottom: none;
+  text-decoration: none;
+  padding: 2px 6px;
+  border: 1px solid var(--gui-border-dark);
+  background: #ffffff;
+  box-shadow: inset 1px 1px 0 #ffffff;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.gui-social .link-icon {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
 .gui-card {
   border: 2px solid var(--gui-border-light);
   border-right-color: var(--gui-border-dark);
