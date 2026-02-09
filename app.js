@@ -2098,11 +2098,11 @@
 
   function formatEducationLines(lines) {
     if (!Array.isArray(lines) || lines.length === 0) return [];
-    return lines.map((line, index) => colorizeEducationLine(String(line || ""), index));
+    return lines.map((entry, index) => colorizeEducationLine(entry, index));
   }
 
-  function colorizeEducationLine(line, index) {
-    const { institution, years } = splitEducationLine(line);
+  function colorizeEducationLine(entry, index) {
+    const { institution, years } = normalizeEducationEntry(entry);
     const colors = [32, 34, 31];
     const baseColor = colors[index] ?? 37;
     const left = institution ? ansiColor(baseColor, institution) : "";
@@ -2110,7 +2110,19 @@
     if (left && right) {
       return `${left} | ${right}`;
     }
-    return left || right || line;
+    return left || right || String(entry || "");
+  }
+
+  function normalizeEducationEntry(entry) {
+    if (entry && typeof entry === "object") {
+      return {
+        institution: entry.institution || entry.name || "",
+        years: entry.years || entry.period || "",
+        logo: entry.logo || entry.image || entry.cover || ""
+      };
+    }
+    const { institution, years } = splitEducationLine(entry);
+    return { institution, years, logo: "" };
   }
 
   function splitEducationLine(line) {
@@ -4158,29 +4170,42 @@
       return;
     }
 
-    lines.forEach((line, index) => {
-      const { institution, years } = splitEducationLine(line);
+    lines.forEach((entry, index) => {
+      const { institution, years, logo } = normalizeEducationEntry(entry);
       const row = document.createElement("div");
       const colorIndex = (index % 3) + 1;
       row.className = `edu-item edu-item-${colorIndex}`;
 
+      if (logo) {
+        const img = document.createElement("img");
+        img.className = "edu-logo";
+        img.src = logo;
+        img.alt = institution ? `Logo ${institution}` : "Logo da instituicao";
+        img.loading = "lazy";
+        row.append(img);
+      }
+
+      const textWrap = document.createElement("div");
+      textWrap.className = "edu-text";
+
       const nameSpan = document.createElement("span");
       nameSpan.className = "edu-name";
-      nameSpan.textContent = institution || line;
-      row.append(nameSpan);
+      nameSpan.textContent = institution || String(entry || "");
+      textWrap.append(nameSpan);
 
       if (years) {
         const sep = document.createElement("span");
         sep.className = "edu-sep";
         sep.textContent = " | ";
-        row.append(sep);
+        textWrap.append(sep);
 
         const yearsSpan = document.createElement("span");
         yearsSpan.className = "edu-years";
         yearsSpan.textContent = years;
-        row.append(yearsSpan);
+        textWrap.append(yearsSpan);
       }
 
+      row.append(textWrap);
       wrapper.append(row);
     });
   }

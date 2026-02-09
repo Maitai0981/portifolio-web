@@ -127,9 +127,21 @@
         }
       ],
       "education": [
-        "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas, IFAM Campus Parintins | 2023 - 2025",
-        "Escola SESI/SENAI Padre Francisco Luppino | 2017 - 2022",
-        "Escola Aloys Joao Mann | 2013 - 2016"
+        {
+          "institution": "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas, IFAM Campus Parintins",
+          "years": "2023 - 2025",
+          "logo": "assets/edu/ifam.png"
+        },
+        {
+          "institution": "Escola SESI/SENAI Padre Francisco Luppino",
+          "years": "2017 - 2022",
+          "logo": "assets/edu/sesi-senai.png"
+        },
+        {
+          "institution": "Escola Aloys Joao Mann",
+          "years": "2013 - 2016",
+          "logo": "assets/edu/aloys-joao-mann.png"
+        }
       ],
       "resume": [
         "Curriculo: https://drive.google.com/file/d/1GelNq-_nek3QaswELxQqkk-o_1Ohp7c9/view?usp=sharing"
@@ -328,9 +340,21 @@
         }
       ],
       "education": [
-        "IFAM - instituto federal de educacao ciencia e tecnologia do amazonas campus parintins | 2023 - 2025",
-        "sesi padre francisco luppino | 2017 - 2022",
-        "aloys joao mann | 2013 - 2016"
+        {
+          "institution": "IFAM - Federal Institute of Amazonas (Parintins)",
+          "years": "2023 - 2025",
+          "logo": "assets/edu/ifam.svg"
+        },
+        {
+          "institution": "SESI/SENAI Padre Francisco Luppino",
+          "years": "2017 - 2022",
+          "logo": "assets/edu/sesi-senai.svg"
+        },
+        {
+          "institution": "Aloys Joao Mann School",
+          "years": "2013 - 2016",
+          "logo": "assets/edu/aloys-joao-mann.svg"
+        }
       ],
       "resume": [
         "Resume: https://drive.google.com/file/d/1GelNq-_nek3QaswELxQqkk-o_1Ohp7c9/view?usp=sharing"

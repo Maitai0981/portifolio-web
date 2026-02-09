@@ -1161,6 +1161,9 @@ button,
 }
 
 .edu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 13px;
   line-height: 1.4;
 }
@@ -1183,6 +1186,20 @@ button,
 
 .edu-name {
   font-weight: 700;
+}
+
+.edu-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.edu-logo {
+  width: 40px;
+  height: 40px;
+  border: 2px inset var(--gui-border-mid);
+  background: #ffffff;
+  padding: 2px;
 }
 
 .edu-years {
