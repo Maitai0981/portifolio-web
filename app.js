@@ -65,6 +65,7 @@
     "resume",
     "email",
     "algorithms",
+    "cnn",
     "snake"
   ];
   const THEMES = ["dark", "light", "hacker", "retro"];
@@ -99,6 +100,7 @@
     "grep",
     "find",
     "algorithms",
+    "cnn",
     "snake"
   ];
 
@@ -107,6 +109,7 @@
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
   const SUPPORTED_LANGS = ["pt", "en"];
+  let cnnModelPromise = null;
 
   const DEFAULT_I18N = {
     pt: {
@@ -127,6 +130,7 @@
           email: "Email",
           terminal: "Terminal",
           algorithms: "Algoritmos",
+          cnn: "CNN Demo",
           snake: "Snake"
         },
         windowTitles: {
@@ -137,6 +141,7 @@
           resume: "Curriculo",
           email: "Email",
           algorithms: "Visualizador de Algoritmos",
+          cnn: "CNN Demo",
           snake: "Snake"
         },
         profileLabel: "Perfil",
@@ -220,6 +225,17 @@
         snakeRestart: "Reiniciar",
         snakeGameOver: "Fim de jogo.",
         snakeScore: "Pontos: {{score}}",
+        cnnHint: "Desenhe um digito no quadro e clique em Prever.",
+        cnnPreviewLabel: "Preview 28x28",
+        cnnClear: "Limpar",
+        cnnPredict: "Prever",
+        cnnResultLabel: "Predicao",
+        cnnLatencyLabel: "Latencia",
+        cnnStatusLoading: "Carregando modelo...",
+        cnnStatusReady: "Modelo pronto.",
+        cnnStatusError: "Erro ao carregar o modelo.",
+        cnnStatusNoTf: "TensorFlow.js nao carregado.",
+        cnnEmpty: "Desenhe algo antes de prever.",
         neofetch: {
           os: "OS",
           host: "Host",
@@ -271,6 +287,7 @@
           email: "Email",
           terminal: "Terminal",
           algorithms: "Algorithms",
+          cnn: "CNN Demo",
           snake: "Snake"
         },
         windowTitles: {
@@ -281,6 +298,7 @@
           resume: "Resume",
           email: "Email",
           algorithms: "Algorithm Visualizer",
+          cnn: "CNN Demo",
           snake: "Snake"
         },
         profileLabel: "Profile",
@@ -364,6 +382,17 @@
         snakeRestart: "Restart",
         snakeGameOver: "Game over.",
         snakeScore: "Score: {{score}}",
+        cnnHint: "Draw a digit and click Predict.",
+        cnnPreviewLabel: "Preview 28x28",
+        cnnClear: "Clear",
+        cnnPredict: "Predict",
+        cnnResultLabel: "Prediction",
+        cnnLatencyLabel: "Latency",
+        cnnStatusLoading: "Loading model...",
+        cnnStatusReady: "Model ready.",
+        cnnStatusError: "Failed to load model.",
+        cnnStatusNoTf: "TensorFlow.js not loaded.",
+        cnnEmpty: "Draw something before predicting.",
         neofetch: {
           os: "OS",
           host: "Host",
@@ -1369,6 +1398,7 @@
       case "theme":
         return handleThemeCommand(args);
       case "algorithms":
+      case "cnn":
       case "snake":
         return handleProgramCommand(command);
       case "clear":
@@ -2714,6 +2744,9 @@
       case "algorithms":
         wrapper.append(createAlgorithmViewer());
         break;
+      case "cnn":
+        wrapper.append(createCnnDemo());
+        break;
       case "snake":
         wrapper.append(createSnakeGame());
         break;
@@ -3228,6 +3261,317 @@
       onClose: () => {
         clearInterval(intervalId);
       }
+    };
+
+    return wrapper;
+  }
+
+  function createCnnDemo() {
+    const messages = getMessages();
+    const wrapper = document.createElement("div");
+    wrapper.className = "cnn-demo";
+
+    const header = document.createElement("div");
+    header.className = "cnn-header";
+
+    const hint = document.createElement("div");
+    hint.className = "cnn-hint";
+    hint.textContent = messages.cnnHint || "Draw a digit and click Predict.";
+
+    const status = document.createElement("div");
+    status.className = "cnn-status";
+    status.textContent = messages.cnnStatusLoading || "Loading model...";
+
+    header.append(hint, status);
+    wrapper.append(header);
+
+    const panel = document.createElement("div");
+    panel.className = "cnn-panel";
+
+    const drawCol = document.createElement("div");
+    drawCol.className = "cnn-draw";
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "cnn-canvas";
+    canvas.width = 280;
+    canvas.height = 280;
+
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "cnn-preview-wrap";
+    const previewLabel = document.createElement("div");
+    previewLabel.textContent = messages.cnnPreviewLabel || "Preview 28x28";
+    const preview = document.createElement("canvas");
+    preview.className = "cnn-preview";
+    preview.width = 28;
+    preview.height = 28;
+    previewWrap.append(previewLabel, preview);
+
+    const controls = document.createElement("div");
+    controls.className = "cnn-controls";
+    const clearBtn = createGuiButton(messages.cnnClear || "Clear", () => resetCanvas());
+    const predictBtn = createGuiButton(messages.cnnPredict || "Predict", () => runPrediction());
+    predictBtn.disabled = true;
+    controls.append(clearBtn, predictBtn);
+
+    drawCol.append(canvas, previewWrap, controls);
+
+    const results = document.createElement("div");
+    results.className = "cnn-results";
+
+    const resultTitle = document.createElement("div");
+    resultTitle.className = "cnn-result-title";
+    resultTitle.textContent = messages.cnnResultLabel || "Prediction";
+
+    const resultValue = document.createElement("div");
+    resultValue.className = "cnn-result-value";
+    resultValue.textContent = "-";
+
+    const latency = document.createElement("div");
+    latency.className = "cnn-latency";
+    latency.textContent = formatLatency(null);
+
+    const probList = document.createElement("div");
+    probList.className = "cnn-prob-list";
+    const probRows = [];
+    for (let i = 0; i < 10; i += 1) {
+      const row = document.createElement("div");
+      row.className = "cnn-prob-row";
+      const label = document.createElement("div");
+      label.textContent = String(i);
+      const bar = document.createElement("div");
+      bar.className = "cnn-prob-bar";
+      const fill = document.createElement("div");
+      fill.className = "cnn-prob-fill";
+      bar.append(fill);
+      const val = document.createElement("div");
+      val.className = "cnn-prob-val";
+      val.textContent = "0.0%";
+      row.append(label, bar, val);
+      probList.append(row);
+      probRows.push({ row, fill, val });
+    }
+
+    results.append(resultTitle, resultValue, latency, probList);
+    panel.append(drawCol, results);
+    wrapper.append(panel);
+
+    const ctx = canvas.getContext("2d");
+    const previewCtx = preview.getContext("2d");
+    ctx.lineWidth = 22;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#ffffff";
+    ctx.fillStyle = "#000000";
+    previewCtx.imageSmoothingEnabled = true;
+
+    let drawing = false;
+
+    function setStatus(text, isError) {
+      status.textContent = text;
+      status.classList.toggle("cnn-error", Boolean(isError));
+    }
+
+    function formatLatency(ms) {
+      const label = messages.cnnLatencyLabel || "Latency";
+      if (typeof ms !== "number") return `${label}: --`;
+      return `${label}: ${Math.round(ms)} ms`;
+    }
+
+    function resetProbs() {
+      resultValue.textContent = "-";
+      probRows.forEach(({ row, fill, val }) => {
+        row.classList.remove("active");
+        fill.style.width = "0%";
+        val.textContent = "0.0%";
+      });
+      latency.textContent = formatLatency(null);
+    }
+
+    function resetCanvas() {
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      updatePreview();
+      resetProbs();
+      if (!status.classList.contains("cnn-error")) {
+        const readyLabel = messages.cnnStatusReady || "Model ready.";
+        const loadingLabel = messages.cnnStatusLoading || "Loading model...";
+        setStatus(predictBtn.disabled ? loadingLabel : readyLabel, false);
+      }
+    }
+
+    function updatePreview() {
+      previewCtx.clearRect(0, 0, preview.width, preview.height);
+      previewCtx.drawImage(canvas, 0, 0, preview.width, preview.height);
+    }
+
+    function hasInk() {
+      const imageData = previewCtx.getImageData(0, 0, preview.width, preview.height);
+      const data = imageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 10) return true;
+      }
+      return false;
+    }
+
+    function getInputTensor() {
+      const imageData = previewCtx.getImageData(0, 0, preview.width, preview.height).data;
+      const buffer = new Float32Array(28 * 28);
+      for (let i = 0; i < buffer.length; i += 1) {
+        buffer[i] = imageData[i * 4] / 255;
+      }
+      return window.tf.tensor4d(buffer, [1, 28, 28, 1]);
+    }
+
+    function updateProbs(values) {
+      const list = Array.from(values);
+      let bestIndex = 0;
+      let bestValue = list[0] || 0;
+      list.forEach((value, index) => {
+        if (value > bestValue) {
+          bestValue = value;
+          bestIndex = index;
+        }
+      });
+      resultValue.textContent = String(bestIndex);
+      list.forEach((value, index) => {
+        const pct = Math.max(0, Math.min(100, value * 100));
+        const row = probRows[index];
+        row.row.classList.toggle("active", index === bestIndex);
+        row.fill.style.width = `${pct.toFixed(1)}%`;
+        row.val.textContent = `${pct.toFixed(1)}%`;
+      });
+    }
+
+    async function ensureModel() {
+      if (!window.tf || typeof window.tf.loadGraphModel !== "function") {
+        setStatus(messages.cnnStatusNoTf || "TensorFlow.js not loaded.", true);
+        predictBtn.disabled = true;
+        return null;
+      }
+      if (!cnnModelPromise) {
+        setStatus(messages.cnnStatusLoading || "Loading model...", false);
+        cnnModelPromise = window.tf
+          .loadGraphModel("./assets/web_model/model.json")
+          .catch((error) => {
+            cnnModelPromise = null;
+            throw error;
+          });
+      }
+      try {
+        const model = await cnnModelPromise;
+        setStatus(messages.cnnStatusReady || "Model ready.", false);
+        predictBtn.disabled = false;
+        return model;
+      } catch (error) {
+        setStatus(messages.cnnStatusError || "Failed to load model.", true);
+        predictBtn.disabled = true;
+        return null;
+      }
+    }
+
+    let predictScheduled = null;
+    let predicting = false;
+    let predictQueued = false;
+    const LIVE_PREDICT_DELAY = 140;
+
+    async function runPrediction(options = {}) {
+      const model = await ensureModel();
+      if (!model) return;
+      updatePreview();
+      if (!hasInk()) {
+        if (!options.silentEmpty) {
+          setStatus(messages.cnnEmpty || "Draw something before predicting.", true);
+        }
+        return;
+      }
+      setStatus(messages.cnnStatusReady || "Model ready.", false);
+      const input = getInputTensor();
+      const start = performance.now();
+      let output = null;
+      try {
+        const prediction = model.predict(input);
+        output = Array.isArray(prediction) ? prediction[0] : prediction;
+        const data = await output.data();
+        updateProbs(data);
+      } finally {
+        const end = performance.now();
+        latency.textContent = formatLatency(end - start);
+        input.dispose();
+        if (output) output.dispose();
+      }
+    }
+
+    function scheduleLivePrediction() {
+      if (predicting) {
+        predictQueued = true;
+        return;
+      }
+      if (predictScheduled) return;
+      predictScheduled = window.setTimeout(async () => {
+        predictScheduled = null;
+        predicting = true;
+        await runPrediction({ silentEmpty: true });
+        predicting = false;
+        if (predictQueued) {
+          predictQueued = false;
+          scheduleLivePrediction();
+        }
+      }, LIVE_PREDICT_DELAY);
+    }
+
+    function getCanvasPos(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    function handlePointerDown(event) {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      drawing = true;
+      const pos = getCanvasPos(event);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      updatePreview();
+      canvas.setPointerCapture(event.pointerId);
+      scheduleLivePrediction();
+    }
+
+    function handlePointerMove(event) {
+      if (!drawing) return;
+      event.preventDefault();
+      const pos = getCanvasPos(event);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      updatePreview();
+      scheduleLivePrediction();
+    }
+
+    function handlePointerUp(event) {
+      if (!drawing) return;
+      drawing = false;
+      ctx.closePath();
+      if (event.pointerId != null) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+      scheduleLivePrediction();
+    }
+
+    canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointermove", handlePointerMove);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointerleave", handlePointerUp);
+
+    resetCanvas();
+    ensureModel();
+
+    wrapper.__windowMeta = {
+      size: { width: 620, height: 520 }
     };
 
     return wrapper;

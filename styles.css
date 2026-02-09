@@ -1157,6 +1157,153 @@ button,
   touch-action: none;
 }
 
+.cnn-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cnn-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cnn-hint {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.cnn-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border: 1px solid var(--gui-border-dark);
+  background: #ffffff;
+}
+
+.cnn-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.cnn-draw {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cnn-canvas {
+  width: min(320px, 100%);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  border: 2px inset var(--gui-border-mid);
+  background: #000000;
+  image-rendering: pixelated;
+  touch-action: none;
+}
+
+.cnn-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.cnn-preview {
+  width: 56px;
+  height: 56px;
+  border: 2px inset var(--gui-border-mid);
+  background: #000000;
+  image-rendering: pixelated;
+}
+
+.cnn-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cnn-results {
+  background: #f1f1f1;
+  border: 2px inset var(--gui-border-mid);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cnn-result-title {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.cnn-result-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0b2d7a;
+}
+
+.cnn-latency {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.cnn-prob-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cnn-prob-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 52px;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.cnn-prob-row.active {
+  font-weight: 700;
+}
+
+.cnn-prob-bar {
+  height: 10px;
+  background: #d9d9d9;
+  border: 1px solid #8c8c8c;
+  position: relative;
+  overflow: hidden;
+}
+
+.cnn-prob-fill {
+  height: 100%;
+  width: 0%;
+  background: #2f66d8;
+}
+
+.cnn-prob-row.active .cnn-prob-fill {
+  background: #1a7f37;
+}
+
+.cnn-prob-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cnn-error {
+  color: #b00020;
+}
+
+@media (max-width: 800px) {
+  .cnn-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
 .keyword-magenta {
   color: #d77bd6;
   font-weight: 600;
