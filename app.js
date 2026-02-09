@@ -524,6 +524,7 @@
 
       this.enableDrag(win, titleBar);
       this.enableResize(win, resizer);
+      this.ensureWindowVisible(win);
       this.focusWindow(id);
     },
     focusWindow(id) {
@@ -562,7 +563,43 @@
       winData.taskButton.remove();
       this.windows.delete(id);
     },
+    ensureWindowVisible(win) {
+      if (!win) return;
+      const padding = 8;
+      const taskbar = 40;
+      const maxWidth = Math.max(200, window.innerWidth - padding * 2);
+      const maxHeight = Math.max(160, window.innerHeight - taskbar - padding * 2);
+
+      const rect = win.getBoundingClientRect();
+      let nextWidth = rect.width;
+      let nextHeight = rect.height;
+
+      if (nextWidth > maxWidth) {
+        nextWidth = maxWidth;
+        win.style.width = `${nextWidth}px`;
+      }
+      if (nextHeight > maxHeight) {
+        nextHeight = maxHeight;
+        win.style.height = `${nextHeight}px`;
+      }
+
+      const updatedRect = win.getBoundingClientRect();
+      const width = updatedRect.width;
+      const height = updatedRect.height;
+      const maxLeft = window.innerWidth - width - padding;
+      const maxTop = window.innerHeight - taskbar - height - padding;
+      const nextLeft = Math.min(Math.max(updatedRect.left, padding), maxLeft);
+      const nextTop = Math.min(Math.max(updatedRect.top, padding), maxTop);
+      win.style.left = `${Math.max(nextLeft, padding)}px`;
+      win.style.top = `${Math.max(nextTop, padding)}px`;
+    },
+    ensureAllVisible() {
+      this.windows.forEach((winData) => {
+        this.ensureWindowVisible(winData.element);
+      });
+    },
     enableDrag(win, handle) {
+      const manager = this;
       let dragging = false;
       let startX = 0;
       let startY = 0;
@@ -581,6 +618,7 @@
         dragging = false;
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+        manager.ensureWindowVisible(win);
       };
 
       handle.addEventListener("mousedown", (event) => {
@@ -595,6 +633,7 @@
       });
     },
     enableResize(win, handle) {
+      const manager = this;
       let resizing = false;
       let startX = 0;
       let startY = 0;
@@ -621,6 +660,7 @@
         handle.releasePointerCapture(event.pointerId);
         document.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("pointerup", onPointerUp);
+        manager.ensureWindowVisible(win);
       };
 
       handle.addEventListener("pointerdown", (event) => {
@@ -926,6 +966,7 @@
     dom.commandMenu.addEventListener("click", handleCommandMenuClick);
     dom.commandSearch.addEventListener("input", handleCommandSearch);
     dom.commandSearch.addEventListener("keydown", handleCommandSearchKeydown);
+    window.addEventListener("resize", () => windowManager.ensureAllVisible());
   }
 
   async function loadContent() {
