@@ -752,6 +752,41 @@ button,
   color: #2a2a2a;
 }
 
+.about-header {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.about-photo {
+  width: 96px;
+  height: 96px;
+  border: 2px solid var(--gui-border-light);
+  border-right-color: var(--gui-border-dark);
+  border-bottom-color: var(--gui-border-dark);
+  box-shadow: 2px 2px 0 var(--gui-border-dark);
+  background: #ffffff;
+  object-fit: cover;
+}
+
+.about-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.about-role {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
 .gui-social .gui-row {
   grid-template-columns: minmax(72px, auto) 1fr;
   align-items: center;
@@ -805,6 +840,25 @@ button,
   box-shadow: 2px 2px 0 var(--gui-border-dark);
 }
 
+.gui-projects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .gui-card h4 {
   margin: 0 0 6px 0;
   font-size: 13px;
@@ -812,6 +866,58 @@ button,
 
 .gui-card p {
   margin: 0 0 6px 0;
+}
+
+.project-index {
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--gui-border-dark);
+  background: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.project-desc {
+  margin: 0;
+  font-size: 12px;
+}
+
+.project-details {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 6px;
+}
+
+.project-tag {
+  padding: 2px 6px;
+  border: 1px solid var(--gui-border-dark);
+  background: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.project-lessons {
+  font-size: 12px;
+  color: #2a2a2a;
+}
+
+.project-lessons-label {
+  font-weight: 700;
+}
+
+.project-links .link {
+  border-bottom: none;
+  text-decoration: none;
+  padding: 2px 6px;
+  border: 1px solid var(--gui-border-dark);
+  background: #ffffff;
 }
 
 .gui-links {
@@ -1086,6 +1192,19 @@ button,
 
   .window-resizer {
     display: none;
+  }
+
+  .about-header {
+    grid-template-columns: 72px 1fr;
+  }
+
+  .about-photo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .gui-projects {
+    grid-template-columns: 1fr;
   }
 
   #desktop-icons {

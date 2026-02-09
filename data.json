@@ -71,6 +71,7 @@
             "Separacao de fluxos entre usuario e proprietario com permissoes.",
             "Integracao de pagamento e notificacoes."
           ],
+          "stack": ["React Native", "Expo"],
           "aliases": ["supasport", "reservas esportivas", "quadras"],
           "links": [
             "https://github.com/Maitai0981/pdm-001"
@@ -85,7 +86,7 @@
             "Otimizacao de desempenho no mobile.",
             "Alinhamento de requisitos com area medica."
           ],
-          "stack": ["React Native", "Expo"],
+          "stack": ["React Native", "Expo", "Python", "TensorFlow"],
           "aliases": ["pibic", "dermatologia", "lesoes de pele"],
           "links": [
             "https://github.com/Maitai0981/pibic_02"

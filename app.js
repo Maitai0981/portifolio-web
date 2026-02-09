@@ -2705,6 +2705,7 @@
         appendRowsFromLines(wrapper, content.email);
         break;
       case "projects":
+        wrapper.classList.add("gui-projects");
         appendProjectCards(wrapper, content.projects || []);
         break;
       case "education":
@@ -3511,18 +3512,28 @@
   function appendAboutContent(wrapper, content) {
     const meta = content.meta || {};
     const keywords = content.aboutKeywords || [];
+    const header = document.createElement("div");
+    header.className = "about-header";
+    const photo = document.createElement("img");
+    photo.className = "about-photo";
+    photo.src = "assets/Matheus.jpg";
+    photo.alt = meta.name ? `Foto de ${meta.name}` : "Foto de perfil";
+    header.append(photo);
+
     if (meta.name || meta.role || meta.location) {
-      const metaLine = document.createElement("div");
-      metaLine.className = "gui-row";
-      const label = document.createElement("div");
-      label.className = "gui-row-label";
-      label.textContent = getUi().profileLabel;
-      const value = document.createElement("div");
-      const parts = [meta.name, meta.role, meta.location].filter(Boolean).join(" - ");
-      value.textContent = parts;
-      metaLine.append(label, value);
-      wrapper.append(metaLine);
+      const info = document.createElement("div");
+      info.className = "about-info";
+      const name = document.createElement("div");
+      name.className = "about-name";
+      name.textContent = meta.name || "";
+      const role = document.createElement("div");
+      role.className = "about-role";
+      role.textContent = [meta.role, meta.location].filter(Boolean).join(" • ");
+      info.append(name, role);
+      header.append(info);
     }
+
+    wrapper.append(header);
 
     (content.about || []).forEach((line) => {
       const p = document.createElement("p");
@@ -3684,30 +3695,62 @@
       return;
     }
 
-    projects.forEach((project) => {
+    projects.forEach((project, index) => {
       const card = document.createElement("div");
-      card.className = "gui-card";
+      card.className = "gui-card project-card";
+
+      const header = document.createElement("div");
+      header.className = "project-header";
       const title = document.createElement("h4");
       title.textContent = project.name || messages.projectDefaultName;
-      card.append(title);
+      const badge = document.createElement("span");
+      badge.className = "project-index";
+      badge.textContent = String(index + 1).padStart(2, "0");
+      header.append(title, badge);
+      card.append(header);
 
       if (project.description) {
         const desc = document.createElement("p");
+        desc.className = "project-desc";
         desc.textContent = project.description;
         card.append(desc);
       }
 
+      if (project.details && project.details !== project.description) {
+        const details = document.createElement("p");
+        details.className = "project-details";
+        details.textContent = project.details;
+        card.append(details);
+      }
+
+      if (Array.isArray(project.stack) && project.stack.length) {
+        const tags = document.createElement("div");
+        tags.className = "project-tags";
+        project.stack.forEach((item) => {
+          const tag = document.createElement("span");
+          tag.className = "project-tag";
+          tag.textContent = item;
+          tags.append(tag);
+        });
+        card.append(tags);
+      }
+
       const lessons = formatProjectLessons(project, messages);
       if (lessons) {
-        const lessonEl = document.createElement("p");
-        lessonEl.className = "gui-lessons";
-        lessonEl.textContent = `${messages.projectLessonsLabel}: ${lessons}`;
+        const lessonEl = document.createElement("div");
+        lessonEl.className = "project-lessons";
+        const label = document.createElement("span");
+        label.className = "project-lessons-label";
+        label.textContent = `${messages.projectLessonsLabel}:`;
+        const value = document.createElement("span");
+        value.textContent = ` ${lessons}`;
+        lessonEl.append(label, value);
         card.append(lessonEl);
       }
 
       if (Array.isArray(project.links) && project.links.length) {
         const links = document.createElement("div");
-        links.className = "gui-links";
+        links.className = "gui-links project-links";
         project.links.forEach((link) => {
           const a = document.createElement("a");
           a.target = "_blank";
