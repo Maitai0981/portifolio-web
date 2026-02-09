@@ -429,7 +429,7 @@ button,
   --sprite-size-h: 96px;
   width: 48px;
   height: 48px;
-  background-image: url("./assets/sprite.png");
+  background-image: url("./assets/sprite_94.png");
   background-repeat: no-repeat;
   background-size: var(--sprite-size-w) var(--sprite-size-h);
   display: block;
@@ -628,11 +628,11 @@ button,
 }
 
 .start-icon .icon-sprite {
-  --sprite-step: 24px;
-  --sprite-size-w: 96px;
-  --sprite-size-h: 48px;
-  width: 24px;
-  height: 24px;
+  --sprite-step: 20px;
+  --sprite-size-w: 80px;
+  --sprite-size-h: 40px;
+  width: 20px;
+  height: 20px;
   margin: 0;
 }
 
