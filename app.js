@@ -5,6 +5,7 @@
     history: [],
     historyIndex: -1,
     theme: "dark",
+    guiMono: false,
     secretUnlocked: false,
     commandMenuOpen: false,
     commandMenuIndex: 0,
@@ -51,7 +52,8 @@
     startButton: null,
     startMenu: null,
     taskButtons: null,
-    taskbarClock: null
+    taskbarClock: null,
+    taskbarAvailability: null
   };
 
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
@@ -121,6 +123,12 @@
         startMenuHeader: "Iniciar",
         startButton: "Iniciar",
         desktopAriaLabel: "Atalhos do desktop",
+        themeToggleLabel: "Tema",
+        themeLight: "Claro",
+        themeDark: "Escuro",
+        themeMono: "Mono",
+        availabilityBadge: "Disponivel para trabalho",
+        availabilityCta: "Contato",
         labels: {
           about: "Sobre",
           social: "Social",
@@ -226,6 +234,8 @@
         snakeGameOver: "Fim de jogo.",
         snakeScore: "Pontos: {{score}}",
         cnnHint: "Desenhe um digito no quadro e clique em Prever.",
+        cnnExplain:
+          "Pipeline: treino em Python, exportacao do modelo e inferencia no navegador com pre-processamento consistente.",
         cnnPreviewLabel: "Preview 28x28",
         cnnClear: "Limpar",
         cnnPredict: "Prever",
@@ -278,6 +288,12 @@
         startMenuHeader: "Start",
         startButton: "Start",
         desktopAriaLabel: "Desktop shortcuts",
+        themeToggleLabel: "Theme",
+        themeLight: "Light",
+        themeDark: "Dark",
+        themeMono: "Mono",
+        availabilityBadge: "Available for work",
+        availabilityCta: "Contact",
         labels: {
           about: "About",
           social: "Social",
@@ -383,6 +399,8 @@
         snakeGameOver: "Game over.",
         snakeScore: "Score: {{score}}",
         cnnHint: "Draw a digit and click Predict.",
+        cnnExplain:
+          "Pipeline: training in Python, model export, and browser inference with consistent preprocessing.",
         cnnPreviewLabel: "Preview 28x28",
         cnnClear: "Clear",
         cnnPredict: "Predict",
@@ -873,6 +891,9 @@
     if (dom.startButton && ui.startButton) dom.startButton.textContent = ui.startButton;
     const startHeader = dom.startMenu?.querySelector(".start-menu-header");
     if (startHeader && ui.startMenuHeader) startHeader.textContent = ui.startMenuHeader;
+    if (dom.taskbarAvailability && ui.availabilityBadge) {
+      dom.taskbarAvailability.textContent = ui.availabilityBadge;
+    }
 
     document.querySelectorAll(".desktop-icon").forEach((icon) => {
       const label = getCommandLabel(icon.dataset.command);
@@ -889,6 +910,8 @@
     if (ui.pageTitle) {
       document.title = ui.pageTitle;
     }
+
+    updateMonoToggle();
   }
 
   function refreshOpenWindows() {
@@ -980,6 +1003,7 @@
     dom.startMenu = document.getElementById("start-menu");
     dom.taskButtons = document.getElementById("task-buttons");
     dom.taskbarClock = document.getElementById("taskbar-clock");
+    dom.taskbarAvailability = document.getElementById("taskbar-availability");
   }
 
   function bindEvents() {
@@ -996,6 +1020,68 @@
     dom.commandSearch.addEventListener("input", handleCommandSearch);
     dom.commandSearch.addEventListener("keydown", handleCommandSearchKeydown);
     window.addEventListener("resize", () => windowManager.ensureAllVisible());
+
+  }
+
+  function initCustomCursor() {
+    if (!window.matchMedia || !window.matchMedia("(pointer: fine)").matches) return;
+    const cursor = document.createElement("div");
+    cursor.id = "custom-cursor";
+    const dot = document.createElement("div");
+    dot.className = "custom-cursor-dot";
+    cursor.append(dot);
+    document.body.append(cursor);
+    document.body.classList.add("has-custom-cursor");
+
+    const interactiveSelector =
+      "a, button, .desktop-icon, #start-menu li, .task-button, .window-btn, .command-item, canvas";
+
+    let rafId = null;
+    let posX = 0;
+    let posY = 0;
+
+    function updateCursor() {
+      rafId = null;
+      cursor.style.left = `${posX}px`;
+      cursor.style.top = `${posY}px`;
+    }
+
+    function handleMove(event) {
+      posX = event.clientX;
+      posY = event.clientY;
+      if (rafId == null) {
+        rafId = window.requestAnimationFrame(updateCursor);
+      }
+    }
+
+    function handleHover(event) {
+      const target = event.target.closest(interactiveSelector);
+      cursor.classList.toggle("is-hover", Boolean(target));
+    }
+
+    function hideCursor() {
+      cursor.classList.add("is-hidden");
+    }
+
+    function showCursor() {
+      cursor.classList.remove("is-hidden");
+    }
+
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseover", handleHover);
+    document.addEventListener("mouseout", handleHover);
+    document.addEventListener("mousedown", () => cursor.classList.add("is-active"));
+    document.addEventListener("mouseup", () => cursor.classList.remove("is-active"));
+    document.addEventListener("mouseleave", hideCursor);
+    document.addEventListener("mouseenter", showCursor);
+    document.addEventListener("focusin", (event) => {
+      if (event.target && event.target.matches("input, textarea")) {
+        cursor.classList.add("is-hidden");
+      }
+    });
+    document.addEventListener("focusout", () => {
+      cursor.classList.remove("is-hidden");
+    });
   }
 
   async function loadContent() {
@@ -2538,6 +2624,24 @@
     return true;
   }
 
+  function applyGuiMono(enabled, options = {}) {
+    state.guiMono = Boolean(enabled);
+    document.body.classList.toggle("gui-mono", state.guiMono);
+    if (options.persist) {
+      localStorage.setItem("portfolioGuiMono", state.guiMono ? "1" : "0");
+    }
+    updateMonoToggle();
+  }
+
+  function restoreGuiPreferences() {
+    const stored = localStorage.getItem("portfolioGuiMono");
+    if (stored != null) {
+      applyGuiMono(stored === "1");
+    }
+  }
+
+  function updateMonoToggle() {}
+
   function updateMatrixState() {
     const shouldEnable = state.theme === "hacker" || state.theme === "secret";
     if (shouldEnable) {
@@ -3285,6 +3389,13 @@
     header.append(hint, status);
     wrapper.append(header);
 
+    const explain = document.createElement("div");
+    explain.className = "cnn-explain";
+    explain.textContent =
+      messages.cnnExplain ||
+      "Pipeline: training in Python, model export, and browser inference with consistent preprocessing.";
+    wrapper.append(explain);
+
     const panel = document.createElement("div");
     panel.className = "cnn-panel";
 
@@ -3364,6 +3475,8 @@
     ctx.fillStyle = "#000000";
     previewCtx.imageSmoothingEnabled = true;
 
+    const PREVIEW_SIZE = 28;
+    const THRESHOLD = 0.2;
     let drawing = false;
 
     function setStatus(text, isError) {
@@ -3403,22 +3516,65 @@
       previewCtx.drawImage(canvas, 0, 0, preview.width, preview.height);
     }
 
-    function hasInk() {
-      const imageData = previewCtx.getImageData(0, 0, preview.width, preview.height);
+    function getCenteredInput() {
+      updatePreview();
+      const imageData = previewCtx.getImageData(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
       const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i] > 10) return true;
-      }
-      return false;
-    }
+      const binary = new Uint8Array(PREVIEW_SIZE * PREVIEW_SIZE);
+      let minX = PREVIEW_SIZE;
+      let minY = PREVIEW_SIZE;
+      let maxX = -1;
+      let maxY = -1;
 
-    function getInputTensor() {
-      const imageData = previewCtx.getImageData(0, 0, preview.width, preview.height).data;
-      const buffer = new Float32Array(28 * 28);
-      for (let i = 0; i < buffer.length; i += 1) {
-        buffer[i] = imageData[i * 4] / 255;
+      for (let y = 0; y < PREVIEW_SIZE; y += 1) {
+        for (let x = 0; x < PREVIEW_SIZE; x += 1) {
+          const idx = y * PREVIEW_SIZE + x;
+          const value = data[idx * 4] / 255;
+          if (value >= THRESHOLD) {
+            binary[idx] = 1;
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
       }
-      return window.tf.tensor4d(buffer, [1, 28, 28, 1]);
+
+      if (maxX < 0) {
+        return { empty: true, tensor: null };
+      }
+
+      const width = maxX - minX + 1;
+      const height = maxY - minY + 1;
+      const offsetX = Math.floor((PREVIEW_SIZE - width) / 2) - minX;
+      const offsetY = Math.floor((PREVIEW_SIZE - height) / 2) - minY;
+
+      const centered = new Float32Array(PREVIEW_SIZE * PREVIEW_SIZE);
+      for (let y = minY; y <= maxY; y += 1) {
+        for (let x = minX; x <= maxX; x += 1) {
+          const idx = y * PREVIEW_SIZE + x;
+          if (!binary[idx]) continue;
+          const nx = x + offsetX;
+          const ny = y + offsetY;
+          if (nx < 0 || ny < 0 || nx >= PREVIEW_SIZE || ny >= PREVIEW_SIZE) continue;
+          centered[ny * PREVIEW_SIZE + nx] = 1;
+        }
+      }
+
+      for (let i = 0; i < centered.length; i += 1) {
+        const v = centered[i] > 0 ? 255 : 0;
+        const base = i * 4;
+        data[base] = v;
+        data[base + 1] = v;
+        data[base + 2] = v;
+        data[base + 3] = 255;
+      }
+      previewCtx.putImageData(imageData, 0, 0);
+
+      return {
+        empty: false,
+        tensor: window.tf.tensor4d(centered, [1, PREVIEW_SIZE, PREVIEW_SIZE, 1])
+      };
     }
 
     function updateProbs(values) {
@@ -3476,15 +3632,15 @@
     async function runPrediction(options = {}) {
       const model = await ensureModel();
       if (!model) return;
-      updatePreview();
-      if (!hasInk()) {
+      const inputData = getCenteredInput();
+      if (inputData.empty) {
         if (!options.silentEmpty) {
           setStatus(messages.cnnEmpty || "Draw something before predicting.", true);
         }
         return;
       }
       setStatus(messages.cnnStatusReady || "Model ready.", false);
-      const input = getInputTensor();
+      const input = inputData.tensor;
       const start = performance.now();
       let output = null;
       try {
@@ -4039,9 +4195,19 @@
       return;
     }
 
-    projects.forEach((project, index) => {
+    const curated = projects.slice(0, 6);
+    curated.forEach((project, index) => {
       const card = document.createElement("div");
       card.className = "gui-card project-card";
+
+      if (project.cover) {
+        const cover = document.createElement("img");
+        cover.className = "project-cover";
+        cover.src = project.cover;
+        cover.alt = project.name ? `Capa do projeto ${project.name}` : "Capa do projeto";
+        cover.loading = "lazy";
+        card.append(cover);
+      }
 
       const header = document.createElement("div");
       header.className = "project-header";
@@ -4145,12 +4311,14 @@
   async function init() {
     cacheDom();
     bindEvents();
+    initCustomCursor();
     state.language = resolveInitialLanguage();
     state.locale = getLocaleForLanguage(state.language);
     unregisterServiceWorkers();
     await loadContent();
     applyLanguage(state.language, { persist: false, announce: false });
     setTheme(state.theme);
+    restoreGuiPreferences();
     initTerminal();
   }
 

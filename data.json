@@ -66,6 +66,7 @@
           "name": "SupaSport",
           "description": "O objetivo do projeto e oferecer uma plataforma completa para que usuarios possam encontrar, reservar e pagar por horarios em estabelecimentos esportivos, como quadras e ginasios. Proprietarios de estabelecimentos tambem podem cadastrar e gerenciar seus locais de forma simples e intuitiva.",
           "details": "Plataforma de reservas esportivas com foco em descoberta de locais, agendamento e pagamento. Inclui area do proprietario para cadastro e administracao de quadras e horarios.",
+          "cover": "assets/covers/supasport.svg",
           "lessons": [
             "Modelagem de disponibilidade e conflitos de reservas.",
             "Separacao de fluxos entre usuario e proprietario com permissoes.",
@@ -81,6 +82,7 @@
           "name": "PIBIC Dermatologia",
           "description": "E um aplicativo movel desenvolvido em React Native/Expo com o objetivo de auxiliar na analise preliminar de lesoes de pele.",
           "details": "Aplicativo mobile voltado a triagem de lesoes de pele, com foco em uma experiencia simples para coleta de informacoes e suporte a pesquisa.",
+          "cover": "assets/covers/pibic-dermatologia.svg",
           "lessons": [
             "Pre-processamento e balanceamento de imagens para treino.",
             "Otimizacao de desempenho no mobile.",
@@ -96,6 +98,7 @@
           "name": "Sistema de cadastro de alunos",
           "description": "Sistema CRUD para cadastro de alunos com upload de imagens, desenvolvido em Django REST Framework.",
           "details": "API REST para cadastro de alunos com suporte a upload de imagens e operacoes CRUD completas.",
+          "cover": "assets/covers/cadastro-alunos.svg",
           "lessons": [
             "Upload seguro de imagens e validacao de formatos.",
             "Serializacao e consistencia dos endpoints REST.",
@@ -111,6 +114,7 @@
           "name": "Crud de um banco de dados em python",
           "description": "Um pequeno CRUD de banco de dados em Python.",
           "details": "Projeto simples de CRUD em Python para operacoes basicas em banco de dados.",
+          "cover": "assets/covers/crud-bd-python.svg",
           "lessons": [
             "Tratamento de erros e validacao de entradas.",
             "Modelagem simples de tabelas e consultas."
@@ -264,6 +268,7 @@
           "name": "SupaSport",
           "description": "The project aims to provide a complete platform for users to find, book, and pay for time slots at sports facilities such as courts and gyms. Facility owners can also register and manage their locations in a simple and intuitive way.",
           "details": "Sports booking platform focused on discovery, scheduling, and payments. Includes an owner area to register and manage courts and time slots.",
+          "cover": "assets/covers/supasport.svg",
           "lessons": [
             "Modeled availability and avoided booking conflicts.",
             "Separated user and owner flows with permissions.",
@@ -278,6 +283,7 @@
           "name": "PIBIC Dermatologia",
           "description": "A mobile app built with React Native/Expo to assist in the preliminary analysis of skin lesions.",
           "details": "Mobile app focused on skin lesion screening with a simple experience for data collection and research support.",
+          "cover": "assets/covers/pibic-dermatologia.svg",
           "lessons": [
             "Image preprocessing and dataset balancing.",
             "Mobile performance optimization.",
@@ -293,6 +299,7 @@
           "name": "Student registration system",
           "description": "CRUD system for student registration with image upload, built with Django REST Framework.",
           "details": "REST API for student registration with image upload support and full CRUD operations.",
+          "cover": "assets/covers/cadastro-alunos.svg",
           "lessons": [
             "Secure image upload and format validation.",
             "Serialization consistency across REST endpoints.",
@@ -308,6 +315,7 @@
           "name": "Database CRUD in Python",
           "description": "A small database CRUD in Python.",
           "details": "Simple Python CRUD project for basic database operations.",
+          "cover": "assets/covers/crud-bd-python.svg",
           "lessons": [
             "Error handling and input validation.",
             "Simple table modeling and queries."

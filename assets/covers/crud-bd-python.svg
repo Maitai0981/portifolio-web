@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="CRUD banco de dados cover">
+  <defs>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f2430"/>
+      <stop offset="100%" stop-color="#4a6fa5"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#g4)"/>
+  <rect x="28" y="28" width="584" height="304" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.7"/>
+  <text x="40" y="145" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#ffffff">CRUD banco de dados</text>
+  <text x="40" y="195" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#e6eff7">Operacoes basicas em Python</text>
+  <text x="40" y="225" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#e6eff7">Python</text>
+</svg>

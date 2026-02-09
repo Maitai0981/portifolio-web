@@ -1,4 +1,4 @@
-const CACHE_NAME = "portfolio-cache-v32";
+const CACHE_NAME = "portfolio-cache-v33";
 const ASSETS = [
   "./",
   "./index.html",
@@ -17,6 +17,10 @@ const ASSETS = [
   "./assets/algoritmo.png",
   "./assets/snake.png",
   "./assets/icon-cnn.svg",
+  "./assets/covers/supasport.svg",
+  "./assets/covers/pibic-dermatologia.svg",
+  "./assets/covers/cadastro-alunos.svg",
+  "./assets/covers/crud-bd-python.svg",
   "./assets/web_model/model.json",
   "./assets/web_model/group1-shard1of1.bin"
 ];
