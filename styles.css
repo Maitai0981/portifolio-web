@@ -1094,6 +1094,11 @@ button,
   border-color: #6e2a2a;
 }
 
+.algo-bar.pivot {
+  background: #2f5fb3;
+  border-color: #1a3d73;
+}
+
 .algo-graph {
   padding: 6px;
   background: #f1f1f1;
@@ -1110,6 +1115,11 @@ button,
 .algo-edge {
   stroke: #5a5a5a;
   stroke-width: 2px;
+}
+
+.algo-edge.selected {
+  stroke: #3b7b3b;
+  stroke-width: 3px;
 }
 
 .algo-edge.active {

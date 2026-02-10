@@ -231,6 +231,8 @@ import {
         algoBubbleLabel: "Bubble sort",
         algoSelectionLabel: "Selection sort",
         algoMergeLabel: "Merge sort",
+        algoQuickLabel: "Quick sort",
+        algoHeapLabel: "Heap sort",
         algoDijkstraLabel: "Dijkstra",
         algoStatusReady: "Pronto para iniciar.",
         algoStatusRunning: "Executando...",
@@ -396,6 +398,8 @@ import {
         algoBubbleLabel: "Bubble sort",
         algoSelectionLabel: "Selection sort",
         algoMergeLabel: "Merge sort",
+        algoQuickLabel: "Quick sort",
+        algoHeapLabel: "Heap sort",
         algoDijkstraLabel: "Dijkstra",
         algoStatusReady: "Ready to start.",
         algoStatusRunning: "Running...",
@@ -1631,12 +1635,61 @@ import {
   }
 
   function formatHelpList(lines) {
-    return (lines || []).map((line) => {
-      const text = String(line);
-      return text.replace(/^([\w-]+)(\s+-\s+)/, (_match, command, sep) => {
-        return `${colorizeCommand(command)}${sep}`;
-      });
+    const rawLines = (lines || []).map((line) => String(line ?? ""));
+    if (rawLines.length === 0) return [];
+
+    const commandEntries = [];
+    const extras = [];
+    let title = "";
+
+    rawLines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!title && trimmed && /comandos|commands/i.test(trimmed)) {
+        title = trimmed.replace(/:$/, "");
+        return;
+      }
+      const match = trimmed.match(/^([\w-]+)\s+-\s+(.+)$/);
+      if (match) {
+        commandEntries.push({ command: match[1], desc: match[2] });
+        return;
+      }
+      extras.push(line);
     });
+
+    if (!commandEntries.length) {
+      return rawLines;
+    }
+
+    if (!title) {
+      title = state.language === "pt" ? "Comandos disponiveis" : "Commands available";
+    }
+
+    const maxLen = commandEntries.reduce(
+      (max, entry) => Math.max(max, entry.command.length),
+      0
+    );
+
+    const output = [];
+    output.push(`┌─ ${title}`);
+    commandEntries.forEach((entry) => {
+      const padded = entry.command.padEnd(maxLen, " ");
+      output.push(`│ ${colorizeCommand(padded)}  ${entry.desc}`);
+    });
+
+    if (extras.some((line) => String(line).trim() !== "")) {
+      output.push("├─");
+      extras.forEach((line) => {
+        const text = String(line ?? "");
+        if (!text.trim()) {
+          output.push("│");
+          return;
+        }
+        output.push(`│ ${text}`);
+      });
+    }
+
+    output.push("└─");
+    return output;
   }
 
   function formatHelpDetail(lines, command) {
@@ -2941,6 +2994,8 @@ import {
       { value: "bubble", label: messages.algoBubbleLabel },
       { value: "selection", label: messages.algoSelectionLabel },
       { value: "merge", label: messages.algoMergeLabel },
+      { value: "quick", label: messages.algoQuickLabel },
+      { value: "heap", label: messages.algoHeapLabel },
       { value: "dijkstra", label: messages.algoDijkstraLabel }
     ].forEach((algo) => {
       const option = document.createElement("option");
@@ -3013,6 +3068,19 @@ import {
       };
     }
 
+    function getEdgeKey(from, to) {
+      return [from, to].sort().join("-");
+    }
+
+    function buildDistanceLabels(distances) {
+      const labels = {};
+      graphNodeIds.forEach((id) => {
+        const value = distances?.[id];
+        labels[id] = Number.isFinite(value) ? String(value) : "INF";
+      });
+      return labels;
+    }
+
     function buildGraphSvg(data, container) {
       container.innerHTML = "";
       const svgNS = "http://www.w3.org/2000/svg";
@@ -3036,7 +3104,7 @@ import {
         line.setAttribute("x2", to.x);
         line.setAttribute("y2", to.y);
         line.classList.add("algo-edge");
-        const key = [edge.from, edge.to].sort().join("-");
+        const key = getEdgeKey(edge.from, edge.to);
         line.dataset.edge = key;
         edgeEls.set(key, line);
         svg.append(line);
@@ -3090,6 +3158,12 @@ import {
       }
       if (algo === "merge") {
         return buildMergeSteps(values);
+      }
+      if (algo === "quick") {
+        return buildQuickSteps(values);
+      }
+      if (algo === "heap") {
+        return buildHeapSteps(values);
       }
       if (algo === "dijkstra") {
         return buildDijkstraSteps(graphData);
@@ -3166,6 +3240,128 @@ import {
       }
 
       mergeSort(0, arr.length);
+      return output;
+    }
+
+    function buildQuickSteps(source) {
+      const arr = source.slice();
+      const output = [];
+
+      function swap(i, j) {
+        const temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+
+      function partition(low, high) {
+        const pivotValue = arr[high];
+        let i = low;
+        for (let j = low; j < high; j += 1) {
+          output.push({
+            values: arr.slice(),
+            highlight: [j, high],
+            pivot: high,
+            swap: false
+          });
+          if (arr[j] < pivotValue) {
+            if (i !== j) {
+              swap(i, j);
+              output.push({
+                values: arr.slice(),
+                highlight: [i, j],
+                pivot: high,
+                swap: true
+              });
+            }
+            i += 1;
+          }
+        }
+        if (i !== high) {
+          swap(i, high);
+          output.push({
+            values: arr.slice(),
+            highlight: [i, high],
+            pivot: i,
+            swap: true
+          });
+        }
+        return i;
+      }
+
+      function quickSort(low, high) {
+        if (low >= high) return;
+        const pivotIndex = partition(low, high);
+        quickSort(low, pivotIndex - 1);
+        quickSort(pivotIndex + 1, high);
+      }
+
+      quickSort(0, arr.length - 1);
+      return output;
+    }
+
+    function buildHeapSteps(source) {
+      const arr = source.slice();
+      const output = [];
+      const size = arr.length;
+
+      function swap(i, j) {
+        const temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+
+      function heapify(heapSize, rootIndex) {
+        let largest = rootIndex;
+        const left = rootIndex * 2 + 1;
+        const right = rootIndex * 2 + 2;
+
+        if (left < heapSize) {
+          output.push({
+            values: arr.slice(),
+            highlight: [rootIndex, left],
+            swap: false
+          });
+          if (arr[left] > arr[largest]) {
+            largest = left;
+          }
+        }
+
+        if (right < heapSize) {
+          output.push({
+            values: arr.slice(),
+            highlight: [rootIndex, right],
+            swap: false
+          });
+          if (arr[right] > arr[largest]) {
+            largest = right;
+          }
+        }
+
+        if (largest !== rootIndex) {
+          swap(rootIndex, largest);
+          output.push({
+            values: arr.slice(),
+            highlight: [rootIndex, largest],
+            swap: true
+          });
+          heapify(heapSize, largest);
+        }
+      }
+
+      for (let i = Math.floor(size / 2) - 1; i >= 0; i -= 1) {
+        heapify(size, i);
+      }
+
+      for (let end = size - 1; end > 0; end -= 1) {
+        swap(0, end);
+        output.push({
+          values: arr.slice(),
+          highlight: [0, end],
+          swap: true
+        });
+        heapify(end, 0);
+      }
+
       return output;
     }
 
@@ -3246,10 +3442,12 @@ import {
       ensureBars();
       const highlights = step?.highlight || [];
       const isSwap = step?.swap;
+      const pivotIndex = Number.isInteger(step?.pivot) ? step.pivot : null;
       Array.from(bars.children).forEach((bar, index) => {
         bar.style.height = `${values[index]}%`;
         bar.classList.toggle("active", highlights.includes(index));
         bar.classList.toggle("swap", isSwap && highlights.includes(index));
+        bar.classList.toggle("pivot", pivotIndex === index);
       });
     }
 
@@ -3265,20 +3463,27 @@ import {
       if (!graphElements) return;
       const visited = new Set(step?.visited || []);
       const current = step?.current;
-      const distances = step?.distances || buildInitialDistances(graphData);
+      const labels =
+        step?.labels ||
+        buildDistanceLabels(step?.distances || buildInitialDistances(graphData));
       graphElements.nodeEls.forEach((group, id) => {
         group.classList.toggle("visited", visited.has(id));
         group.classList.toggle("current", current === id);
-        const distance = distances[id];
         const distEl = graphElements.distEls.get(id);
         if (distEl) {
-          distEl.textContent = Number.isFinite(distance) ? String(distance) : "INF";
+          distEl.textContent = labels[id] ?? "";
         }
       });
 
-      graphElements.edgeEls.forEach((line) => line.classList.remove("active"));
+      graphElements.edgeEls.forEach((line) => line.classList.remove("active", "selected"));
+      const selectedEdges = step?.selectedEdges || [];
+      selectedEdges.forEach((edge) => {
+        const key = getEdgeKey(edge.from, edge.to);
+        const edgeEl = graphElements.edgeEls.get(key);
+        if (edgeEl) edgeEl.classList.add("selected");
+      });
       if (step?.edge) {
-        const key = [step.edge.from, step.edge.to].sort().join("-");
+        const key = getEdgeKey(step.edge.from, step.edge.to);
         const edgeEl = graphElements.edgeEls.get(key);
         if (edgeEl) edgeEl.classList.add("active");
       }
