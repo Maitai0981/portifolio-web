@@ -1,9 +1,13 @@
-const CACHE_NAME = "portfolio-cache-v34";
+const CACHE_NAME = "portfolio-cache-v35";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js",
+  "./main.js",
+  "./modules/trie.js",
+  "./modules/levenshtein.js",
+  "./modules/commandSearch.js",
+  "./modules/cnnDemo.js",
   "./data.json",
   "./manifest.webmanifest",
   "./assets/sprite.png",
@@ -21,9 +25,9 @@ const ASSETS = [
   "./assets/covers/pibic-dermatologia.svg",
   "./assets/covers/cadastro-alunos.svg",
   "./assets/covers/crud-bd-python.svg",
-  "./assets/edu/ifam.png",
-  "./assets/edu/sesi-senai.png",
-  "./assets/edu/aloys-joao-mann.png",
+  "./assets/edu/ifam.svg",
+  "./assets/edu/sesi-senai.svg",
+  "./assets/edu/aloys-joao-mann.svg",
   "./assets/web_model/model.json",
   "./assets/web_model/group1-shard1of1.bin"
 ];

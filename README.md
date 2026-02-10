@@ -23,7 +23,7 @@ O servidor sobe em `http://localhost:8080` (ou na porta definida em `PORT`).
 
 - `index.html`: estrutura principal da aplicação.
 - `styles.css`: estilos globais da interface.
-- `app.js`: lógica de interação do terminal e da GUI.
+- `main.js`: lógica de interação do terminal e da GUI (ES Modules).
 - `assets/`: imagens e ícones.
 - `data.json`: conteúdo usado nas seções.
 - `server.js`: servidor HTTP simples.
