@@ -75,7 +75,8 @@ body.theme-secret {
   height: 0;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -216,8 +217,15 @@ body.has-custom-cursor textarea {
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 #terminal-input-line {
@@ -336,15 +344,41 @@ button,
   color: #8fa3b6;
 }
 
-.ansi-black { color: #0b0d10; }
-.ansi-red { color: #ff5f56; }
-.ansi-green { color: #38c172; }
-.ansi-yellow { color: #f2c94c; }
-.ansi-blue { color: #4aa3ff; }
-.ansi-magenta { color: #d77bd6; }
-.ansi-cyan { color: #5fd7ff; }
-.ansi-white { color: #f2f2f2; }
-.ansi-bright-black { color: #9aa5b1; }
+.ansi-black {
+  color: #0b0d10;
+}
+
+.ansi-red {
+  color: #ff5f56;
+}
+
+.ansi-green {
+  color: #38c172;
+}
+
+.ansi-yellow {
+  color: #f2c94c;
+}
+
+.ansi-blue {
+  color: #4aa3ff;
+}
+
+.ansi-magenta {
+  color: #d77bd6;
+}
+
+.ansi-cyan {
+  color: #5fd7ff;
+}
+
+.ansi-white {
+  color: #f2f2f2;
+}
+
+.ansi-bright-black {
+  color: #9aa5b1;
+}
 
 .link {
   text-decoration: none;
@@ -370,20 +404,57 @@ button,
   line-height: 1;
 }
 
-.link-icon-github { background: #c9d1d9; }
-.link-icon-linkedin { background: #9bc5ff; }
-.link-icon-instagram { background: #ffc2f0; }
-.link-icon-codeforces { background: #ffd79a; }
-.link-icon-email { background: #e83636; }
-.link-icon-beecrowd { background: #ffe8b5; }
-.link-icon-link { background: #e4e4e4; }
+.link-icon-github {
+  background: #c9d1d9;
+}
 
-.link-github { color: #c9d1d9; }
-.link-linkedin { color: #4da3ff; }
-.link-instagram { color: #ff7ad9; }
-.link-codeforces { color: #ffb74a; }
-.link-email { color: #e83636; }
-.link-beecrowd { color: #e0a931; }
+.link-icon-linkedin {
+  background: #9bc5ff;
+}
+
+.link-icon-instagram {
+  background: #ffc2f0;
+}
+
+.link-icon-codeforces {
+  background: #ffd79a;
+}
+
+.link-icon-email {
+  background: #e83636;
+}
+
+.link-icon-beecrowd {
+  background: #ffe8b5;
+}
+
+.link-icon-link {
+  background: #e4e4e4;
+}
+
+.link-github {
+  color: #c9d1d9;
+}
+
+.link-linkedin {
+  color: #4da3ff;
+}
+
+.link-instagram {
+  color: #ff7ad9;
+}
+
+.link-codeforces {
+  color: #ffb74a;
+}
+
+.link-email {
+  color: #e83636;
+}
+
+.link-beecrowd {
+  color: #e0a931;
+}
 
 /* GUI */
 #gui {
@@ -864,7 +935,7 @@ button,
   color: #1f1f1f;
 }
 
-.gui-social .gui-row > div:last-child {
+.gui-social .gui-row>div:last-child {
   display: flex;
   align-items: center;
   gap: 8px;

@@ -17,11 +17,13 @@
         "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
         "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
         "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
-        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
+        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m",
+        "\u001b[90mDigite \u001b[0m\u001b[36mgui\u001b[0m\u001b[90m para abrir a interface grafica.\u001b[0m"
       ],
       "bannerMobile": [
         "\u001b[33mMatheus Saragoca\u001b[0m",
-        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m"
+        "\u001b[90mDigite \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m para listar comandos.\u001b[0m",
+        "\u001b[90mDigite \u001b[0m\u001b[36mgui\u001b[0m\u001b[90m para abrir a interface grafica.\u001b[0m"
       ],
       "about": [
         "Sou desenvolvedor de software com forte base em programacao competitiva, ciencia de dados e inteligencia artificial. Atuo de forma organizada e proativa, com foco em resolucao de problemas, qualidade de codigo e melhoria continua de processos. Tenho experiencia no desenvolvimento de sistemas web e back-end, automacao e analise de dados, alem da construcao e treinamento de modelos de aprendizado de maquina e aprendizado profundo.",
@@ -72,8 +74,15 @@
             "Separacao de fluxos entre usuario e proprietario com permissoes.",
             "Integracao de pagamento e notificacoes."
           ],
-          "stack": ["React Native", "Expo"],
-          "aliases": ["supasport", "reservas esportivas", "quadras"],
+          "stack": [
+            "React Native",
+            "Expo"
+          ],
+          "aliases": [
+            "supasport",
+            "reservas esportivas",
+            "quadras"
+          ],
           "links": [
             "https://github.com/Maitai0981/pdm-001"
           ]
@@ -88,8 +97,17 @@
             "Otimizacao de desempenho no mobile.",
             "Alinhamento de requisitos com area medica."
           ],
-          "stack": ["React Native", "Expo", "Python", "TensorFlow"],
-          "aliases": ["pibic", "dermatologia", "lesoes de pele"],
+          "stack": [
+            "React Native",
+            "Expo",
+            "Python",
+            "TensorFlow"
+          ],
+          "aliases": [
+            "pibic",
+            "dermatologia",
+            "lesoes de pele"
+          ],
           "links": [
             "https://github.com/Maitai0981/pibic_02"
           ]
@@ -104,8 +122,16 @@
             "Serializacao e consistencia dos endpoints REST.",
             "Automacao de CRUD com testes basicos."
           ],
-          "stack": ["Python", "Django REST Framework"],
-          "aliases": ["cadastro de alunos", "alunos", "crud alunos", "django"],
+          "stack": [
+            "Python",
+            "Django REST Framework"
+          ],
+          "aliases": [
+            "cadastro de alunos",
+            "alunos",
+            "crud alunos",
+            "django"
+          ],
           "links": [
             "https://github.com/Maitai0981/Aula_crud_aluno"
           ]
@@ -119,8 +145,14 @@
             "Tratamento de erros e validacao de entradas.",
             "Modelagem simples de tabelas e consultas."
           ],
-          "stack": ["Python"],
-          "aliases": ["crud python", "banco de dados", "crud bd"],
+          "stack": [
+            "Python"
+          ],
+          "aliases": [
+            "crud python",
+            "banco de dados",
+            "crud bd"
+          ],
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]
@@ -231,11 +263,13 @@
         "\u001b[33m██╔═══╝ ██║   ██║██╔══██╗   ██║   ██╔══╝  ██║   ██║██║     ██║██║   ██║\u001b[0m",
         "\u001b[33m██║     ╚██████╔╝██║  ██║   ██║   ██║     ╚██████╔╝███████╗██║╚██████╔╝\u001b[0m",
         "\u001b[33m╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝      ╚═════╝ ╚══════╝╚═╝ ╚═════╝\u001b[0m",
-        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m"
+        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m",
+        "\u001b[90mType \u001b[0m\u001b[36mgui\u001b[0m\u001b[90m to open the graphical interface.\u001b[0m"
       ],
       "bannerMobile": [
         "\u001b[33mMatheus Saragoca\u001b[0m",
-        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m"
+        "\u001b[90mType \u001b[0m\u001b[36mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m",
+        "\u001b[90mType \u001b[0m\u001b[36mgui\u001b[0m\u001b[90m to open the graphical interface.\u001b[0m"
       ],
       "about": [
         "I am a software developer with a strong background in competitive programming, data science, and artificial intelligence. I work in an organized and proactive way, focusing on problem solving, code quality, and continuous process improvement. I have experience developing web and back-end systems, automation, and data analysis, as well as building and training machine learning and deep learning models.",
@@ -286,7 +320,11 @@
             "Separated user and owner flows with permissions.",
             "Integrated payments and notifications."
           ],
-          "aliases": ["supasport", "sports booking", "courts"],
+          "aliases": [
+            "supasport",
+            "sports booking",
+            "courts"
+          ],
           "links": [
             "https://github.com/Maitai0981/pdm-001"
           ]
@@ -301,8 +339,15 @@
             "Mobile performance optimization.",
             "Aligned requirements with medical stakeholders."
           ],
-          "stack": ["React Native", "Expo"],
-          "aliases": ["pibic", "dermatology", "skin lesions"],
+          "stack": [
+            "React Native",
+            "Expo"
+          ],
+          "aliases": [
+            "pibic",
+            "dermatology",
+            "skin lesions"
+          ],
           "links": [
             "https://github.com/Maitai0981/pibic_02"
           ]
@@ -317,8 +362,15 @@
             "Serialization consistency across REST endpoints.",
             "CRUD automation with basic tests."
           ],
-          "stack": ["Python", "Django REST Framework"],
-          "aliases": ["students", "crud students", "django"],
+          "stack": [
+            "Python",
+            "Django REST Framework"
+          ],
+          "aliases": [
+            "students",
+            "crud students",
+            "django"
+          ],
           "links": [
             "https://github.com/Maitai0981/Aula_crud_aluno"
           ]
@@ -332,8 +384,14 @@
             "Error handling and input validation.",
             "Simple table modeling and queries."
           ],
-          "stack": ["Python"],
-          "aliases": ["crud python", "database", "crud db"],
+          "stack": [
+            "Python"
+          ],
+          "aliases": [
+            "crud python",
+            "database",
+            "crud db"
+          ],
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]

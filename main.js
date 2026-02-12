@@ -7,7 +7,7 @@ import {
 
 (() => {
   const state = {
-    mode: "cli",
+    mode: "gui",
     sessionActive: true,
     history: [],
     historyIndex: -1,
@@ -2722,7 +2722,7 @@ import {
     }
   }
 
-  function updateMonoToggle() {}
+  function updateMonoToggle() { }
 
   function updateMatrixState() {
     const shouldEnable = state.theme === "hacker" || state.theme === "secret";
