@@ -7,7 +7,7 @@ import {
 
 (() => {
   const state = {
-    mode: "gui",
+    mode: "cli",
     sessionActive: true,
     history: [],
     historyIndex: -1,
@@ -1130,6 +1130,7 @@ import {
     clearOutput();
     appendOutputLines(getBannerLines());
     focusInput();
+    toggleMode(state.mode);
   }
 
   function focusInput() {
