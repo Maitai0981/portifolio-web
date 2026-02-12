@@ -75,7 +75,8 @@ import {
     "email",
     "algorithms",
     "cnn",
-    "snake"
+    "snake",
+    "terminal"
   ];
   const THEMES = ["dark", "light", "hacker", "retro"];
   const COMMANDS = [
@@ -158,7 +159,8 @@ import {
           email: "Email",
           algorithms: "Visualizador de Algoritmos",
           cnn: "CNN Demo",
-          snake: "Snake"
+          snake: "Snake",
+          terminal: "Terminal"
         },
         profileLabel: "Perfil",
         noContent: "Sem conteudo.",
@@ -325,7 +327,8 @@ import {
           email: "Email",
           algorithms: "Algorithm Visualizer",
           cnn: "CNN Demo",
-          snake: "Snake"
+          snake: "Snake",
+          terminal: "Terminal"
         },
         profileLabel: "Profile",
         noContent: "No content.",
@@ -2396,6 +2399,10 @@ import {
   }
 
   function openDesktopCommand(command) {
+    if (command === "terminal") {
+      toggleMode(state.mode);
+      return;
+    }
     if (GUI_WINDOW_COMMANDS.includes(command)) {
       openGuiWindow(command);
     }
