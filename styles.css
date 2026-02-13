@@ -67,12 +67,6 @@ body.theme-secret {
 
 * {
   box-sizing: border-box;
-  scrollbar-width: none;
-}
-
-*::-webkit-scrollbar {
-  width: 0;
-  height: 0;
 }
 
 html,
@@ -81,12 +75,13 @@ body {
   padding: 0;
   height: 100%;
   background: var(--terminal-bg);
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
 }
 
 body {
   font-family: "Fira Code", "Cascadia Code", "Consolas", monospace;
   color: var(--terminal-fg);
-  -webkit-text-size-adjust: 100%;
 }
 
 body.has-custom-cursor {
@@ -474,7 +469,6 @@ button,
   position: absolute;
   inset: 0 0 40px 0;
   background: var(--gui-bg);
-  user-select: none;
 }
 
 #desktop-icons {
@@ -485,6 +479,8 @@ button,
   grid-template-columns: repeat(auto-fill, 140px);
   gap: 26px;
   width: min(760px, 95vw);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .desktop-icon {
@@ -1530,6 +1526,10 @@ button,
     grid-template-columns: 1fr;
   }
 
+  #desktop {
+    inset: 0 0 48px 0;
+  }
+
   #desktop-icons {
     width: 96vw;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -1551,6 +1551,10 @@ button,
 
   #taskbar {
     height: 48px;
+  }
+
+  #start-menu {
+    bottom: 48px;
   }
 
   #start-button {

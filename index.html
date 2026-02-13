@@ -8,18 +8,18 @@
   <meta name="description" content="Portfolio interativo com terminal Ubuntu e GUI retro estilo Windows 95." />
   <meta name="keywords" content="portfolio, terminal, windows 95, frontend, javascript, desenvolvimento web" />
   <meta name="author" content="Matheus Saragoca" />
-  <meta name="theme-color" content="#0b0d10" />
+  <meta id="theme-color-meta" name="theme-color" content="#0b0d10" />
   <meta name="robots" content="index, follow">
   <meta property="og:title" content="Portfolio Terminal + GUI" />
   <meta property="og:description" content="Experiência interativa com terminal Ubuntu e GUI retro estilo Windows 95." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="assets/pessoa.png" />
+  <meta property="og:image" content="assets/Matheus.jpg" />
   <meta property="og:site_name" content="Matheus Saragoça Portfolio">
   <meta property="og:url" content="https://maitai0981.github.io/portifolio-web/">
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Portfolio Terminal + GUI" />
   <meta name="twitter:description" content="Terminal Ubuntu + GUI retro em uma SPA." />
-  <link rel="icon" href="assets/icons8.png" type="image/svg+xml" />
+  <link rel="icon" href="assets/icons8.png" type="image/png" />
   <link rel="canonical" href="https://maitai0981.github.io/portifolio-web/" />
   <script>
     (function () {
@@ -30,31 +30,33 @@
     })();
   </script>
   <script>
-    window.__APP_VERSION__ = "2026-02-10-04";
+    window.__APP_VERSION__ = "2026-02-13-04";
   </script>
-  <link rel="stylesheet" href="./styles.css?v=2026-02-10-01" />
+  <link rel="stylesheet" href="./styles.css?v=2026-02-13-04" />
 </head>
 
 <body>
   <div id="app">
-    <section id="terminal" class="mode">
+    <section id="terminal" class="mode mode-hidden" aria-hidden="true">
       <div id="terminal-output" aria-live="polite"></div>
       <div id="terminal-input-line">
         <span id="prompt">Matheus@saragoca:~$</span>
-        <input id="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+        <label id="terminal-input-label" for="terminal-input" class="sr-only">Entrada de comando</label>
+        <input id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-labelledby="terminal-input-label" />
       </div>
     </section>
 
     <div id="command-menu" class="hidden" aria-hidden="true">
       <div class="command-menu-panel" role="dialog" aria-modal="true" aria-label="Menu de comandos">
         <div class="command-menu-header">Command Menu</div>
-        <input id="command-search" type="text" placeholder="Digite um comando..." autocomplete="off" />
+        <label id="command-search-label" for="command-search" class="sr-only">Pesquisar comando</label>
+        <input id="command-search" type="text" placeholder="Digite um comando..." autocomplete="off" aria-labelledby="command-search-label" />
         <ul id="command-list"></ul>
         <div class="command-menu-hint">Enter para executar • Esc para fechar</div>
       </div>
     </div>
 
-    <section id="gui" class="mode mode-hidden" aria-hidden="true">
+    <section id="gui" class="mode" aria-hidden="false">
       <div id="desktop">
         <div id="desktop-icons" aria-label="Atalhos do desktop">
           <button class="desktop-icon" type="button" data-command="about">
@@ -113,7 +115,7 @@
           </button>
           <button class="desktop-icon" type="button" data-command="terminal">
             <span class="icon-glyph" aria-hidden="true">
-                <img class="icon-image" src="assets/term.png" />
+              <img class="icon-image" src="assets/term.png" alt="" aria-hidden="true" />
             </span>
             <span class="icon-label">Terminal</span>
           </button>
@@ -200,7 +202,7 @@
     </section>
   </div>
 
-  <script type="module" src="./main.js?v=2026-02-10-01"></script>
+  <script type="module" src="./main.js?v=2026-02-13-04"></script>
 </body>
 
 </html>

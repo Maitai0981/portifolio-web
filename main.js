@@ -6,8 +6,10 @@ import {
 } from "./modules/commandSearch.js";
 
 (() => {
+  const INITIAL_MODE = "gui";
+
   const state = {
-    mode: "cli",
+    mode: INITIAL_MODE,
     sessionActive: true,
     history: [],
     historyIndex: -1,
@@ -50,9 +52,11 @@ import {
     terminal: null,
     terminalOutput: null,
     terminalInput: null,
+    terminalInputLabel: null,
     prompt: null,
     commandMenu: null,
     commandSearch: null,
+    commandSearchLabel: null,
     commandList: null,
     gui: null,
     desktop: null,
@@ -60,7 +64,8 @@ import {
     startMenu: null,
     taskButtons: null,
     taskbarClock: null,
-    taskbarAvailability: null
+    taskbarAvailability: null,
+    themeColorMeta: null
   };
 
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
@@ -129,6 +134,8 @@ import {
         commandMenuPlaceholder: "Digite um comando...",
         commandMenuHint: "Enter para executar • Esc para fechar",
         commandMenuAriaLabel: "Menu de comandos",
+        terminalInputLabel: "Entrada de comando do terminal",
+        commandSearchLabel: "Pesquisar comando",
         startMenuHeader: "Iniciar",
         startButton: "Iniciar",
         desktopAriaLabel: "Atalhos do desktop",
@@ -225,6 +232,7 @@ import {
         searchAboutLabel: "Sobre",
         searchProjectsLabel: "Projetos",
         algoHint: "Escolha um algoritmo e acompanhe a execucao.",
+        algoSelectLabel: "Selecionar algoritmo",
         algoRandom: "Novo array",
         algoReset: "Resetar",
         algoRun: "Executar",
@@ -297,6 +305,8 @@ import {
         commandMenuPlaceholder: "Type a command...",
         commandMenuHint: "Enter to run • Esc to close",
         commandMenuAriaLabel: "Command menu",
+        terminalInputLabel: "Terminal command input",
+        commandSearchLabel: "Search command",
         startMenuHeader: "Start",
         startButton: "Start",
         desktopAriaLabel: "Desktop shortcuts",
@@ -393,6 +403,7 @@ import {
         searchAboutLabel: "About",
         searchProjectsLabel: "Projects",
         algoHint: "Pick an algorithm and follow the execution.",
+        algoSelectLabel: "Select algorithm",
         algoRandom: "New array",
         algoReset: "Reset",
         algoRun: "Run",
@@ -895,6 +906,18 @@ import {
     if (dom.commandSearch && ui.commandMenuPlaceholder) {
       dom.commandSearch.placeholder = ui.commandMenuPlaceholder;
     }
+    if (dom.terminalInput && ui.terminalInputLabel) {
+      dom.terminalInput.setAttribute("aria-label", ui.terminalInputLabel);
+    }
+    if (dom.terminalInputLabel && ui.terminalInputLabel) {
+      dom.terminalInputLabel.textContent = ui.terminalInputLabel;
+    }
+    if (dom.commandSearch && ui.commandSearchLabel) {
+      dom.commandSearch.setAttribute("aria-label", ui.commandSearchLabel);
+    }
+    if (dom.commandSearchLabel && ui.commandSearchLabel) {
+      dom.commandSearchLabel.textContent = ui.commandSearchLabel;
+    }
     const hint = dom.commandMenu?.querySelector(".command-menu-hint");
     if (hint && ui.commandMenuHint) hint.textContent = ui.commandMenuHint;
     const panel = dom.commandMenu?.querySelector(".command-menu-panel");
@@ -1008,9 +1031,11 @@ import {
     dom.terminal = document.getElementById("terminal");
     dom.terminalOutput = document.getElementById("terminal-output");
     dom.terminalInput = document.getElementById("terminal-input");
+    dom.terminalInputLabel = document.getElementById("terminal-input-label");
     dom.prompt = document.getElementById("prompt");
     dom.commandMenu = document.getElementById("command-menu");
     dom.commandSearch = document.getElementById("command-search");
+    dom.commandSearchLabel = document.getElementById("command-search-label");
     dom.commandList = document.getElementById("command-list");
     dom.gui = document.getElementById("gui");
     dom.desktop = document.getElementById("desktop");
@@ -1019,6 +1044,7 @@ import {
     dom.taskButtons = document.getElementById("task-buttons");
     dom.taskbarClock = document.getElementById("taskbar-clock");
     dom.taskbarAvailability = document.getElementById("taskbar-availability");
+    dom.themeColorMeta = document.getElementById("theme-color-meta");
   }
 
   function bindEvents() {
@@ -1132,8 +1158,7 @@ import {
     updatePrompt();
     clearOutput();
     appendOutputLines(getBannerLines());
-    focusInput();
-    toggleMode(state.mode);
+    setMode(state.mode);
   }
 
   function focusInput() {
@@ -1249,7 +1274,9 @@ import {
     state.commandMenuOpen = false;
     dom.commandMenu.classList.add("hidden");
     dom.commandMenu.setAttribute("aria-hidden", "true");
-    focusInput();
+    if (state.mode === "cli") {
+      focusInput();
+    }
   }
 
   function handleCommandMenuClick(event) {
@@ -2309,7 +2336,7 @@ import {
     state.shell.cwd = "~";
     dom.terminalInput.removeAttribute("disabled");
     closeCommandMenu();
-    setMode("cli");
+    setMode(INITIAL_MODE);
   }
 
   function setMode(mode) {
@@ -2400,7 +2427,7 @@ import {
 
   function openDesktopCommand(command) {
     if (command === "terminal") {
-      toggleMode(state.mode);
+      applyAction("terminal", "gui");
       return;
     }
     if (GUI_WINDOW_COMMANDS.includes(command)) {
@@ -2696,6 +2723,21 @@ import {
     }
   }
 
+  function updateThemeColor(theme) {
+    const colorByTheme = {
+      dark: "#0b0d10",
+      light: "#f5f6f8",
+      hacker: "#020b06",
+      retro: "#190f0a",
+      secret: "#05030f"
+    };
+    const color = colorByTheme[theme] || colorByTheme.dark;
+    const meta = dom.themeColorMeta || document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", color);
+    }
+  }
+
   function setTheme(theme) {
     const normalized = String(theme || "").toLowerCase();
     const themeClass = normalized === "secret" ? "theme-secret" : `theme-${normalized}`;
@@ -2710,6 +2752,7 @@ import {
     );
     document.body.classList.add(themeClass);
     state.theme = normalized;
+    updateThemeColor(normalized);
     updateMatrixState();
     return true;
   }
@@ -2998,6 +3041,7 @@ import {
 
     const algoSelect = document.createElement("select");
     algoSelect.className = "gui-select";
+    algoSelect.setAttribute("aria-label", messages.algoSelectLabel || "Select algorithm");
     [
       { value: "bubble", label: messages.algoBubbleLabel },
       { value: "selection", label: messages.algoSelectionLabel },

@@ -1,4 +1,4 @@
-const CACHE_NAME = "portfolio-cache-v38";
+const CACHE_NAME = "portfolio-cache-v39";
 const ASSETS = [
   "./",
   "./index.html",
@@ -11,23 +11,18 @@ const ASSETS = [
   "./data.json",
   "./manifest.webmanifest",
   "./assets/sprite.png",
-  "./assets/pessoa.png",
-  "./assets/midia-social.png",
-  "./assets/dev.png",
-  "./assets/livros.png",
-  "./assets/curriculo.png",
-  "./assets/o-email.png",
-  "./assets/icon.svg",
-  "./assets/algoritmo.png",
-  "./assets/snake.png",
+  "./assets/sprite_94.png",
+  "./assets/icons8.png",
+  "./assets/Matheus.jpg",
+  "./assets/term.png",
   "./assets/icon-cnn.svg",
   "./assets/covers/supasport.svg",
   "./assets/covers/pibic-dermatologia.svg",
   "./assets/covers/cadastro-alunos.svg",
   "./assets/covers/crud-bd-python.svg",
-  "./assets/edu/ifam.svg",
-  "./assets/edu/sesi-senai.svg",
-  "./assets/edu/aloys-joao-mann.svg",
+  "./assets/edu/ifam.png",
+  "./assets/edu/sesi-senai.png",
+  "./assets/edu/aloys-joao-mann.png",
   "./assets/web_model/model.json",
   "./assets/web_model/group1-shard1of1.bin"
 ];

@@ -401,17 +401,17 @@
         {
           "institution": "IFAM - Federal Institute of Amazonas (Parintins)",
           "years": "2023 - 2025",
-          "logo": "assets/edu/ifam.svg"
+          "logo": "assets/edu/ifam.png"
         },
         {
           "institution": "SESI/SENAI Padre Francisco Luppino",
           "years": "2017 - 2022",
-          "logo": "assets/edu/sesi-senai.svg"
+          "logo": "assets/edu/sesi-senai.png"
         },
         {
           "institution": "Aloys Joao Mann School",
           "years": "2013 - 2016",
-          "logo": "assets/edu/aloys-joao-mann.svg"
+          "logo": "assets/edu/aloys-joao-mann.png"
         }
       ],
       "resume": [
