@@ -75,8 +75,6 @@ body {
   padding: 0;
   height: 100%;
   background: var(--terminal-bg);
-  -webkit-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
 }
 
 body {
@@ -479,8 +477,6 @@ button,
   grid-template-columns: repeat(auto-fill, 140px);
   gap: 26px;
   width: min(760px, 95vw);
-  -webkit-user-select: none;
-  user-select: none;
 }
 
 .desktop-icon {
