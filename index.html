@@ -41,7 +41,8 @@
       <div id="terminal-input-line">
         <span id="prompt">Matheus@saragoca:~$</span>
         <label id="terminal-input-label" for="terminal-input" class="sr-only">Entrada de comando</label>
-        <input id="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-labelledby="terminal-input-label" />
+        <input id="terminal-input" type="text" autocomplete="off" spellcheck="false"
+          aria-labelledby="terminal-input-label" />
       </div>
     </section>
 
@@ -49,7 +50,8 @@
       <div class="command-menu-panel" role="dialog" aria-modal="true" aria-label="Menu de comandos">
         <div class="command-menu-header">Command Menu</div>
         <label id="command-search-label" for="command-search" class="sr-only">Pesquisar comando</label>
-        <input id="command-search" type="text" placeholder="Digite um comando..." autocomplete="off" aria-labelledby="command-search-label" />
+        <input id="command-search" type="text" placeholder="Digite um comando..." autocomplete="off"
+          aria-labelledby="command-search-label" />
         <ul id="command-list"></ul>
         <div class="command-menu-hint">Enter para executar • Esc para fechar</div>
       </div>
@@ -58,6 +60,12 @@
     <section id="gui" class="mode" aria-hidden="false">
       <div id="desktop">
         <div id="desktop-icons" aria-label="Atalhos do desktop">
+          <button class="desktop-icon" type="button" data-command="terminal">
+            <span class="icon-glyph" aria-hidden="true">
+              <img class="icon-image" src="assets/term.png" alt="" aria-hidden="true" />
+            </span>
+            <span class="icon-label">Terminal</span>
+          </button>
           <button class="desktop-icon" type="button" data-command="about">
             <span class="icon-glyph" aria-hidden="true">
               <span class="icon-sprite icon-about" aria-hidden="true"></span>
@@ -111,12 +119,6 @@
               <span class="icon-sprite icon-email" aria-hidden="true"></span>
             </span>
             <span class="icon-label">Email</span>
-          </button>
-          <button class="desktop-icon" type="button" data-command="terminal">
-            <span class="icon-glyph" aria-hidden="true">
-              <img class="icon-image" src="assets/term.png" alt="" aria-hidden="true" />
-            </span>
-            <span class="icon-label">Terminal</span>
           </button>
         </div>
       </div>
