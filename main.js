@@ -11,6 +11,8 @@ import {
   const state = {
     mode: INITIAL_MODE,
     sessionActive: true,
+    commandBusy: false,
+    commandQueue: Promise.resolve(),
     history: [],
     historyIndex: -1,
     theme: "dark",
@@ -45,6 +47,21 @@ import {
       drops: [],
       width: 0,
       height: 0
+    },
+    pet: {
+      active: false,
+      root: null,
+      bubble: null,
+      art: null,
+      hideBubbleTimer: null,
+      idleTimer: null,
+      reactionTimer: null,
+      animationTimer: null,
+      currentType: "neutral",
+      frameIndex: 0,
+      lookDirection: "center",
+      lastPointerX: window.innerWidth * 0.5,
+      lastPointerY: window.innerHeight * 0.5
     }
   };
 
@@ -60,6 +77,7 @@ import {
     commandList: null,
     gui: null,
     desktop: null,
+    taskbar: null,
     startButton: null,
     startMenu: null,
     taskButtons: null,
@@ -112,6 +130,7 @@ import {
     "exit-gui",
     "terminal",
     "theme",
+    "pet",
     "grep",
     "find",
     "algorithms",
@@ -122,6 +141,115 @@ import {
   const commandIndex = buildCommandIndex(COMMANDS);
 
   const FAST_TYPING_SPEED = 2;
+
+  const PET_ASCII_SPRITE_SHEET = {
+    neutral: {
+      fps: 2,
+      loop: true,
+      frames: [
+        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" },
+        { face: "◕ᴥ◕", body: "/|_|\\", status: "aguardando" }
+      ]
+    },
+    wake: {
+      fps: 8,
+      loop: false,
+      frames: [
+        { face: "•ᴥ•", body: "/|_|\\", status: "booting..." },
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "pronto" },
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "monitorando" }
+      ]
+    },
+    click: {
+      fps: 10,
+      loop: false,
+      frames: [
+        { face: "⊙ᴥ⊙", body: "/|_|\\", status: "! clique !" },
+        { face: "ಠᴥಠ", body: "/|_|\\", status: "te vi" },
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "confirmado" }
+      ]
+    },
+    key: {
+      fps: 12,
+      loop: false,
+      frames: [
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "⌨..." },
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "digitando" },
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "input lido" }
+      ]
+    },
+    idle: {
+      fps: 3,
+      loop: true,
+      frames: [
+        { face: "˘ᴥ˘", body: "/|_|\\", status: "z z z" },
+        { face: "-ᴥ-", body: "/|_|\\", status: "economia" },
+        { face: "˘ᴥ˘", body: "/|_|\\", status: "..." }
+      ]
+    },
+    command: {
+      fps: 8,
+      loop: false,
+      frames: [
+        { face: "•ᴥ•", body: "/|_|\\", status: "processando" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "ok!" },
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "concluido" }
+      ]
+    },
+    error: {
+      fps: 6,
+      loop: false,
+      frames: [
+        { face: "xᴥx", body: "/|_|\\", status: "erro" },
+        { face: "ಠᴥಠ", body: "/|_|\\", status: "vamos de novo" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "aguardando" }
+      ]
+    },
+    reload: {
+      fps: 7,
+      loop: false,
+      frames: [
+        { face: "↻ᴥ↻", body: "/|_|\\", status: "recarregando" },
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "limpando estado" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "pronto" }
+      ]
+    },
+    modeGui: {
+      fps: 7,
+      loop: false,
+      frames: [
+        { face: "◕ᴥ◕", body: "/|_|\\", status: "▣ GUI" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "janela aberta" }
+      ]
+    },
+    modeCli: {
+      fps: 7,
+      loop: false,
+      frames: [
+        { face: "•ᴥ•", body: "/|_|\\", status: "▤ CLI" },
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "prompt pronto" }
+      ]
+    },
+    guiIcon: {
+      fps: 10,
+      loop: false,
+      frames: [
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "icone detectado" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "GUI em acao" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
+      ]
+    },
+    themeChange: {
+      fps: 8,
+      loop: false,
+      frames: [
+        { face: "◕ᴥ◕", body: "/|_|\\", status: "tema..." },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "sincronizado" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "aplicado" }
+      ]
+    }
+  };
 
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
@@ -226,6 +354,13 @@ import {
         themeInvalid: "Tema invalido: {{theme}}",
         themeChanged: "Tema alterado para: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
+        petActivated: "Mascote ativado. Digite `pet off` para esconder.",
+        petDeactivated: "Mascote ocultado.",
+        petAlreadyActive: "O mascote ja esta ativo.",
+        petAlreadyInactive: "O mascote ja esta oculto.",
+        petStatusOn: "Mascote: ativo",
+        petStatusOff: "Mascote: oculto",
+        petUsage: "Use: pet | pet on | pet off | pet status",
         searchUsage: "Uso: grep <termo> (ou find <termo>)",
         searchHeader: "Resultados para: {{query}}",
         searchNoResults: "Nenhum resultado encontrado.",
@@ -397,6 +532,13 @@ import {
         themeInvalid: "Invalid theme: {{theme}}",
         themeChanged: "Theme set to: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
+        petActivated: "Mascot activated. Type `pet off` to hide it.",
+        petDeactivated: "Mascot hidden.",
+        petAlreadyActive: "Mascot is already active.",
+        petAlreadyInactive: "Mascot is already hidden.",
+        petStatusOn: "Mascot: active",
+        petStatusOff: "Mascot: hidden",
+        petUsage: "Use: pet | pet on | pet off | pet status",
         searchUsage: "Usage: grep <term> (or find <term>)",
         searchHeader: "Results for: {{query}}",
         searchNoResults: "No results found.",
@@ -639,9 +781,10 @@ import {
     ensureWindowVisible(win) {
       if (!win) return;
       const padding = 8;
-      const taskbar = 40;
+      const viewportHeight = getViewportHeight();
+      const taskbar = getTaskbarHeight();
       const maxWidth = Math.max(200, window.innerWidth - padding * 2);
-      const maxHeight = Math.max(160, window.innerHeight - taskbar - padding * 2);
+      const maxHeight = Math.max(160, viewportHeight - taskbar - padding * 2);
 
       const rect = win.getBoundingClientRect();
       let nextWidth = rect.width;
@@ -660,7 +803,7 @@ import {
       const width = updatedRect.width;
       const height = updatedRect.height;
       const maxLeft = window.innerWidth - width - padding;
-      const maxTop = window.innerHeight - taskbar - height - padding;
+      const maxTop = viewportHeight - taskbar - height - padding;
       const nextLeft = Math.min(Math.max(updatedRect.left, padding), maxLeft);
       const nextTop = Math.min(Math.max(updatedRect.top, padding), maxTop);
       win.style.left = `${Math.max(nextLeft, padding)}px`;
@@ -720,7 +863,7 @@ import {
         const minWidth = 260;
         const minHeight = 180;
         const maxWidth = window.innerWidth - 20;
-        const maxHeight = window.innerHeight - 120;
+        const maxHeight = getViewportHeight() - getTaskbarHeight() - 20;
         const nextWidth = Math.min(Math.max(startWidth + dx, minWidth), maxWidth);
         const nextHeight = Math.min(Math.max(startHeight + dy, minHeight), maxHeight);
         win.style.width = `${nextWidth}px`;
@@ -798,6 +941,460 @@ import {
 
   function isMobileViewport() {
     return window.matchMedia && window.matchMedia("(max-width: 700px)").matches;
+  }
+
+  function getViewportHeight() {
+    const viewport = window.visualViewport;
+    if (viewport && Number.isFinite(viewport.height) && viewport.height > 0) {
+      return Math.floor(viewport.height);
+    }
+    return window.innerHeight;
+  }
+
+  function getTaskbarHeight() {
+    const cssHeight = Number.parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue("--taskbar-height"),
+      10
+    );
+    const fallback = Number.isFinite(cssHeight) && cssHeight > 0 ? cssHeight : 40;
+    const measured = dom.taskbar?.offsetHeight || 0;
+    return Math.max(fallback, measured);
+  }
+
+  function getPetCommandJokes(command, isPt) {
+    const key = String(command || "").toLowerCase();
+    const jokesPt = {
+      help: ["Pediu help? Ate gato usa manual quando a caixa vem sem tampa."],
+      lang: ["Trocar idioma? Eu sou bilingue: miau e miau premium."],
+      me: ["Perguntou sobre voce? Eu aprovo esse marketing pessoal felino."],
+      about: ["Sobre voce lido. Spoiler: 100% humano, 200% dev."],
+      social: ["Redes sociais abertas. Hora de socializar sem perder o deploy."],
+      projects: ["Projetos na tela. Portfolio mais organizado que minha caixa de areia."],
+      education: ["Educacao carregada. Diploma de gato: mestre em soneca aplicada."],
+      resume: ["Resume aberto. Curriculo enxuto, impacto bruto."],
+      curriculum: ["Curriculum servido. Esse CV ta com mais garra que arranhador novo."],
+      email: ["Email exibido. Mensagem curta, assunto forte e sem anexar meme... ou quase."],
+      banner: ["Banner no ar. Isso sim e abrir com estilo."],
+      date: ["Data mostrada. O tempo passa, bug fica... ai a gente corrige."],
+      neofetch: ["Neofetch rodou. Setup bonito compila mais rapido no coracao."],
+      cowsay: ["Cowsay? Muuuuito bom. Eu, como gato, respeito o bovino poeta."],
+      sudo: ["Sudo negado. Nem eu tenho root, so ronron."],
+      history: ["Historico aberto. Seus comandos estao com mais lore que serie longa."],
+      ls: ["LS listou tudo. Inventario completo, nivel RPG de terminal."],
+      cd: ["CD trocou pasta. Passeio de diretorio sem coleira."],
+      cat: ["cat leu arquivo. Eu apoio todo comando com nome de gato."],
+      clear: ["Tela limpa. Faxina digital feita com a pata esquerda."],
+      cls: ["CLS passado. Chao brilhando, sem poeira de stack trace."],
+      reload: ["Reload dado. Reiniciei sem perder minhas 7 vidas de processo."],
+      exit: ["Exit? Volta logo, o terminal fica triste sem plateia."],
+      gui: ["GUI ativada. Agora com janelas e zero corrente de ar."],
+      "exit-gui": ["Saiu da GUI. De volta ao raiz, onde o prompt canta."],
+      terminal: ["Terminal aberto. Bem-vindo ao habitat natural dos comandos."],
+      theme: ["Tema trocado. Agora sim: fashion week do terminal."],
+      pet: ["Chamou o pet? Presente! Com trocadilho e pelo virtual."],
+      grep: ["Grep caçando texto. Farejo melhor que bloodhound de regex."],
+      find: ["Find em acao. Missao busca e captura concluida."],
+      algorithms: ["Algoritmos abertos. Complexidade baixa, carisma alto."],
+      cnn: ["CNN carregada. Rede neural ativada, neurio felino curioso."],
+      snake: ["Snake aberto. Cobrinha no palco e eu na torcida."],
+      default: ["Comando executado. Mais um passo rumo ao dominio mundial do prompt."]
+    };
+
+    const jokesEn = {
+      help: ["Need help? Even cats read docs when the box has no lid."],
+      cat: ["`cat` command approved by the cat mascot authority."],
+      grep: ["Pattern hunt started. My whiskers detect regex vibes."],
+      default: ["Command done. One more clean move in terminal land."]
+    };
+
+    if (isPt) {
+      return jokesPt[key] || jokesPt.default;
+    }
+    return jokesEn[key] || jokesEn.default;
+  }
+
+  function getPetErrorJokes(command, isPt) {
+    const key = String(command || "").toLowerCase();
+    const errorsPt = {
+      sudo: ["Sem sudo hoje. Ate eu obedeco as permissoes da casa."],
+      grep: ["Regex rebelde detectada. Respira e fecha os parenteses."],
+      find: ["Nao achei nada. Talvez esteja na pasta do universo paralelo."],
+      cd: ["Esse caminho ta mais perdido que cursor sem foco."],
+      default: ["Deu erro, mas relaxa: bug tambem e uma feature em treinamento."]
+    };
+    const errorsEn = {
+      default: ["That failed, but no panic: every bug is a feature in training."]
+    };
+    if (isPt) {
+      return errorsPt[key] || errorsPt.default;
+    }
+    return errorsEn[key] || errorsEn.default;
+  }
+
+  function getPetGuiIconJokes(command, isPt, phase = "open") {
+    const key = String(command || "").toLowerCase();
+    const selectedPt = {
+      terminal: ["Terminal selecionado. Cheiro de comando no ar."],
+      about: ["Sobre selecionado. Hora do trailer oficial do dev."],
+      social: ["Social selecionado. Cat networking ativado."],
+      projects: ["Projects selecionado. Vitrine de build impecavel."],
+      education: ["Education selecionado. Conhecimento em modo turbo."],
+      algorithms: ["Algorithms selecionado. O(n) de fofura confirmado."],
+      cnn: ["CNN selecionado. Neuronios aquecendo os bigodes."],
+      snake: ["Snake selecionado. Cobrinha na area, foco no reflexo."],
+      resume: ["Resume selecionado. CV pronto para critico exigente."],
+      email: ["Email selecionado. Mensagem chegando em 3, 2, miau."],
+      default: ["Icone selecionado. Eu vi isso com meus olhos ASCII."]
+    };
+    const openedPt = {
+      terminal: ["Abrindo terminal. Casa do prompt e da paz interior."],
+      about: ["Abrindo Sobre. Lore principal desbloqueada."],
+      social: ["Abrindo Social. Link por link, sem cair no limbo."],
+      projects: ["Abrindo Projects. Portifolio no modo chef's kiss."],
+      education: ["Abrindo Education. Certificados sem fake guru."],
+      algorithms: ["Abrindo Algorithms. Complexidade sob controle."],
+      cnn: ["Abrindo CNN Demo. Deep learning, deep ronron."],
+      snake: ["Abrindo Snake. Se perder, culpa da cobrinha, nao minha."],
+      resume: ["Abrindo Resume. Contratavel e compilavel."],
+      email: ["Abrindo Email. Assunto forte e sem textao."],
+      default: ["Icone aberto. GUI trabalhando bonito."]
+    };
+    const selectedEn = {
+      default: ["Icon selected. I saw that with my ASCII eyes."]
+    };
+    const openedEn = {
+      default: ["Icon opened. GUI workflow looks clean."]
+    };
+    const table = isPt
+      ? phase === "select"
+        ? selectedPt
+        : openedPt
+      : phase === "select"
+        ? selectedEn
+        : openedEn;
+    return table[key] || table.default;
+  }
+
+  function getThemeDisplayName(theme, isPt) {
+    const key = String(theme || "").toLowerCase();
+    const namesPt = {
+      dark: "escuro",
+      light: "claro",
+      hacker: "hacker",
+      retro: "retro",
+      secret: "secreto"
+    };
+    const namesEn = {
+      dark: "dark",
+      light: "light",
+      hacker: "hacker",
+      retro: "retro",
+      secret: "secret"
+    };
+    const table = isPt ? namesPt : namesEn;
+    return table[key] || key || (isPt ? "desconhecido" : "unknown");
+  }
+
+  function getPetThemeChangeJokes(theme, isPt) {
+    const key = String(theme || "").toLowerCase();
+    const label = getThemeDisplayName(key, isPt);
+    const jokesPt = {
+      dark: [`Tema ${label} aplicado. Modo ninja felino ativado.`],
+      light: [`Tema ${label} aplicado. Agora ate meu bigode brilha.`],
+      hacker: [`Tema ${label} aplicado. Iniciando ronron criptografado.`],
+      retro: [`Tema ${label} aplicado. Vibe 90s e arranhador vintage.`],
+      secret: [`Tema ${label} aplicado. Nivel lendario desbloqueado.`],
+      default: [`Tema ${label} aplicado. Casaco novo, mesmo mascote.`]
+    };
+    const jokesEn = {
+      dark: [`${label} theme on. Stealth cat mode engaged.`],
+      light: [`${label} theme on. Even my whiskers are brighter.`],
+      hacker: [`${label} theme on. Encrypting purr sequence.`],
+      retro: [`${label} theme on. Vintage vibes, modern claws.`],
+      secret: [`${label} theme on. Legendary mode unlocked.`],
+      default: [`${label} theme on. New style, same cat.`]
+    };
+    const table = isPt ? jokesPt : jokesEn;
+    return table[key] || table.default;
+  }
+
+  function getPetPhrases(type, meta = {}) {
+    const isPt = state.language === "pt";
+    const command = String(meta.command || "").toLowerCase();
+    const commandText = command ? `\`${command}\`` : isPt ? "esse comando" : "that command";
+    const theme = String(meta.theme || state.theme || "").toLowerCase();
+    const phrases = {
+      wake: isPt
+        ? ["Oi! Eu sou seu pet ASCII.", "Ativado. Agora eu reajo a tudo.", "Pronto para acompanhar comandos."]
+        : ["Hi! I'm your ASCII pet.", "Activated. I react to everything now.", "Ready to follow commands."],
+      click: isPt
+        ? ["Clique detectado.", "Ei, senti esse clique.", "To de olho no mouse."]
+        : ["Click detected.", "Hey, I felt that click.", "Mouse movement noticed."],
+      key: isPt
+        ? ["Digitando rapido, hein?", "Input recebido.", "Esse teclado nao para."]
+        : ["Typing fast, huh?", "Input received.", "That keyboard never stops."],
+      idle: isPt
+        ? ["Tudo bem por ai?", "Ainda estou aqui.", "Posso ajudar com outro comando?"]
+        : ["Everything okay there?", "I'm still here.", "Need another command?"],
+      command: isPt
+        ? getPetCommandJokes(command, true)
+        : getPetCommandJokes(command, false),
+      error: isPt
+        ? [`Falhou em ${commandText}.`, ...getPetErrorJokes(command, true)]
+        : [`Failed at ${commandText}.`, ...getPetErrorJokes(command, false)],
+      reload: isPt
+        ? ["Recarregando sessao e mantendo CLI.", "Limpando estado.", "Pronto, terminal renovado."]
+        : ["Reloading session and keeping CLI.", "Clearing state.", "Done, refreshed terminal."],
+      modeGui: isPt
+        ? ["Entrando na GUI.", "Modo grafico ativado.", "GUI aberta."]
+        : ["Entering GUI.", "Graphic mode enabled.", "GUI opened."],
+      modeCli: isPt
+        ? ["Voltando para o terminal.", "CLI ativada.", "Prompt pronto."]
+        : ["Back to terminal.", "CLI enabled.", "Prompt ready."],
+      guiIcon: isPt
+        ? getPetGuiIconJokes(command, true, meta.phase || "open")
+        : getPetGuiIconJokes(command, false, meta.phase || "open"),
+      themeChange: isPt
+        ? getPetThemeChangeJokes(theme, true)
+        : getPetThemeChangeJokes(theme, false)
+    };
+    return phrases[type] || [];
+  }
+
+  function getPetSprite(type) {
+    return PET_ASCII_SPRITE_SHEET[type] || PET_ASCII_SPRITE_SHEET.neutral;
+  }
+
+  function getPetFrame(sprite, frameIndex) {
+    const fallback = { face: "•ᴥ•", body: "/|_|\\", status: "..." };
+    if (!sprite || !Array.isArray(sprite.frames) || sprite.frames.length === 0) return fallback;
+    const safeIndex = Math.max(0, Math.min(frameIndex, sprite.frames.length - 1));
+    return sprite.frames[safeIndex] || fallback;
+  }
+
+  function buildPetAscii(frame, lookDirection = "center") {
+    const earsLine =
+      lookDirection === "left" ? "◀  /\\_/\\    " : lookDirection === "right" ? "   /\\_/\\ ▶" : "   /\\_/\\   ";
+    const faceLine = `  ( ${frame.face} )`;
+    const bodyLine = `   ${frame.body}`;
+    const statusLine = `   ${frame.status}`;
+    return [earsLine, faceLine, bodyLine, statusLine].join("\n");
+  }
+
+  function renderPetAscii() {
+    if (!state.pet.art) return;
+    const sprite = getPetSprite(state.pet.currentType);
+    const frame = getPetFrame(sprite, state.pet.frameIndex);
+    state.pet.art.textContent = buildPetAscii(frame, state.pet.lookDirection);
+  }
+
+  function stopPetAnimation() {
+    if (state.pet.animationTimer) {
+      clearInterval(state.pet.animationTimer);
+      state.pet.animationTimer = null;
+    }
+  }
+
+  function startPetAnimation(type, options = {}) {
+    const sprite = getPetSprite(type);
+    const shouldRestart = options.restart !== false || state.pet.currentType !== type;
+    state.pet.currentType = type;
+    if (shouldRestart) {
+      state.pet.frameIndex = 0;
+    }
+    stopPetAnimation();
+    renderPetAscii();
+
+    const frameCount = sprite.frames?.length || 0;
+    if (frameCount <= 1) return;
+
+    const fps = Number.isFinite(sprite.fps) && sprite.fps > 0 ? sprite.fps : 6;
+    const intervalMs = Math.max(80, Math.round(1000 / fps));
+    state.pet.animationTimer = setInterval(() => {
+      const currentSprite = getPetSprite(state.pet.currentType);
+      const lastFrame = Math.max(0, (currentSprite.frames?.length || 1) - 1);
+
+      if (currentSprite.loop) {
+        state.pet.frameIndex = (state.pet.frameIndex + 1) % (lastFrame + 1);
+      } else if (state.pet.frameIndex < lastFrame) {
+        state.pet.frameIndex += 1;
+      } else {
+        stopPetAnimation();
+        return;
+      }
+      renderPetAscii();
+    }, intervalMs);
+  }
+
+  function resolvePetLookDirection(x) {
+    if (!state.pet.root || typeof x !== "number") return "center";
+    const rect = state.pet.root.getBoundingClientRect();
+    const centerX = rect.left + rect.width * 0.5;
+    const deltaX = x - centerX;
+    if (deltaX < -44) return "left";
+    if (deltaX > 44) return "right";
+    return "center";
+  }
+
+  function clearPetTimers() {
+    if (state.pet.hideBubbleTimer) {
+      clearTimeout(state.pet.hideBubbleTimer);
+      state.pet.hideBubbleTimer = null;
+    }
+    if (state.pet.idleTimer) {
+      clearTimeout(state.pet.idleTimer);
+      state.pet.idleTimer = null;
+    }
+    if (state.pet.reactionTimer) {
+      clearTimeout(state.pet.reactionTimer);
+      state.pet.reactionTimer = null;
+    }
+    stopPetAnimation();
+  }
+
+  function showPetBubble(text, duration = 2000) {
+    if (!state.pet.bubble) return;
+    clearTimeout(state.pet.hideBubbleTimer);
+    state.pet.bubble.textContent = text;
+    state.pet.bubble.classList.add("is-visible");
+    state.pet.hideBubbleTimer = setTimeout(() => {
+      state.pet.bubble.classList.remove("is-visible");
+      state.pet.hideBubbleTimer = null;
+    }, duration);
+  }
+
+  function resetPetIdleTimer() {
+    if (!state.pet.active) return;
+    clearTimeout(state.pet.idleTimer);
+    state.pet.idleTimer = setTimeout(() => {
+      reactPet("idle", { persistMs: 2600 });
+    }, 12000);
+  }
+
+  function schedulePetNeutral(delay = 1500) {
+    clearTimeout(state.pet.reactionTimer);
+    state.pet.reactionTimer = setTimeout(() => {
+      state.pet.reactionTimer = null;
+      startPetAnimation("neutral", { restart: true });
+    }, delay);
+  }
+
+  function getPetReactionClass(type) {
+    if (type === "click") return "is-react-click";
+    if (type === "key") return "is-react-key";
+    if (
+      type === "command" ||
+      type === "reload" ||
+      type === "modeGui" ||
+      type === "modeCli" ||
+      type === "wake" ||
+      type === "guiIcon" ||
+      type === "themeChange"
+    ) {
+      return "is-react-command";
+    }
+    if (type === "error") return "is-react-error";
+    return "";
+  }
+
+  function reactPet(type, options = {}) {
+    if (!state.pet.active || !state.pet.root) return;
+    const messages = getPetPhrases(type, options.meta || {});
+    if (messages.length) {
+      showPetBubble(getRandomItem(messages), options.bubbleDuration || 2000);
+    }
+    state.pet.root.classList.remove("is-react-click", "is-react-key", "is-react-command", "is-react-error");
+    const animationClass = getPetReactionClass(type);
+    if (animationClass) {
+      state.pet.root.classList.add(animationClass);
+      setTimeout(() => {
+        state.pet.root?.classList.remove(animationClass);
+      }, 260);
+    }
+    startPetAnimation(type, { restart: true });
+    schedulePetNeutral(options.persistMs || 1600);
+    resetPetIdleTimer();
+  }
+
+  function ensurePetMascot() {
+    if (state.pet.root) return;
+    const host = document.getElementById("app") || document.body;
+    const root = document.createElement("div");
+    root.id = "pet-mascot";
+    root.className = "hidden";
+    root.setAttribute("aria-hidden", "true");
+
+    const bubble = document.createElement("div");
+    bubble.className = "pet-bubble";
+    bubble.textContent = "";
+
+    const art = document.createElement("pre");
+    art.className = "pet-ascii";
+    art.setAttribute("aria-hidden", "true");
+
+    root.append(bubble, art);
+    host.append(root);
+
+    state.pet.root = root;
+    state.pet.bubble = bubble;
+    state.pet.art = art;
+    state.pet.currentType = "neutral";
+    state.pet.frameIndex = 0;
+    renderPetAscii();
+  }
+
+  function setPetActive(active) {
+    ensurePetMascot();
+    const enabled = Boolean(active);
+    if (enabled === state.pet.active) return false;
+    state.pet.active = enabled;
+    clearPetTimers();
+
+    if (!state.pet.root) return true;
+    if (enabled) {
+      state.pet.root.classList.remove("hidden");
+      state.pet.root.classList.add("is-active");
+      state.pet.root.setAttribute("aria-hidden", "false");
+      state.pet.lookDirection = resolvePetLookDirection(state.pet.lastPointerX);
+      startPetAnimation("neutral", { restart: true });
+      reactPet("wake", { persistMs: 1800 });
+    } else {
+      state.pet.root.classList.add("hidden");
+      state.pet.root.classList.remove("is-active", "is-react-click", "is-react-key", "is-react-command", "is-react-error");
+      state.pet.root.setAttribute("aria-hidden", "true");
+      if (state.pet.bubble) {
+        state.pet.bubble.classList.remove("is-visible");
+      }
+      state.pet.currentType = "neutral";
+      state.pet.frameIndex = 0;
+      renderPetAscii();
+    }
+    return true;
+  }
+
+  function handlePetPointerMove(event) {
+    if (!state.pet.active) return;
+    if (typeof event.clientX !== "number" || typeof event.clientY !== "number") return;
+    state.pet.lastPointerX = event.clientX;
+    state.pet.lastPointerY = event.clientY;
+    const nextDirection = resolvePetLookDirection(event.clientX);
+    if (nextDirection !== state.pet.lookDirection) {
+      state.pet.lookDirection = nextDirection;
+      renderPetAscii();
+    }
+    resetPetIdleTimer();
+  }
+
+  function handlePetClick() {
+    reactPet("click", { persistMs: 1200 });
+  }
+
+  function handlePetKeydown(event) {
+    if (!state.pet.active) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.length === 1 || event.key === "Enter" || event.key === "Backspace") {
+      reactPet("key", { persistMs: 1100 });
+    }
   }
 
   function getBannerLines() {
@@ -1039,6 +1636,7 @@ import {
     dom.commandList = document.getElementById("command-list");
     dom.gui = document.getElementById("gui");
     dom.desktop = document.getElementById("desktop");
+    dom.taskbar = document.getElementById("taskbar");
     dom.startButton = document.getElementById("start-button");
     dom.startMenu = document.getElementById("start-menu");
     dom.taskButtons = document.getElementById("task-buttons");
@@ -1060,7 +1658,15 @@ import {
     dom.commandMenu.addEventListener("click", handleCommandMenuClick);
     dom.commandSearch.addEventListener("input", handleCommandSearch);
     dom.commandSearch.addEventListener("keydown", handleCommandSearchKeydown);
-    window.addEventListener("resize", () => windowManager.ensureAllVisible());
+    document.addEventListener("pointermove", handlePetPointerMove, { passive: true });
+    document.addEventListener("click", handlePetClick, true);
+    document.addEventListener("keydown", handlePetKeydown, true);
+    const syncWindowLayout = () => windowManager.ensureAllVisible();
+    window.addEventListener("resize", syncWindowLayout);
+    window.addEventListener("orientationchange", syncWindowLayout);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncWindowLayout);
+    }
 
   }
 
@@ -1151,7 +1757,22 @@ import {
     const user = meta.user || "Matheus";
     const machine = meta.machine || "saragoca";
     const path = formatPromptPath();
-    dom.prompt.textContent = `${user}@${machine}:${path}$`;
+    if (!dom.prompt) return;
+    dom.prompt.textContent = "";
+
+    const userHost = document.createElement("span");
+    userHost.className = "prompt-userhost";
+    userHost.textContent = `${user}@${machine}:`;
+
+    const pathEl = document.createElement("span");
+    pathEl.className = "prompt-path";
+    pathEl.textContent = path;
+
+    const symbol = document.createElement("span");
+    symbol.className = "prompt-symbol";
+    symbol.textContent = "$";
+
+    dom.prompt.append(userHost, pathEl, symbol);
   }
 
   function initTerminal() {
@@ -1166,7 +1787,37 @@ import {
     dom.terminalInput.focus();
   }
 
-  function handleTerminalKeydown(event) {
+  function setCommandBusy(busy) {
+    state.commandBusy = Boolean(busy);
+    if (dom.terminalInput) {
+      dom.terminalInput.readOnly = state.commandBusy;
+    }
+  }
+
+  function enqueueCliCommand(command, origin = "cli") {
+    if (!command) return Promise.resolve();
+
+    const run = async () => {
+      if (!state.sessionActive) return;
+      state.history.push(command);
+      state.historyIndex = -1;
+      appendCommandEcho(command);
+      setCommandBusy(true);
+      try {
+        await executeCommand(command, origin);
+      } finally {
+        setCommandBusy(false);
+        if (state.mode === "cli") {
+          focusInput();
+        }
+      }
+    };
+
+    state.commandQueue = state.commandQueue.then(run, run);
+    return state.commandQueue;
+  }
+
+  async function handleTerminalKeydown(event) {
     if (!state.sessionActive) return;
 
     if (event.ctrlKey && event.key.toLowerCase() === "l") {
@@ -1196,13 +1847,11 @@ import {
 
     if (event.key === "Enter") {
       event.preventDefault();
+      if (state.commandBusy) return;
       const input = dom.terminalInput.value.trim();
       if (!input) return;
       dom.terminalInput.value = "";
-      state.history.push(input);
-      state.historyIndex = -1;
-      appendCommandEcho(input);
-      executeCommand(input, "cli");
+      await enqueueCliCommand(input, "cli");
     }
 
     if (event.key === "ArrowUp") {
@@ -1355,13 +2004,10 @@ import {
     runCommandFromMenu(item.dataset.command);
   }
 
-  function runCommandFromMenu(command) {
+  async function runCommandFromMenu(command) {
     closeCommandMenu();
-    if (!command || !state.sessionActive) return;
-    state.history.push(command);
-    state.historyIndex = -1;
-    appendCommandEcho(command);
-    executeCommand(command, "cli");
+    if (!command || !state.sessionActive || state.commandBusy) return;
+    await enqueueCliCommand(command, "cli");
   }
 
   function handleClickSound(event) {
@@ -1439,24 +2085,38 @@ import {
     scrollToBottom();
   }
 
-  function executeCommand(rawInput, origin) {
+  async function executeCommand(rawInput, origin) {
     const { command, args } = parseInput(rawInput);
     if (!command) return;
     const result = getCommandResult(command, args);
 
     if (result.error) {
       appendOutputLine(result.error, "error");
+      reactPet("error", { meta: { command }, persistMs: 1800 });
       if (result.lines && result.lines.length > 0) {
-        appendOutputLines(result.lines, { typing: shouldTypeLines(result.lines), speed: FAST_TYPING_SPEED });
+        await appendOutputLines(result.lines, {
+          typing: shouldTypeLines(result.lines),
+          speed: FAST_TYPING_SPEED
+        });
       }
       return;
     }
 
     if (result.lines && result.lines.length > 0) {
-      appendOutputLines(result.lines, { typing: shouldTypeLines(result.lines), speed: FAST_TYPING_SPEED });
+      await appendOutputLines(result.lines, {
+        typing: shouldTypeLines(result.lines),
+        speed: FAST_TYPING_SPEED
+      });
+    }
+
+    if (command !== "theme" && !["reload", "gui", "terminal"].includes(result.action || "")) {
+      reactPet("command", { meta: { command }, persistMs: 1300 });
     }
 
     if (result.action) {
+      if (result.action === "reload") {
+        reactPet("reload", { persistMs: 1600 });
+      }
       applyAction(result.action, origin);
     }
   }
@@ -1526,6 +2186,8 @@ import {
         return handleSearchCommand(args);
       case "theme":
         return handleThemeCommand(args);
+      case "pet":
+        return handlePetCommand(args);
       case "algorithms":
       case "cnn":
       case "snake":
@@ -2297,13 +2959,55 @@ import {
     return { lines: [formatTemplate(messages.themeChanged, { theme: choice })] };
   }
 
+  function handlePetCommand(args) {
+    const messages = getMessages();
+    const action = String(args?.[0] || "").trim().toLowerCase();
+    const isPt = state.language === "pt";
+
+    if (!action || action === "on") {
+      if (state.pet.active) {
+        return { lines: [messages.petAlreadyActive || "Mascote ja ativo."] };
+      }
+      setPetActive(true);
+      return { lines: [messages.petActivated || "Mascote ativado."] };
+    }
+
+    if (action === "off" || action === "hide") {
+      if (!state.pet.active) {
+        return { lines: [messages.petAlreadyInactive || "Mascote ja oculto."] };
+      }
+      setPetActive(false);
+      return { lines: [messages.petDeactivated || "Mascote ocultado."] };
+    }
+
+    if (action === "status") {
+      return {
+        lines: [state.pet.active ? messages.petStatusOn || "Mascote: ativo" : messages.petStatusOff || "Mascote: oculto"]
+      };
+    }
+
+    if (action === "sheet" || action === "sprites") {
+      const header = isPt ? "Sprite sheet do gatinho:" : "Kitten sprite sheet:";
+      const lines = [header];
+      Object.entries(PET_ASCII_SPRITE_SHEET).forEach(([name, sprite]) => {
+        const frames = Array.isArray(sprite.frames) ? sprite.frames.length : 0;
+        const fps = Number.isFinite(sprite.fps) ? sprite.fps : 0;
+        const loop = sprite.loop ? "on" : "off";
+        lines.push(`- ${name}: frames=${frames}, fps=${fps}, loop=${loop}`);
+      });
+      return { lines };
+    }
+
+    return { lines: [isPt ? "Use: pet | pet on | pet off | pet status | pet sheet" : "Use: pet | pet on | pet off | pet status | pet sheet"] };
+  }
+
   function applyAction(action, origin) {
     switch (action) {
       case "cls":
         clearOutput();
         break;
       case "reload":
-        resetState();
+        resetState("cli");
         initTerminal();
         break;
       case "exit":
@@ -2326,8 +3030,9 @@ import {
     }
   }
 
-  function resetState() {
+  function resetState(nextMode = INITIAL_MODE) {
     state.sessionActive = true;
+    state.commandQueue = Promise.resolve();
     state.history = [];
     state.historyIndex = -1;
     state.me.active = false;
@@ -2335,11 +3040,13 @@ import {
     state.me.lastProject = null;
     state.shell.cwd = "~";
     dom.terminalInput.removeAttribute("disabled");
+    setCommandBusy(false);
     closeCommandMenu();
-    setMode(INITIAL_MODE);
+    setMode(nextMode);
   }
 
   function setMode(mode) {
+    const previousMode = state.mode;
     state.mode = mode;
     if (mode === "gui") {
       hideMode(dom.terminal);
@@ -2360,6 +3067,9 @@ import {
     const ui = getUi();
     const modeLabel = ui.modeLabels?.[mode] || mode;
     announceToScreenReader(formatTemplate(messages.a11yMode, { mode: modeLabel }));
+    if (state.pet.active && previousMode !== mode) {
+      reactPet(mode === "gui" ? "modeGui" : "modeCli", { persistMs: 1600 });
+    }
   }
 
   function toggleStartMenu(event) {
@@ -2397,6 +3107,7 @@ import {
     if (!item) return;
     const command = item.dataset.command;
     dom.startMenu.classList.add("hidden");
+    reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
 
     if (command === "terminal") {
       applyAction("terminal", "gui");
@@ -2442,12 +3153,15 @@ import {
       return;
     }
     selectDesktopIcon(icon);
+    const command = icon.dataset.command;
+    reactPet("guiIcon", { meta: { command, phase: "select" }, persistMs: 1100 });
   }
 
   function handleDesktopDblClick(event) {
     const icon = event.target.closest(".desktop-icon");
     if (!icon) return;
     const command = icon.dataset.command;
+    reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
     openDesktopCommand(command);
   }
 
@@ -2456,7 +3170,9 @@ import {
     if (!icon) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      openDesktopCommand(icon.dataset.command);
+      const command = icon.dataset.command;
+      reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
+      openDesktopCommand(command);
     }
   }
 
@@ -2500,13 +3216,14 @@ import {
   }
 
   function appendOutputLines(lines, options = {}) {
-    if (!lines || lines.length === 0) return;
+    if (!lines || lines.length === 0) return Promise.resolve();
     const shouldType = options.typing === true || (state.options.typing && options.typing !== false);
     if (shouldType) {
       const speed = typeof options.speed === "number" ? options.speed : state.options.typingSpeed;
-      typeLines(lines, speed);
+      return typeLines(lines, speed);
     } else {
       lines.forEach((line) => appendOutputLine(line));
+      return Promise.resolve();
     }
   }
 
@@ -2743,6 +3460,7 @@ import {
     const themeClass = normalized === "secret" ? "theme-secret" : `theme-${normalized}`;
     const allowed = normalized === "secret" ? state.secretUnlocked : THEMES.includes(normalized);
     if (!allowed) return false;
+    const previousTheme = state.theme;
     document.body.classList.remove(
       "theme-dark",
       "theme-light",
@@ -2754,6 +3472,9 @@ import {
     state.theme = normalized;
     updateThemeColor(normalized);
     updateMatrixState();
+    if (state.pet.active && previousTheme !== normalized) {
+      reactPet("themeChange", { meta: { theme: normalized }, persistMs: 1700 });
+    }
     return true;
   }
 
@@ -4266,6 +4987,7 @@ import {
 
   async function init() {
     cacheDom();
+    ensurePetMascot();
     bindEvents();
     initCustomCursor();
     state.language = resolveInitialLanguage();

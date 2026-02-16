@@ -1,10 +1,10 @@
 :root {
-  --terminal-bg: #0b0d10;
-  --terminal-bg-accent: #111826;
-  --terminal-fg: #f2c94c;
-  --terminal-accent: #38c172;
-  --terminal-error: #ff5f56;
-  --terminal-dim: #8fa3b6;
+  --terminal-bg: #300a24;
+  --terminal-bg-accent: #2c001e;
+  --terminal-fg: #eeeeec;
+  --terminal-accent: #8ae234;
+  --terminal-error: #ef2929;
+  --terminal-dim: #adaca8;
   --gui-bg: #008080;
   --gui-bg-light: #008080;
   --gui-border-light: #ffffff;
@@ -18,15 +18,26 @@
   --gui-text: #000000;
   --gui-taskbar: #c0c0c0;
   --gui-start: #c0c0c0;
+  --taskbar-height: 40px;
+  --pet-bubble-border: rgba(138, 226, 52, 0.45);
+  --pet-bubble-bg: rgba(8, 10, 16, 0.92);
+  --pet-shell-border: rgba(255, 255, 255, 0.2);
+  --pet-shell-bg-start: rgba(44, 0, 30, 0.92);
+  --pet-shell-bg-end: rgba(18, 4, 24, 0.94);
 }
 
 body.theme-dark {
-  --terminal-bg: #0b0d10;
-  --terminal-bg-accent: #111826;
-  --terminal-fg: #f2c94c;
-  --terminal-accent: #38c172;
-  --terminal-error: #ff5f56;
-  --terminal-dim: #8fa3b6;
+  --terminal-bg: #300a24;
+  --terminal-bg-accent: #2c001e;
+  --terminal-fg: #eeeeec;
+  --terminal-accent: #8ae234;
+  --terminal-error: #ef2929;
+  --terminal-dim: #adaca8;
+  --pet-bubble-border: rgba(138, 226, 52, 0.45);
+  --pet-bubble-bg: rgba(8, 10, 16, 0.92);
+  --pet-shell-border: rgba(255, 255, 255, 0.2);
+  --pet-shell-bg-start: rgba(44, 0, 30, 0.92);
+  --pet-shell-bg-end: rgba(18, 4, 24, 0.94);
 }
 
 body.theme-light {
@@ -36,6 +47,11 @@ body.theme-light {
   --terminal-accent: #1a7f37;
   --terminal-error: #b00020;
   --terminal-dim: #516173;
+  --pet-bubble-border: rgba(26, 127, 55, 0.45);
+  --pet-bubble-bg: rgba(255, 255, 255, 0.94);
+  --pet-shell-border: rgba(30, 36, 48, 0.2);
+  --pet-shell-bg-start: rgba(255, 255, 255, 0.96);
+  --pet-shell-bg-end: rgba(235, 240, 246, 0.96);
 }
 
 body.theme-hacker {
@@ -45,6 +61,11 @@ body.theme-hacker {
   --terminal-accent: #2fff80;
   --terminal-error: #ff6464;
   --terminal-dim: #1e8f5b;
+  --pet-bubble-border: rgba(47, 255, 128, 0.46);
+  --pet-bubble-bg: rgba(1, 18, 10, 0.94);
+  --pet-shell-border: rgba(47, 255, 128, 0.35);
+  --pet-shell-bg-start: rgba(2, 30, 16, 0.95);
+  --pet-shell-bg-end: rgba(1, 14, 9, 0.95);
 }
 
 body.theme-retro {
@@ -54,6 +75,11 @@ body.theme-retro {
   --terminal-accent: #ff9f1c;
   --terminal-error: #ff5f56;
   --terminal-dim: #c97a3c;
+  --pet-bubble-border: rgba(255, 159, 28, 0.5);
+  --pet-bubble-bg: rgba(41, 19, 12, 0.94);
+  --pet-shell-border: rgba(255, 204, 102, 0.3);
+  --pet-shell-bg-start: rgba(56, 25, 14, 0.95);
+  --pet-shell-bg-end: rgba(32, 14, 8, 0.95);
 }
 
 body.theme-secret {
@@ -63,6 +89,11 @@ body.theme-secret {
   --terminal-accent: #ff5cf0;
   --terminal-error: #ff6b6b;
   --terminal-dim: #5d6bff;
+  --pet-bubble-border: rgba(102, 242, 255, 0.5);
+  --pet-bubble-bg: rgba(15, 10, 30, 0.94);
+  --pet-shell-border: rgba(255, 92, 240, 0.35);
+  --pet-shell-bg-start: rgba(32, 16, 54, 0.95);
+  --pet-shell-bg-end: rgba(12, 7, 28, 0.96);
 }
 
 * {
@@ -78,7 +109,7 @@ body {
 }
 
 body {
-  font-family: "Fira Code", "Cascadia Code", "Consolas", monospace;
+  font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Cascadia Mono", "Consolas", monospace;
   color: var(--terminal-fg);
 }
 
@@ -132,9 +163,89 @@ body.has-custom-cursor textarea {
   opacity: 0;
 }
 
+#pet-mascot {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--taskbar-height) + 14px + env(safe-area-inset-bottom, 0px));
+  min-width: 144px;
+  z-index: 2600;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.55));
+  transition: transform 140ms ease;
+}
+
+#pet-mascot.is-active {
+  animation: petFloat 2.8s ease-in-out infinite;
+}
+
+#pet-mascot.is-react-click {
+  transform: translateY(-2px) scale(1.05);
+}
+
+#pet-mascot.is-react-key {
+  transform: translateY(1px) scale(0.98);
+}
+
+#pet-mascot.is-react-command {
+  transform: translateY(-1px) scale(1.02);
+}
+
+#pet-mascot.is-react-error {
+  transform: translateY(1px) scale(0.97);
+}
+
+.pet-bubble {
+  margin: 0 0 6px auto;
+  max-width: 220px;
+  width: max-content;
+  padding: 6px 9px;
+  border: 1px solid var(--pet-bubble-border);
+  background: var(--pet-bubble-bg);
+  color: var(--terminal-fg);
+  font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Cascadia Mono", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.pet-bubble.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pet-ascii {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--pet-shell-border);
+  background: linear-gradient(180deg, var(--pet-shell-bg-start), var(--pet-shell-bg-end));
+  color: var(--terminal-accent);
+  font-size: 16px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  white-space: pre;
+  font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Cascadia Mono", "Consolas", monospace;
+  border-radius: 4px;
+}
+
+@keyframes petFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 #app {
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  min-height: 100vh;
+  width: 100%;
   overflow: hidden;
   position: relative;
 }
@@ -176,9 +287,17 @@ body.has-custom-cursor textarea {
   flex-direction: column;
   padding: 24px;
   gap: 16px;
-  background: radial-gradient(circle at top, var(--terminal-bg-accent) 0%, var(--terminal-bg) 70%);
+  background: var(--terminal-bg);
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   position: relative;
+}
+
+#terminal::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 #terminal-output {
@@ -194,7 +313,7 @@ body.has-custom-cursor textarea {
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--terminal-fg);
-  animation: slideIn 0.2s ease-out;
+  animation: none;
 }
 
 .terminal-line.error {
@@ -206,7 +325,11 @@ body.has-custom-cursor textarea {
 }
 
 .terminal-line.command-echo {
-  color: var(--terminal-dim);
+  color: var(--terminal-fg);
+}
+
+.terminal-line.command-echo > span:first-child {
+  color: var(--terminal-accent);
 }
 
 @keyframes slideIn {
@@ -225,17 +348,33 @@ body.has-custom-cursor textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
   position: relative;
   z-index: 1;
+  border-top: 1px solid rgba(173, 172, 168, 0.26);
+  padding-top: 8px;
 }
 
 #prompt {
   color: var(--terminal-accent);
-  font-weight: 600;
+  font-weight: 400;
+  max-width: 52%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#prompt .prompt-path {
+  color: #729fcf;
+}
+
+#prompt .prompt-symbol {
+  color: var(--terminal-fg);
 }
 
 #terminal-input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   color: var(--terminal-fg);
@@ -338,39 +477,39 @@ button,
 }
 
 .ansi-black {
-  color: #0b0d10;
+  color: #2e3436;
 }
 
 .ansi-red {
-  color: #ff5f56;
+  color: #cc0000;
 }
 
 .ansi-green {
-  color: #38c172;
+  color: #4e9a06;
 }
 
 .ansi-yellow {
-  color: #f2c94c;
+  color: #c4a000;
 }
 
 .ansi-blue {
-  color: #4aa3ff;
+  color: #3465a4;
 }
 
 .ansi-magenta {
-  color: #d77bd6;
+  color: #75507b;
 }
 
 .ansi-cyan {
-  color: #5fd7ff;
+  color: #06989a;
 }
 
 .ansi-white {
-  color: #f2f2f2;
+  color: #d3d7cf;
 }
 
 .ansi-bright-black {
-  color: #9aa5b1;
+  color: #555753;
 }
 
 .link {
@@ -465,7 +604,7 @@ button,
 
 #desktop {
   position: absolute;
-  inset: 0 0 40px 0;
+  inset: 0 0 calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px)) 0;
   background: var(--gui-bg);
 }
 
@@ -587,14 +726,14 @@ button,
   bottom: 0;
   left: 0;
   right: 0;
-  height: 40px;
+  height: calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px));
   background: var(--gui-taskbar);
   border-top: 2px solid var(--gui-border-light);
   box-shadow: inset 0 1px 0 #ffffff;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 8px;
+  padding: 0 8px env(safe-area-inset-bottom, 0px);
 }
 
 #start-button {
@@ -662,7 +801,7 @@ button,
 #start-menu {
   position: absolute;
   left: 8px;
-  bottom: 40px;
+  bottom: calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px));
   width: 240px;
   background: var(--gui-taskbar);
   border: 2px solid var(--gui-border-light);
@@ -1478,16 +1617,24 @@ button,
 }
 
 @media (max-width: 700px) {
+  :root {
+    --taskbar-height: 48px;
+  }
+
   #terminal {
-    padding: 14px 14px 72px;
+    padding: 14px 14px calc(72px + env(safe-area-inset-bottom, 0px));
     font-size: 14px;
   }
 
+  #terminal-output {
+    padding-bottom: 0;
+  }
+
   #terminal-input-line {
-    position: sticky;
-    bottom: 0;
-    padding: 10px 0 6px;
-    background: linear-gradient(180deg, rgba(11, 13, 16, 0) 0%, var(--terminal-bg) 40%);
+    position: relative;
+    bottom: auto;
+    padding: 10px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--terminal-bg);
   }
 
   #terminal-input {
@@ -1496,13 +1643,13 @@ button,
 
   .window {
     width: 92vw;
-    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 120px - env(safe-area-inset-bottom, 0px));
     left: 4vw !important;
     top: 56px !important;
   }
 
   .window-content {
-    max-height: calc(100vh - 200px);
+    max-height: calc(100dvh - 200px - env(safe-area-inset-bottom, 0px));
   }
 
   .window-resizer {
@@ -1523,7 +1670,7 @@ button,
   }
 
   #desktop {
-    inset: 0 0 48px 0;
+    inset: 0 0 calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px)) 0;
   }
 
   #desktop-icons {
@@ -1545,14 +1692,6 @@ button,
     font-size: 13px;
   }
 
-  #taskbar {
-    height: 48px;
-  }
-
-  #start-menu {
-    bottom: 48px;
-  }
-
   #start-button {
     height: 32px;
   }
@@ -1563,5 +1702,37 @@ button,
 
   #command-list {
     max-height: 200px;
+  }
+
+  #pet-mascot {
+    right: 8px;
+    min-width: 118px;
+  }
+
+  .pet-ascii {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+
+  .pet-bubble {
+    max-width: 176px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .taskbar-availability {
+    display: none;
+  }
+
+  #taskbar {
+    gap: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  #taskbar-clock {
+    font-size: 11px;
+    padding: 2px 4px;
   }
 }
