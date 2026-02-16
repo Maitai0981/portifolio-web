@@ -102,6 +102,47 @@ import {
     "terminal"
   ];
   const THEMES = ["dark", "light", "hacker", "retro"];
+  const THEME_CLASSES = ["theme-dark", "theme-light", "theme-hacker", "theme-retro", "theme-secret"];
+  const THEME_COLOR_MAP = Object.freeze({
+    dark: "#0b0d10",
+    light: "#f5f6f8",
+    hacker: "#020b06",
+    retro: "#190f0a",
+    secret: "#05030f"
+  });
+  const PET_TIMING = Object.freeze({
+    bubbleMs: 2000,
+    idleMs: 12000,
+    neutralMs: 1500,
+    defaultPersistMs: 1600,
+    animationClassMs: 260,
+    pointerDeadzonePx: 44
+  });
+  const PET_PERSIST_MS = Object.freeze({
+    wake: 1800,
+    click: 1200,
+    key: 1100,
+    command: 1300,
+    error: 1800,
+    reload: 1600,
+    modeSwitch: 1600,
+    guiOpen: 1300,
+    guiSelect: 1100,
+    themeChange: 1700,
+    idle: 2600
+  });
+  const PET_REACTION_CLASS_BY_TYPE = Object.freeze({
+    click: "is-react-click",
+    key: "is-react-key",
+    command: "is-react-command",
+    reload: "is-react-command",
+    modeGui: "is-react-command",
+    modeCli: "is-react-command",
+    wake: "is-react-command",
+    guiIcon: "is-react-command",
+    themeChange: "is-react-command",
+    error: "is-react-error"
+  });
   const COMMANDS = [
     "help",
     "lang",
@@ -1231,8 +1272,8 @@ import {
     const rect = state.pet.root.getBoundingClientRect();
     const centerX = rect.left + rect.width * 0.5;
     const deltaX = x - centerX;
-    if (deltaX < -44) return "left";
-    if (deltaX > 44) return "right";
+    if (deltaX < -PET_TIMING.pointerDeadzonePx) return "left";
+    if (deltaX > PET_TIMING.pointerDeadzonePx) return "right";
     return "center";
   }
 
@@ -1252,7 +1293,7 @@ import {
     stopPetAnimation();
   }
 
-  function showPetBubble(text, duration = 2000) {
+  function showPetBubble(text, duration = PET_TIMING.bubbleMs) {
     if (!state.pet.bubble) return;
     clearTimeout(state.pet.hideBubbleTimer);
     state.pet.bubble.textContent = text;
@@ -1267,11 +1308,11 @@ import {
     if (!state.pet.active) return;
     clearTimeout(state.pet.idleTimer);
     state.pet.idleTimer = setTimeout(() => {
-      reactPet("idle", { persistMs: 2600 });
-    }, 12000);
+      reactPet("idle", { persistMs: PET_PERSIST_MS.idle });
+    }, PET_TIMING.idleMs);
   }
 
-  function schedulePetNeutral(delay = 1500) {
+  function schedulePetNeutral(delay = PET_TIMING.neutralMs) {
     clearTimeout(state.pet.reactionTimer);
     state.pet.reactionTimer = setTimeout(() => {
       state.pet.reactionTimer = null;
@@ -1280,28 +1321,14 @@ import {
   }
 
   function getPetReactionClass(type) {
-    if (type === "click") return "is-react-click";
-    if (type === "key") return "is-react-key";
-    if (
-      type === "command" ||
-      type === "reload" ||
-      type === "modeGui" ||
-      type === "modeCli" ||
-      type === "wake" ||
-      type === "guiIcon" ||
-      type === "themeChange"
-    ) {
-      return "is-react-command";
-    }
-    if (type === "error") return "is-react-error";
-    return "";
+    return PET_REACTION_CLASS_BY_TYPE[type] || "";
   }
 
   function reactPet(type, options = {}) {
     if (!state.pet.active || !state.pet.root) return;
     const messages = getPetPhrases(type, options.meta || {});
     if (messages.length) {
-      showPetBubble(getRandomItem(messages), options.bubbleDuration || 2000);
+      showPetBubble(getRandomItem(messages), options.bubbleDuration || PET_TIMING.bubbleMs);
     }
     state.pet.root.classList.remove("is-react-click", "is-react-key", "is-react-command", "is-react-error");
     const animationClass = getPetReactionClass(type);
@@ -1309,10 +1336,10 @@ import {
       state.pet.root.classList.add(animationClass);
       setTimeout(() => {
         state.pet.root?.classList.remove(animationClass);
-      }, 260);
+      }, PET_TIMING.animationClassMs);
     }
     startPetAnimation(type, { restart: true });
-    schedulePetNeutral(options.persistMs || 1600);
+    schedulePetNeutral(options.persistMs || PET_TIMING.defaultPersistMs);
     resetPetIdleTimer();
   }
 
@@ -1357,7 +1384,7 @@ import {
       state.pet.root.setAttribute("aria-hidden", "false");
       state.pet.lookDirection = resolvePetLookDirection(state.pet.lastPointerX);
       startPetAnimation("neutral", { restart: true });
-      reactPet("wake", { persistMs: 1800 });
+      reactPet("wake", { persistMs: PET_PERSIST_MS.wake });
     } else {
       state.pet.root.classList.add("hidden");
       state.pet.root.classList.remove("is-active", "is-react-click", "is-react-key", "is-react-command", "is-react-error");
@@ -1386,14 +1413,14 @@ import {
   }
 
   function handlePetClick() {
-    reactPet("click", { persistMs: 1200 });
+    reactPet("click", { persistMs: PET_PERSIST_MS.click });
   }
 
   function handlePetKeydown(event) {
     if (!state.pet.active) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.key.length === 1 || event.key === "Enter" || event.key === "Backspace") {
-      reactPet("key", { persistMs: 1100 });
+      reactPet("key", { persistMs: PET_PERSIST_MS.key });
     }
   }
 
@@ -2092,7 +2119,7 @@ import {
 
     if (result.error) {
       appendOutputLine(result.error, "error");
-      reactPet("error", { meta: { command }, persistMs: 1800 });
+      reactPet("error", { meta: { command }, persistMs: PET_PERSIST_MS.error });
       if (result.lines && result.lines.length > 0) {
         await appendOutputLines(result.lines, {
           typing: shouldTypeLines(result.lines),
@@ -2110,12 +2137,12 @@ import {
     }
 
     if (command !== "theme" && !["reload", "gui", "terminal"].includes(result.action || "")) {
-      reactPet("command", { meta: { command }, persistMs: 1300 });
+      reactPet("command", { meta: { command }, persistMs: PET_PERSIST_MS.command });
     }
 
     if (result.action) {
       if (result.action === "reload") {
-        reactPet("reload", { persistMs: 1600 });
+        reactPet("reload", { persistMs: PET_PERSIST_MS.reload });
       }
       applyAction(result.action, origin);
     }
@@ -3068,7 +3095,7 @@ import {
     const modeLabel = ui.modeLabels?.[mode] || mode;
     announceToScreenReader(formatTemplate(messages.a11yMode, { mode: modeLabel }));
     if (state.pet.active && previousMode !== mode) {
-      reactPet(mode === "gui" ? "modeGui" : "modeCli", { persistMs: 1600 });
+      reactPet(mode === "gui" ? "modeGui" : "modeCli", { persistMs: PET_PERSIST_MS.modeSwitch });
     }
   }
 
@@ -3102,21 +3129,28 @@ import {
     }, TRANSITION_MS);
   }
 
+  function reactPetForGuiIcon(command, phase = "open") {
+    const persistMs = phase === "select" ? PET_PERSIST_MS.guiSelect : PET_PERSIST_MS.guiOpen;
+    reactPet("guiIcon", { meta: { command, phase }, persistMs });
+  }
+
+  function runGuiCommand(command, origin = "gui") {
+    if (command === "terminal") {
+      applyAction("terminal", origin);
+      return;
+    }
+    if (GUI_WINDOW_COMMANDS.includes(command)) {
+      openGuiWindow(command);
+    }
+  }
+
   function handleStartMenuClick(event) {
     const item = event.target.closest("li");
     if (!item) return;
     const command = item.dataset.command;
     dom.startMenu.classList.add("hidden");
-    reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
-
-    if (command === "terminal") {
-      applyAction("terminal", "gui");
-      return;
-    }
-
-    if (GUI_WINDOW_COMMANDS.includes(command)) {
-      openGuiWindow(command);
-    }
+    reactPetForGuiIcon(command, "open");
+    runGuiCommand(command, "gui");
   }
 
   function selectDesktopIcon(icon) {
@@ -3137,13 +3171,7 @@ import {
   }
 
   function openDesktopCommand(command) {
-    if (command === "terminal") {
-      applyAction("terminal", "gui");
-      return;
-    }
-    if (GUI_WINDOW_COMMANDS.includes(command)) {
-      openGuiWindow(command);
-    }
+    runGuiCommand(command, "gui");
   }
 
   function handleDesktopClick(event) {
@@ -3154,14 +3182,14 @@ import {
     }
     selectDesktopIcon(icon);
     const command = icon.dataset.command;
-    reactPet("guiIcon", { meta: { command, phase: "select" }, persistMs: 1100 });
+    reactPetForGuiIcon(command, "select");
   }
 
   function handleDesktopDblClick(event) {
     const icon = event.target.closest(".desktop-icon");
     if (!icon) return;
     const command = icon.dataset.command;
-    reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
+    reactPetForGuiIcon(command, "open");
     openDesktopCommand(command);
   }
 
@@ -3171,7 +3199,7 @@ import {
     if (event.key === "Enter") {
       event.preventDefault();
       const command = icon.dataset.command;
-      reactPet("guiIcon", { meta: { command, phase: "open" }, persistMs: 1300 });
+      reactPetForGuiIcon(command, "open");
       openDesktopCommand(command);
     }
   }
@@ -3441,14 +3469,7 @@ import {
   }
 
   function updateThemeColor(theme) {
-    const colorByTheme = {
-      dark: "#0b0d10",
-      light: "#f5f6f8",
-      hacker: "#020b06",
-      retro: "#190f0a",
-      secret: "#05030f"
-    };
-    const color = colorByTheme[theme] || colorByTheme.dark;
+    const color = THEME_COLOR_MAP[theme] || THEME_COLOR_MAP.dark;
     const meta = dom.themeColorMeta || document.querySelector('meta[name="theme-color"]');
     if (meta) {
       meta.setAttribute("content", color);
@@ -3461,19 +3482,13 @@ import {
     const allowed = normalized === "secret" ? state.secretUnlocked : THEMES.includes(normalized);
     if (!allowed) return false;
     const previousTheme = state.theme;
-    document.body.classList.remove(
-      "theme-dark",
-      "theme-light",
-      "theme-hacker",
-      "theme-retro",
-      "theme-secret"
-    );
+    document.body.classList.remove(...THEME_CLASSES);
     document.body.classList.add(themeClass);
     state.theme = normalized;
     updateThemeColor(normalized);
     updateMatrixState();
     if (state.pet.active && previousTheme !== normalized) {
-      reactPet("themeChange", { meta: { theme: normalized }, persistMs: 1700 });
+      reactPet("themeChange", { meta: { theme: normalized }, persistMs: PET_PERSIST_MS.themeChange });
     }
     return true;
   }
