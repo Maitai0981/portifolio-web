@@ -35,7 +35,8 @@ import {
 
     options: {
       typing: false,
-      typingSpeed: 8
+      typingSpeed: 1,
+      reducedMotion: false
     },
     content: null,
     matrix: {
@@ -55,13 +56,36 @@ import {
       art: null,
       hideBubbleTimer: null,
       idleTimer: null,
+      microAnimationTimer: null,
       reactionTimer: null,
       animationTimer: null,
       currentType: "neutral",
       frameIndex: 0,
+      frameDirection: 1,
+      lastReactionAt: {
+        click: 0,
+        key: 0,
+        command: 0,
+        error: 0
+      },
+      keyBurst: {
+        count: 0,
+        lastAt: 0
+      },
+      insight: {
+        commandStreak: 0,
+        errorStreak: 0,
+        lastCommand: "",
+        lastDurationMs: 0,
+        lastAction: ""
+      },
       lookDirection: "center",
       lastPointerX: window.innerWidth * 0.5,
-      lastPointerY: window.innerHeight * 0.5
+      lastPointerY: window.innerHeight * 0.5,
+      reactionQueue: [],
+      reactionQueueSeq: 0,
+      reactionQueueTimer: null,
+      reactionInFlight: null
     }
   };
 
@@ -114,8 +138,10 @@ import {
     bubbleMs: 2000,
     idleMs: 12000,
     neutralMs: 1500,
+    microMinMs: 2400,
+    microMaxMs: 5200,
     defaultPersistMs: 1600,
-    animationClassMs: 260,
+    animationClassMs: 600,
     pointerDeadzonePx: 44
   });
   const PET_PERSIST_MS = Object.freeze({
@@ -132,16 +158,55 @@ import {
     idle: 2600
   });
   const PET_REACTION_CLASS_BY_TYPE = Object.freeze({
-    click: "is-react-click",
-    key: "is-react-key",
-    command: "is-react-command",
-    reload: "is-react-command",
-    modeGui: "is-react-command",
-    modeCli: "is-react-command",
-    wake: "is-react-command",
-    guiIcon: "is-react-command",
-    themeChange: "is-react-command",
-    error: "is-react-error"
+    click: "anim-pop",
+    key: "anim-micro",
+    command: "anim-bounce",
+    reload: "anim-spin",
+    modeGui: "anim-wiggle",
+    modeCli: "anim-wiggle",
+    wake: "anim-bounce",
+    guiIcon: "anim-pop",
+    themeChange: "anim-spin",
+    error: "anim-shake",
+    idle: "anim-pulse"
+  });
+  const PET_REACTION_COOLDOWN_MS = Object.freeze({
+    click: 120,
+    key: 90,
+    command: 140,
+    error: 140
+  });
+  const PET_KEY_BURST_WINDOW_MS = 170;
+  const PET_ALWAYS_ACTIVE = true;
+  const PET_REACTION_PRIORITY = Object.freeze({
+    wake: 100,
+    error: 95,
+    reload: 90,
+    command: 80,
+    modeGui: 70,
+    modeCli: 70,
+    themeChange: 68,
+    guiIcon: 62,
+    click: 52,
+    key: 46,
+    idle: 8,
+    idleScan: 6,
+    idleStretch: 6,
+    blink: 5,
+    neutral: 1
+  });
+  const PET_QUEUE_MAX = 10;
+  const PET_QUEUE_STEP_MS = 84;
+  const TERMINAL_MAX_LINES = 280;
+  const HISTORY_MAX_ITEMS = 220;
+  const STORAGE_KEYS = Object.freeze({
+    lang: "portfolioLang",
+    theme: "portfolioTheme",
+    mode: "portfolioMode",
+    guiMono: "portfolioGuiMono",
+    petActive: "portfolioPetActive",
+    typingSpeed: "portfolioTypingSpeed",
+    reducedMotion: "portfolioReducedMotion"
   });
   const COMMANDS = [
     "help",
@@ -160,9 +225,6 @@ import {
     "cowsay",
     "sudo",
     "history",
-    "ls",
-    "cd",
-    "cat",
     "clear",
     "cls",
     "reload",
@@ -171,9 +233,9 @@ import {
     "exit-gui",
     "terminal",
     "theme",
+    "typing",
+    "motion",
     "pet",
-    "grep",
-    "find",
     "algorithms",
     "cnn",
     "snake"
@@ -181,25 +243,33 @@ import {
 
   const commandIndex = buildCommandIndex(COMMANDS);
 
-  const FAST_TYPING_SPEED = 2;
-
   const PET_ASCII_SPRITE_SHEET = {
     neutral: {
-      fps: 2,
+      fps: 1,
       loop: true,
       frames: [
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
+        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
+        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
+        { face: "◕ᴥ◕", body: "/|_|\\", status: "aguardando" },
         { face: "•ᴥ•", body: "/|_|\\", status: "..." },
         { face: "•ᴥ•", body: "/|_|\\", status: "on-line" },
-        { face: "◕ᴥ◕", body: "/|_|\\", status: "aguardando" }
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "..." },
+        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
+        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     wake: {
-      fps: 8,
+      fps: 7,
       loop: false,
       frames: [
-        { face: "•ᴥ•", body: "/|_|\\", status: "booting..." },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "pronto" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "monitorando" }
+        { face: "-ᴥ-", body: "/|_|\\", status: "booting..." },
+        { face: "•ᴥ•", body: "/|_|\\", status: "carregando" },
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "✓ pronto" },
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "monitorando" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     click: {
@@ -208,25 +278,51 @@ import {
       frames: [
         { face: "⊙ᴥ⊙", body: "/|_|\\", status: "! clique !" },
         { face: "ಠᴥಠ", body: "/|_|\\", status: "te vi" },
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "confirmado" }
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "confirmado" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
       ]
     },
     key: {
-      fps: 12,
+      fps: 14,
       loop: false,
       frames: [
         { face: "•̀ᴥ•́", body: "/|_|\\", status: "⌨..." },
         { face: "◉ᴥ◉", body: "/|_|\\", status: "digitando" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "input lido" }
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "input lido" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "..." }
       ]
     },
     idle: {
-      fps: 3,
+      fps: 2,
       loop: true,
       frames: [
         { face: "˘ᴥ˘", body: "/|_|\\", status: "z z z" },
-        { face: "-ᴥ-", body: "/|_|\\", status: "economia" },
-        { face: "˘ᴥ˘", body: "/|_|\\", status: "..." }
+        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
+        { face: "˘ᴥ˘", body: "/|_|\\", status: "economia" },
+        { face: "-ᴥ-", body: "/|_|\\", status: "..." }
+      ]
+    },
+    idleScan: {
+      fps: 8,
+      loop: false,
+      frames: [
+        { face: "◉ᴥ•", body: "/|_|\\", status: "varrendo..." },
+        { face: "•ᴥ◉", body: "/|_|\\", status: "checando" }
+      ]
+    },
+    idleStretch: {
+      fps: 6,
+      loop: false,
+      frames: [
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "alongando" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
+      ]
+    },
+    blink: {
+      fps: 14,
+      loop: false,
+      frames: [
+        { face: "-ᴥ-", body: "/|_|\\", status: "..." }
       ]
     },
     command: {
@@ -234,26 +330,32 @@ import {
       loop: false,
       frames: [
         { face: "•ᴥ•", body: "/|_|\\", status: "processando" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "ok!" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "concluido" }
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "executando" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "ok! ✓" },
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "concluido" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     error: {
-      fps: 6,
+      fps: 8,
       loop: false,
       frames: [
-        { face: "xᴥx", body: "/|_|\\", status: "erro" },
+        { face: "xᴥx", body: "/|_|\\", status: "!! erro !!" },
+        { face: "ಠᴥಠ", body: "/|_|\\", status: "opa..." },
+        { face: "xᴥx", body: "/|_|\\", status: "!! erro !!" },
         { face: "ಠᴥಠ", body: "/|_|\\", status: "vamos de novo" },
         { face: "•ᴥ•", body: "/|_|\\", status: "aguardando" }
       ]
     },
     reload: {
-      fps: 7,
+      fps: 9,
       loop: false,
       frames: [
         { face: "↻ᴥ↻", body: "/|_|\\", status: "recarregando" },
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "limpando estado" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "pronto" }
+        { face: "◉ᴥ◉", body: "/|_|\\", status: "limpando..." },
+        { face: "↻ᴥ↻", body: "/|_|\\", status: "quase la" },
+        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "✓ pronto" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     modeGui: {
@@ -261,7 +363,8 @@ import {
       loop: false,
       frames: [
         { face: "◕ᴥ◕", body: "/|_|\\", status: "▣ GUI" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "janela aberta" }
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "janela aberta" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     modeCli: {
@@ -269,7 +372,8 @@ import {
       loop: false,
       frames: [
         { face: "•ᴥ•", body: "/|_|\\", status: "▤ CLI" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "prompt pronto" }
+        { face: "•̀ᴥ•́", body: "/|_|\\", status: "prompt pronto" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     },
     guiIcon: {
@@ -277,17 +381,18 @@ import {
       loop: false,
       frames: [
         { face: "◉ᴥ◉", body: "/|_|\\", status: "icone detectado" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "GUI em acao" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "GUI em ação" },
         { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
       ]
     },
     themeChange: {
-      fps: 8,
+      fps: 9,
       loop: false,
       frames: [
-        { face: "◕ᴥ◕", body: "/|_|\\", status: "tema..." },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "sincronizado" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "aplicado" }
+        { face: "◕ᴥ◕", body: "/|_|\\", status: "trocando tema..." },
+        { face: "⊙ᴥ⊙", body: "/|_|\\", status: "sincronizando" },
+        { face: "＾ᴥ＾", body: "/|_|\\", status: "✓ aplicado" },
+        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
       ]
     }
   };
@@ -396,13 +501,22 @@ import {
         themeInvalid: "Tema invalido: {{theme}}",
         themeChanged: "Tema alterado para: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
-        petActivated: "Mascote ativado. Digite `pet off` para esconder.",
+        typingCurrent: "Velocidade de digitacao atual: {{speed}}",
+        typingChanged: "Velocidade de digitacao ajustada para: {{speed}}",
+        typingUsage: "Use: typing [1-18]",
+        motionStatusReduced: "Reducao de movimento: ativada",
+        motionStatusFull: "Reducao de movimento: desativada",
+        motionChangedReduced: "Reducao de movimento ativada.",
+        motionChangedFull: "Reducao de movimento desativada.",
+        motionUsage: "Use: motion [on|off|status]",
+        petActivated: "Mascote ativado.",
         petDeactivated: "Mascote ocultado.",
+        petAlwaysOn: "Mascote fixo: sempre ativo.",
         petAlreadyActive: "O mascote ja esta ativo.",
         petAlreadyInactive: "O mascote ja esta oculto.",
         petStatusOn: "Mascote: ativo",
         petStatusOff: "Mascote: oculto",
-        petUsage: "Use: pet | pet on | pet off | pet status",
+        petUsage: "Use: pet | pet on | pet status",
         searchUsage: "Uso: grep <termo> (ou find <termo>)",
         searchHeader: "Resultados para: {{query}}",
         searchNoResults: "Nenhum resultado encontrado.",
@@ -574,13 +688,22 @@ import {
         themeInvalid: "Invalid theme: {{theme}}",
         themeChanged: "Theme set to: {{theme}}",
         themeUsage: "Use: theme {{themes}}",
-        petActivated: "Mascot activated. Type `pet off` to hide it.",
+        typingCurrent: "Current typing speed: {{speed}}",
+        typingChanged: "Typing speed set to: {{speed}}",
+        typingUsage: "Use: typing [1-18]",
+        motionStatusReduced: "Reduced motion: enabled",
+        motionStatusFull: "Reduced motion: disabled",
+        motionChangedReduced: "Reduced motion enabled.",
+        motionChangedFull: "Reduced motion disabled.",
+        motionUsage: "Use: motion [on|off|status]",
+        petActivated: "Mascot activated.",
         petDeactivated: "Mascot hidden.",
+        petAlwaysOn: "Mascot is fixed: always active.",
         petAlreadyActive: "Mascot is already active.",
         petAlreadyInactive: "Mascot is already hidden.",
         petStatusOn: "Mascot: active",
         petStatusOff: "Mascot: hidden",
-        petUsage: "Use: pet | pet on | pet off | pet status",
+        petUsage: "Use: pet | pet on | pet status",
         searchUsage: "Usage: grep <term> (or find <term>)",
         searchHeader: "Results for: {{query}}",
         searchNoResults: "No results found.",
@@ -937,6 +1060,84 @@ import {
   };
 
   let selectedDesktopIcon = null;
+  let errorBannerTimer = null;
+
+  function readStoredValue(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStoredValue(key, value) {
+    try {
+      localStorage.setItem(key, String(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function removeStoredValue(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function normalizeStoredBoolean(value) {
+    if (value == null) return null;
+    const normalized = String(value).trim().toLowerCase();
+    if (normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on") return true;
+    if (normalized === "0" || normalized === "false" || normalized === "no" || normalized === "off") return false;
+    return null;
+  }
+
+  function toFiniteNumber(value, fallback) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
+  function logClientError(context, error, extra = {}) {
+    const payload = {
+      context,
+      message: error instanceof Error ? error.message : String(error || ""),
+      stack: error instanceof Error ? error.stack : "",
+      mode: state.mode,
+      theme: state.theme,
+      language: state.language,
+      timestamp: new Date().toISOString(),
+      ...extra
+    };
+    console.error("[portfolio:error]", payload);
+  }
+
+  function ensureErrorBanner() {
+    let banner = document.getElementById("error-banner");
+    if (banner) return banner;
+    banner = document.createElement("div");
+    banner.id = "error-banner";
+    banner.className = "error-banner";
+    banner.setAttribute("role", "status");
+    banner.setAttribute("aria-live", "polite");
+    document.body.append(banner);
+    return banner;
+  }
+
+  function showErrorBanner(message, durationMs = 2600) {
+    const text = String(message || "").trim();
+    if (!text) return;
+    const banner = ensureErrorBanner();
+    banner.textContent = text;
+    banner.classList.add("is-visible");
+    clearTimeout(errorBannerTimer);
+    errorBannerTimer = setTimeout(() => {
+      banner.classList.remove("is-visible");
+    }, Math.max(900, Number(durationMs) || 2600));
+  }
 
   function normalizeLanguage(input) {
     const value = String(input || "")
@@ -954,7 +1155,9 @@ import {
   }
 
   function resolveInitialLanguage() {
-    const stored = normalizeLanguage(localStorage.getItem("portfolioLang"));
+    const fromQuery = normalizeLanguage(new URLSearchParams(window.location.search).get("lang"));
+    if (fromQuery) return fromQuery;
+    const stored = normalizeLanguage(readStoredValue(STORAGE_KEYS.lang));
     if (stored) return stored;
     const navigatorLang = normalizeLanguage(navigator.language || navigator.userLanguage || "");
     return navigatorLang || "pt";
@@ -1022,9 +1225,6 @@ import {
       cowsay: ["Cowsay? Muuuuito bom. Eu, como gato, respeito o bovino poeta."],
       sudo: ["Sudo negado. Nem eu tenho root, so ronron."],
       history: ["Historico aberto. Seus comandos estao com mais lore que serie longa."],
-      ls: ["LS listou tudo. Inventario completo, nivel RPG de terminal."],
-      cd: ["CD trocou pasta. Passeio de diretorio sem coleira."],
-      cat: ["cat leu arquivo. Eu apoio todo comando com nome de gato."],
       clear: ["Tela limpa. Faxina digital feita com a pata esquerda."],
       cls: ["CLS passado. Chao brilhando, sem poeira de stack trace."],
       reload: ["Reload dado. Reiniciei sem perder minhas 7 vidas de processo."],
@@ -1034,8 +1234,6 @@ import {
       terminal: ["Terminal aberto. Bem-vindo ao habitat natural dos comandos."],
       theme: ["Tema trocado. Agora sim: fashion week do terminal."],
       pet: ["Chamou o pet? Presente! Com trocadilho e pelo virtual."],
-      grep: ["Grep caçando texto. Farejo melhor que bloodhound de regex."],
-      find: ["Find em acao. Missao busca e captura concluida."],
       algorithms: ["Algoritmos abertos. Complexidade baixa, carisma alto."],
       cnn: ["CNN carregada. Rede neural ativada, neurio felino curioso."],
       snake: ["Snake aberto. Cobrinha no palco e eu na torcida."],
@@ -1044,8 +1242,33 @@ import {
 
     const jokesEn = {
       help: ["Need help? Even cats read docs when the box has no lid."],
-      cat: ["`cat` command approved by the cat mascot authority."],
-      grep: ["Pattern hunt started. My whiskers detect regex vibes."],
+      lang: ["Language switch? I am bilingual: meow and premium meow."],
+      me: ["Talking about you? Approved by the feline marketing board."],
+      about: ["About read. Spoiler: 100% human, 200% dev."],
+      social: ["Social links open. Networking without breaking deploy."],
+      projects: ["Projects loaded. Portfolio cleaner than my litter box."],
+      education: ["Education loaded. Cat diploma: applied nap sciences."],
+      resume: ["Resume open. Lean CV, strong impact."],
+      curriculum: ["Curriculum served. This CV has sharp claws."],
+      email: ["Email shown. Short message, strong subject line."],
+      banner: ["Banner up. That is how you open with style."],
+      date: ["Date shown. Time moves, bugs stay, then we fix."],
+      neofetch: ["Neofetch done. A clean setup compiles better."],
+      cowsay: ["Cowsay? Moo-velous. Respect to the bovine poet."],
+      sudo: ["Sudo denied. No root today, only purr privileges."],
+      history: ["History opened. Your command lore is growing."],
+      clear: ["Screen cleared. Digital cleanup completed."],
+      cls: ["CLS executed. Floor shining, no stack-trace dust."],
+      reload: ["Reload done. Same session, fresh state."],
+      exit: ["Exit? Come back soon, the terminal misses you."],
+      gui: ["GUI enabled. Windows open, airflow stable."],
+      "exit-gui": ["Leaving GUI. Back to prompt roots."],
+      terminal: ["Terminal opened. Natural habitat of commands."],
+      theme: ["Theme changed. Terminal fashion week started."],
+      pet: ["You called the pet? Present, with extra puns."],
+      algorithms: ["Algorithms opened. Low complexity, high charisma."],
+      cnn: ["CNN loaded. Neural network online, whiskers curious."],
+      snake: ["Snake opened. Game on, reflexes ready."],
       default: ["Command done. One more clean move in terminal land."]
     };
 
@@ -1059,12 +1282,10 @@ import {
     const key = String(command || "").toLowerCase();
     const errorsPt = {
       sudo: ["Sem sudo hoje. Ate eu obedeco as permissoes da casa."],
-      grep: ["Regex rebelde detectada. Respira e fecha os parenteses."],
-      find: ["Nao achei nada. Talvez esteja na pasta do universo paralelo."],
-      cd: ["Esse caminho ta mais perdido que cursor sem foco."],
       default: ["Deu erro, mas relaxa: bug tambem e uma feature em treinamento."]
     };
     const errorsEn = {
+      sudo: ["No sudo today. House permissions are enforced."],
       default: ["That failed, but no panic: every bug is a feature in training."]
     };
     if (isPt) {
@@ -1160,11 +1381,79 @@ import {
     return table[key] || table.default;
   }
 
+  function getPetTempoLabel(durationMs, isPt) {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+      return isPt ? "tempo indefinido" : "timing unknown";
+    }
+    if (durationMs <= 120) return isPt ? "instantaneo" : "instant";
+    if (durationMs <= 420) return isPt ? "rapido" : "fast";
+    if (durationMs <= 1000) return isPt ? "estavel" : "steady";
+    return isPt ? "mais lento" : "slower";
+  }
+
+  function getPetCommandInsights(meta, isPt) {
+    const durationMs = Number(meta.durationMs || 0);
+    const linesCount = Math.max(0, Number(meta.linesCount || 0));
+    const action = String(meta.action || "").toLowerCase();
+    const streak = Math.max(0, Number(meta.commandStreak || 0));
+    const tempo = getPetTempoLabel(durationMs, isPt);
+    const output = [];
+
+    output.push(
+      isPt
+        ? `Leitura: ${tempo} (${Math.max(0, Math.round(durationMs))}ms).`
+        : `Read: ${tempo} (${Math.max(0, Math.round(durationMs))}ms).`
+    );
+
+    if (action === "gui" || action === "terminal") {
+      output.push(isPt ? "Mudanca de modo detectada." : "Mode switch detected.");
+    } else if (action === "reload") {
+      output.push(isPt ? "Reset de sessao confirmado." : "Session reset confirmed.");
+    }
+
+    if (linesCount >= 14) {
+      output.push(
+        isPt ? "Resposta extensa. Parse completo." : "Large output. Parsed end-to-end."
+      );
+    } else if (linesCount >= 1) {
+      output.push(
+        isPt ? `Saida curta: ${linesCount} linha(s).` : `Compact output: ${linesCount} line(s).`
+      );
+    }
+
+    if (streak >= 3) {
+      output.push(
+        isPt ? `Sequencia boa: ${streak} comandos seguidos.` : `Good streak: ${streak} commands in a row.`
+      );
+    }
+    return output;
+  }
+
+  function getPetErrorInsights(meta, isPt) {
+    const streak = Math.max(0, Number(meta.errorStreak || 0));
+    const hasSuggestions = Boolean(meta.hasSuggestions);
+    const output = [];
+    if (hasSuggestions) {
+      output.push(
+        isPt ? "Tenho sugestoes no terminal para corrigir rapido." : "I have terminal suggestions to fix it fast."
+      );
+    }
+    if (streak >= 2) {
+      output.push(
+        isPt ? `Padrao de erro detectado (${streak}x).` : `Error pattern detected (${streak}x).`
+      );
+    }
+    return output;
+  }
+
   function getPetPhrases(type, meta = {}) {
     const isPt = state.language === "pt";
     const command = String(meta.command || "").toLowerCase();
     const commandText = command ? `\`${command}\`` : isPt ? "esse comando" : "that command";
     const theme = String(meta.theme || state.theme || "").toLowerCase();
+    const unifiedCommandPhrase =
+      (getPetCommandJokes(command, isPt)[0]) ||
+      (isPt ? "Comando executado." : "Command executed.");
     const phrases = {
       wake: isPt
         ? ["Oi! Eu sou seu pet ASCII.", "Ativado. Agora eu reajo a tudo.", "Pronto para acompanhar comandos."]
@@ -1173,17 +1462,23 @@ import {
         ? ["Clique detectado.", "Ei, senti esse clique.", "To de olho no mouse."]
         : ["Click detected.", "Hey, I felt that click.", "Mouse movement noticed."],
       key: isPt
-        ? ["Digitando rapido, hein?", "Input recebido.", "Esse teclado nao para."]
-        : ["Typing fast, huh?", "Input received.", "That keyboard never stops."],
+        ? [
+            meta.keyBurst >= 5 ? "Rajada de teclas detectada." : "Input recebido.",
+            meta.keyBurst >= 5 ? "Voce esta em modo turbo." : "Esse teclado nao para.",
+            "Leitura de input atualizada."
+          ]
+        : [
+            meta.keyBurst >= 5 ? "Key burst detected." : "Input received.",
+            meta.keyBurst >= 5 ? "You are in turbo mode." : "That keyboard never stops.",
+            "Input reading updated."
+          ],
       idle: isPt
         ? ["Tudo bem por ai?", "Ainda estou aqui.", "Posso ajudar com outro comando?"]
         : ["Everything okay there?", "I'm still here.", "Need another command?"],
-      command: isPt
-        ? getPetCommandJokes(command, true)
-        : getPetCommandJokes(command, false),
+      command: [unifiedCommandPhrase],
       error: isPt
-        ? [`Falhou em ${commandText}.`, ...getPetErrorJokes(command, true)]
-        : [`Failed at ${commandText}.`, ...getPetErrorJokes(command, false)],
+        ? [`Falhou em ${commandText}.`, ...getPetErrorJokes(command, true), ...getPetErrorInsights(meta, true)]
+        : [`Failed at ${commandText}.`, ...getPetErrorJokes(command, false), ...getPetErrorInsights(meta, false)],
       reload: isPt
         ? ["Recarregando sessao e mantendo CLI.", "Limpando estado.", "Pronto, terminal renovado."]
         : ["Reloading session and keeping CLI.", "Clearing state.", "Done, refreshed terminal."],
@@ -1193,9 +1488,7 @@ import {
       modeCli: isPt
         ? ["Voltando para o terminal.", "CLI ativada.", "Prompt pronto."]
         : ["Back to terminal.", "CLI enabled.", "Prompt ready."],
-      guiIcon: isPt
-        ? getPetGuiIconJokes(command, true, meta.phase || "open")
-        : getPetGuiIconJokes(command, false, meta.phase || "open"),
+      guiIcon: [unifiedCommandPhrase],
       themeChange: isPt
         ? getPetThemeChangeJokes(theme, true)
         : getPetThemeChangeJokes(theme, false)
@@ -1243,6 +1536,7 @@ import {
     state.pet.currentType = type;
     if (shouldRestart) {
       state.pet.frameIndex = 0;
+      state.pet.frameDirection = 1;
     }
     stopPetAnimation();
     renderPetAscii();
@@ -1251,13 +1545,25 @@ import {
     if (frameCount <= 1) return;
 
     const fps = Number.isFinite(sprite.fps) && sprite.fps > 0 ? sprite.fps : 6;
-    const intervalMs = Math.max(80, Math.round(1000 / fps));
+    const intervalMs = Math.max(60, Math.round(1000 / fps));
     state.pet.animationTimer = setInterval(() => {
       const currentSprite = getPetSprite(state.pet.currentType);
       const lastFrame = Math.max(0, (currentSprite.frames?.length || 1) - 1);
 
       if (currentSprite.loop) {
-        state.pet.frameIndex = (state.pet.frameIndex + 1) % (lastFrame + 1);
+        if (currentSprite.loopMode === "pingpong" && lastFrame > 0) {
+          let nextFrame = state.pet.frameIndex + state.pet.frameDirection;
+          if (nextFrame > lastFrame) {
+            state.pet.frameDirection = -1;
+            nextFrame = Math.max(0, lastFrame - 1);
+          } else if (nextFrame < 0) {
+            state.pet.frameDirection = 1;
+            nextFrame = Math.min(lastFrame, 1);
+          }
+          state.pet.frameIndex = nextFrame;
+        } else {
+          state.pet.frameIndex = (state.pet.frameIndex + 1) % (lastFrame + 1);
+        }
       } else if (state.pet.frameIndex < lastFrame) {
         state.pet.frameIndex += 1;
       } else {
@@ -1291,6 +1597,16 @@ import {
       clearTimeout(state.pet.reactionTimer);
       state.pet.reactionTimer = null;
     }
+    if (state.pet.microAnimationTimer) {
+      clearTimeout(state.pet.microAnimationTimer);
+      state.pet.microAnimationTimer = null;
+    }
+    if (state.pet.reactionQueueTimer) {
+      clearTimeout(state.pet.reactionQueueTimer);
+      state.pet.reactionQueueTimer = null;
+    }
+    state.pet.reactionQueue = [];
+    state.pet.reactionInFlight = null;
     stopPetAnimation();
   }
 
@@ -1313,6 +1629,34 @@ import {
     }, PET_TIMING.idleMs);
   }
 
+  function schedulePetMicroAnimation() {
+    clearTimeout(state.pet.microAnimationTimer);
+    if (!state.pet.active) return;
+    const delayRange = PET_TIMING.microMaxMs - PET_TIMING.microMinMs;
+    const delay = PET_TIMING.microMinMs + Math.round(Math.random() * Math.max(0, delayRange));
+    state.pet.microAnimationTimer = setTimeout(() => {
+      state.pet.microAnimationTimer = null;
+      if (
+        state.pet.active &&
+        !state.pet.reactionTimer &&
+        (state.pet.currentType === "neutral" || state.pet.currentType === "idle")
+      ) {
+        const roll = Math.random();
+        if (roll < 0.55) {
+          startPetAnimation("blink", { restart: true });
+          schedulePetNeutral(220);
+        } else if (roll < 0.85) {
+          startPetAnimation("idleScan", { restart: true });
+          schedulePetNeutral(520);
+        } else {
+          startPetAnimation("idleStretch", { restart: true });
+          schedulePetNeutral(620);
+        }
+      }
+      schedulePetMicroAnimation();
+    }, delay);
+  }
+
   function schedulePetNeutral(delay = PET_TIMING.neutralMs) {
     clearTimeout(state.pet.reactionTimer);
     state.pet.reactionTimer = setTimeout(() => {
@@ -1325,23 +1669,216 @@ import {
     return PET_REACTION_CLASS_BY_TYPE[type] || "";
   }
 
-  function reactPet(type, options = {}) {
-    if (!state.pet.active || !state.pet.root) return;
+  function shouldPetReactByCooldown(type) {
+    const key = String(type || "").toLowerCase();
+    const cooldown = PET_REACTION_COOLDOWN_MS[key] || 0;
+    if (cooldown <= 0) return true;
+    const now = Date.now();
+    const last = Number(state.pet.lastReactionAt[key] || 0);
+    if (now - last < cooldown) return false;
+    state.pet.lastReactionAt[key] = now;
+    return true;
+  }
+
+  function updatePetInsight(type, meta = {}) {
+    const key = String(type || "").toLowerCase();
+    if (key === "error") {
+      state.pet.insight.errorStreak += 1;
+      state.pet.insight.commandStreak = 0;
+      return;
+    }
+    if (key === "command" || key === "reload" || key === "modegui" || key === "modecli" || key === "themechange") {
+      state.pet.insight.commandStreak += 1;
+      state.pet.insight.errorStreak = Math.max(0, state.pet.insight.errorStreak - 1);
+      state.pet.insight.lastCommand = String(meta.command || "");
+      state.pet.insight.lastDurationMs = Math.max(0, Number(meta.durationMs || 0));
+      state.pet.insight.lastAction = String(meta.action || "");
+    }
+  }
+
+  function spawnPetParticles(type) {
+    if (!state.pet.root) return;
+    const rect = state.pet.root.getBoundingClientRect();
+    const cx = rect.left + rect.width * 0.5;
+    const cy = rect.top + rect.height * 0.3;
+
+    const configs = {
+      command: { count: 7, colors: ["#8ae234", "#fcaf3e", "#fce94f"], star: true },
+      wake: { count: 9, colors: ["#fce94f", "#fcaf3e", "#8ae234"], star: true },
+      error: { count: 6, colors: ["#ef2929", "#cc0000", "#ff8080"], star: false },
+      themeChange: { count: 8, colors: ["#ad7fa8", "#75507b", "#f2c94c"], star: true },
+      modeGui: { count: 5, colors: ["#729fcf", "#4a90d9", "#ffffff"], star: false },
+      reload: { count: 6, colors: ["#06989a", "#2fffcc", "#8ae234"], star: false }
+    };
+
+    const cfg = configs[type];
+    if (!cfg) return;
+
+    for (let i = 0; i < cfg.count; i += 1) {
+      const spark = document.createElement("div");
+      spark.className = `pet-spark${cfg.star ? " is-star" : ""}`;
+
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 28 + Math.random() * 44;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 18;
+      const dur = 0.38 + Math.random() * 0.36;
+      const rot = (Math.random() - 0.5) * 400;
+      const color = cfg.colors[Math.floor(Math.random() * cfg.colors.length)];
+
+      spark.style.setProperty("--dx", `${dx}px`);
+      spark.style.setProperty("--dy", `${dy}px`);
+      spark.style.setProperty("--dur", `${dur}s`);
+      spark.style.setProperty("--rot", `${rot}deg`);
+      spark.style.left = `${cx - 4}px`;
+      spark.style.top = `${cy - 4}px`;
+      spark.style.background = color;
+      spark.style.animationDelay = `${i * 0.03}s`;
+
+      document.body.appendChild(spark);
+      spark.addEventListener("animationend", () => spark.remove(), { once: true });
+    }
+  }
+
+  function getPetPriority(type) {
+    return PET_REACTION_PRIORITY[type] ?? PET_REACTION_PRIORITY.neutral;
+  }
+
+  function trimPetQueue() {
+    if (state.pet.reactionQueue.length <= PET_QUEUE_MAX) return;
+    state.pet.reactionQueue.sort((a, b) => b.priority - a.priority || a.seq - b.seq);
+    state.pet.reactionQueue = state.pet.reactionQueue.slice(0, PET_QUEUE_MAX);
+  }
+
+  function schedulePetQueueDrain(delayMs = PET_QUEUE_STEP_MS) {
+    clearTimeout(state.pet.reactionQueueTimer);
+    state.pet.reactionQueueTimer = setTimeout(() => {
+      state.pet.reactionQueueTimer = null;
+      drainPetReactionQueue();
+    }, Math.max(20, Number(delayMs) || PET_QUEUE_STEP_MS));
+  }
+
+  function enqueuePetReaction(type, options = {}) {
+    const reactionType = String(type || "").trim();
+    if (!reactionType) return;
+
+    const next = {
+      type: reactionType,
+      options,
+      priority: getPetPriority(reactionType),
+      seq: ++state.pet.reactionQueueSeq
+    };
+
+    const queue = state.pet.reactionQueue;
+    const last = queue[queue.length - 1];
+    if (
+      last &&
+      last.type === next.type &&
+      Math.abs(last.priority - next.priority) <= 1 &&
+      !options.force
+    ) {
+      last.options = next.options;
+      schedulePetQueueDrain(10);
+      return;
+    }
+
+    queue.push(next);
+    trimPetQueue();
+
+    const active = state.pet.reactionInFlight;
+    if (active && next.priority > active.priority + 12) {
+      clearTimeout(state.pet.reactionQueueTimer);
+      state.pet.reactionQueueTimer = null;
+      state.pet.reactionInFlight = null;
+      queue.sort((a, b) => b.priority - a.priority || a.seq - b.seq);
+      schedulePetQueueDrain(10);
+      return;
+    }
+
+    if (!active) {
+      schedulePetQueueDrain(10);
+    }
+  }
+
+  function popNextPetReaction() {
+    const queue = state.pet.reactionQueue;
+    if (!queue.length) return null;
+    queue.sort((a, b) => b.priority - a.priority || a.seq - b.seq);
+    return queue.shift() || null;
+  }
+
+  function performPetReaction(type, options = {}) {
+    updatePetInsight(type, options.meta || {});
     const messages = getPetPhrases(type, options.meta || {});
     if (messages.length) {
       showPetBubble(getRandomItem(messages), options.bubbleDuration || PET_TIMING.bubbleMs);
     }
-    state.pet.root.classList.remove("is-react-click", "is-react-key", "is-react-command", "is-react-error");
+    const allAnimClasses = [
+      "is-react-click",
+      "is-react-key",
+      "is-react-command",
+      "is-react-error",
+      "anim-bounce",
+      "anim-shake",
+      "anim-spin",
+      "anim-wiggle",
+      "anim-pop",
+      "anim-micro",
+      "anim-pulse"
+    ];
+    state.pet.root.classList.remove(...allAnimClasses);
     const animationClass = getPetReactionClass(type);
     if (animationClass) {
+      void state.pet.root.offsetWidth;
       state.pet.root.classList.add(animationClass);
-      setTimeout(() => {
-        state.pet.root?.classList.remove(animationClass);
-      }, PET_TIMING.animationClassMs);
+      if (animationClass !== "anim-pulse") {
+        let cleared = false;
+        const clearClass = () => {
+          if (cleared) return;
+          cleared = true;
+          state.pet.root?.classList.remove(animationClass);
+        };
+        state.pet.root.addEventListener("animationend", clearClass, { once: true });
+        setTimeout(clearClass, PET_TIMING.animationClassMs);
+      }
+    }
+    if (["command", "wake", "error", "themeChange", "modeGui", "reload"].includes(type)) {
+      spawnPetParticles(type);
     }
     startPetAnimation(type, { restart: true });
     schedulePetNeutral(options.persistMs || PET_TIMING.defaultPersistMs);
     resetPetIdleTimer();
+  }
+
+  function drainPetReactionQueue() {
+    if (!state.pet.active || !state.pet.root) return;
+    if (state.pet.reactionInFlight) return;
+    const next = popNextPetReaction();
+    if (!next) return;
+
+    state.pet.reactionInFlight = next;
+    performPetReaction(next.type, next.options);
+    const lowPriority = next.priority <= 12;
+    const stepMs = lowPriority ? PET_QUEUE_STEP_MS + 24 : PET_QUEUE_STEP_MS;
+    state.pet.reactionQueueTimer = setTimeout(() => {
+      state.pet.reactionInFlight = null;
+      state.pet.reactionQueueTimer = null;
+      if (state.pet.reactionQueue.length > 0) {
+        drainPetReactionQueue();
+      }
+    }, stepMs);
+  }
+
+  function reactPet(type, options = {}) {
+    if (!state.pet.active || !state.pet.root) return;
+    if (!shouldPetReactByCooldown(type)) return;
+    if (
+      (type === "idle" || type === "blink" || type === "idleScan" || type === "idleStretch") &&
+      state.pet.reactionQueue.length > 0
+    ) {
+      return;
+    }
+    enqueuePetReaction(type, options);
   }
 
   function ensurePetMascot() {
@@ -1373,31 +1910,49 @@ import {
 
   function setPetActive(active) {
     ensurePetMascot();
-    const enabled = Boolean(active);
-    if (enabled === state.pet.active) return false;
+    const enabled = PET_ALWAYS_ACTIVE ? true : Boolean(active);
+    const hasChanged = enabled !== state.pet.active;
     state.pet.active = enabled;
+    writeStoredValue(STORAGE_KEYS.petActive, enabled ? "1" : "0");
     clearPetTimers();
 
-    if (!state.pet.root) return true;
+    if (!state.pet.root) return hasChanged;
     if (enabled) {
       state.pet.root.classList.remove("hidden");
       state.pet.root.classList.add("is-active");
       state.pet.root.setAttribute("aria-hidden", "false");
       state.pet.lookDirection = resolvePetLookDirection(state.pet.lastPointerX);
       startPetAnimation("neutral", { restart: true });
-      reactPet("wake", { persistMs: PET_PERSIST_MS.wake });
+      if (hasChanged || state.pet.currentType === "neutral") {
+        reactPet("wake", { persistMs: PET_PERSIST_MS.wake });
+      }
+      schedulePetMicroAnimation();
     } else {
       state.pet.root.classList.add("hidden");
-      state.pet.root.classList.remove("is-active", "is-react-click", "is-react-key", "is-react-command", "is-react-error");
+      state.pet.root.classList.remove(
+        "is-active",
+        "is-react-click",
+        "is-react-key",
+        "is-react-command",
+        "is-react-error",
+        "anim-bounce",
+        "anim-shake",
+        "anim-spin",
+        "anim-wiggle",
+        "anim-pop",
+        "anim-micro",
+        "anim-pulse"
+      );
       state.pet.root.setAttribute("aria-hidden", "true");
       if (state.pet.bubble) {
         state.pet.bubble.classList.remove("is-visible");
       }
       state.pet.currentType = "neutral";
       state.pet.frameIndex = 0;
+      state.pet.frameDirection = 1;
       renderPetAscii();
     }
-    return true;
+    return hasChanged;
   }
 
   function handlePetPointerMove(event) {
@@ -1421,7 +1976,14 @@ import {
     if (!state.pet.active) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.key.length === 1 || event.key === "Enter" || event.key === "Backspace") {
-      reactPet("key", { persistMs: PET_PERSIST_MS.key });
+      const now = Date.now();
+      const delta = now - Number(state.pet.keyBurst.lastAt || 0);
+      state.pet.keyBurst.count = delta <= PET_KEY_BURST_WINDOW_MS ? state.pet.keyBurst.count + 1 : 1;
+      state.pet.keyBurst.lastAt = now;
+      reactPet("key", {
+        persistMs: PET_PERSIST_MS.key,
+        meta: { keyBurst: state.pet.keyBurst.count }
+      });
     }
   }
 
@@ -1568,6 +2130,8 @@ import {
       const label = getCommandLabel(item.dataset.command);
       const labelEl = item.querySelector(".start-label");
       if (labelEl) labelEl.textContent = label;
+      item.setAttribute("tabindex", "0");
+      item.setAttribute("role", "menuitem");
     });
 
     if (ui.pageTitle) {
@@ -1592,7 +2156,7 @@ import {
     state.language = normalized;
     state.locale = getLocaleForLanguage(normalized);
     if (options.persist) {
-      localStorage.setItem("portfolioLang", normalized);
+      writeStoredValue(STORAGE_KEYS.lang, normalized);
     }
     document.documentElement.lang = normalized === "pt" ? "pt-BR" : "en";
     updateUiText();
@@ -1677,6 +2241,7 @@ import {
     dom.terminalInput.addEventListener("keydown", handleTerminalKeydown);
     dom.startButton.addEventListener("click", toggleStartMenu);
     dom.startMenu.addEventListener("click", handleStartMenuClick);
+    dom.startMenu.addEventListener("keydown", handleStartMenuKeydown);
     document.addEventListener("click", handleDocumentClick);
     document.addEventListener("keydown", handleGlobalKeydown);
     document.addEventListener("click", handleClickSound, true);
@@ -1773,6 +2338,8 @@ import {
       state.content = buildFallbackContent();
       appendOutputLine(messages.loadError, "error");
       announceToScreenReader(messages.loadError);
+      logClientError("loadContent", error);
+      showErrorBanner(messages.loadError, 2600);
     }
   }
 
@@ -1828,6 +2395,9 @@ import {
     const run = async () => {
       if (!state.sessionActive) return;
       state.history.push(command);
+      if (state.history.length > HISTORY_MAX_ITEMS) {
+        state.history.splice(0, state.history.length - HISTORY_MAX_ITEMS);
+      }
       state.historyIndex = -1;
       appendCommandEcho(command);
       setCommandBusy(true);
@@ -2110,42 +2680,81 @@ import {
     prompt.textContent = dom.prompt.textContent + " ";
     line.append(prompt, document.createTextNode(input));
     dom.terminalOutput.append(line);
+    trimTerminalOutput();
     scrollToBottom();
   }
 
   async function executeCommand(rawInput, origin) {
     const { command, args } = parseInput(rawInput);
     if (!command) return;
-    const result = getCommandResult(command, args);
+    const startedAt = performance.now();
+    try {
+      const result = getCommandResult(command, args);
 
-    if (result.error) {
-      appendOutputLine(result.error, "error");
-      reactPet("error", { meta: { command }, persistMs: PET_PERSIST_MS.error });
+      if (result.error) {
+        appendOutputLine(result.error, "error");
+        showErrorBanner(result.error, 2200);
+        const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+        const hasSuggestions = Boolean(result.lines && result.lines.length > 0);
+        reactPet("error", {
+          meta: {
+            command,
+            durationMs,
+            hasSuggestions,
+            errorStreak: state.pet.insight.errorStreak + 1
+          },
+          persistMs: PET_PERSIST_MS.error
+        });
+        if (result.lines && result.lines.length > 0) {
+          await appendOutputLines(result.lines, {
+            typing: shouldTypeLines(result.lines),
+            speed: state.options.typingSpeed
+          });
+        }
+        return;
+      }
+
       if (result.lines && result.lines.length > 0) {
         await appendOutputLines(result.lines, {
           typing: shouldTypeLines(result.lines),
-          speed: FAST_TYPING_SPEED
+          speed: state.options.typingSpeed
         });
       }
-      return;
-    }
 
-    if (result.lines && result.lines.length > 0) {
-      await appendOutputLines(result.lines, {
-        typing: shouldTypeLines(result.lines),
-        speed: FAST_TYPING_SPEED
-      });
-    }
+      const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+      const linesCount = Array.isArray(result.lines) ? result.lines.length : 0;
+      const commandMeta = {
+        command,
+        action: result.action || "",
+        durationMs,
+        linesCount,
+        commandStreak: state.pet.insight.commandStreak + 1
+      };
 
-    if (command !== "theme" && !["reload", "gui", "terminal"].includes(result.action || "")) {
-      reactPet("command", { meta: { command }, persistMs: PET_PERSIST_MS.command });
-    }
-
-    if (result.action) {
-      if (result.action === "reload") {
-        reactPet("reload", { persistMs: PET_PERSIST_MS.reload });
+      if (command !== "theme" && !["reload", "gui", "terminal"].includes(result.action || "")) {
+        reactPet("command", { meta: commandMeta, persistMs: PET_PERSIST_MS.command });
       }
-      applyAction(result.action, origin);
+
+      if (result.action) {
+        if (result.action === "reload") {
+          reactPet("reload", { meta: commandMeta, persistMs: PET_PERSIST_MS.reload });
+        }
+        applyAction(result.action, origin);
+      }
+    } catch (error) {
+      const fallback = state.language === "pt" ? "Erro interno ao executar comando." : "Internal command error.";
+      appendOutputLine(fallback, "error");
+      showErrorBanner(fallback, 2600);
+      logClientError("executeCommand", error, { rawInput, command });
+      reactPet("error", {
+        meta: {
+          command,
+          durationMs: Math.max(0, Math.round(performance.now() - startedAt)),
+          hasSuggestions: false
+        },
+        persistMs: PET_PERSIST_MS.error
+      });
+      return;
     }
   }
 
@@ -2203,17 +2812,12 @@ import {
         return handleSudoCommand(args);
       case "history":
         return { lines: formatHistory() };
-      case "ls":
-        return handleLsCommand(args);
-      case "cd":
-        return handleCdCommand(args);
-      case "cat":
-        return handleCatCommand(args);
-      case "grep":
-      case "find":
-        return handleSearchCommand(args);
       case "theme":
         return handleThemeCommand(args);
+      case "typing":
+        return handleTypingCommand(args);
+      case "motion":
+        return handleMotionCommand(args);
       case "pet":
         return handlePetCommand(args);
       case "algorithms":
@@ -2987,6 +3591,56 @@ import {
     return { lines: [formatTemplate(messages.themeChanged, { theme: choice })] };
   }
 
+  function handleTypingCommand(args) {
+    const messages = getMessages();
+    if (!args || args.length === 0) {
+      return {
+        lines: [
+          formatTemplate(messages.typingCurrent || "Current typing speed: {{speed}}", {
+            speed: state.options.typingSpeed
+          }),
+          messages.typingUsage || "Use: typing [1-18]"
+        ]
+      };
+    }
+    const nextSpeed = Math.round(Number(args[0]));
+    if (!Number.isFinite(nextSpeed) || nextSpeed < 1 || nextSpeed > 18) {
+      return { lines: [messages.typingUsage || "Use: typing [1-18]"] };
+    }
+    state.options.typingSpeed = nextSpeed;
+    writeStoredValue(STORAGE_KEYS.typingSpeed, String(nextSpeed));
+    return {
+      lines: [
+        formatTemplate(messages.typingChanged || "Typing speed set to: {{speed}}", {
+          speed: state.options.typingSpeed
+        })
+      ]
+    };
+  }
+
+  function handleMotionCommand(args) {
+    const messages = getMessages();
+    const action = String(args?.[0] || "status").trim().toLowerCase();
+    if (action === "status") {
+      return {
+        lines: [
+          state.options.reducedMotion
+            ? messages.motionStatusReduced || "Reduced motion: enabled"
+            : messages.motionStatusFull || "Reduced motion: disabled"
+        ]
+      };
+    }
+    if (action === "on" || action === "reduce" || action === "low") {
+      applyReducedMotion(true, { persist: true });
+      return { lines: [messages.motionChangedReduced || "Reduced motion enabled."] };
+    }
+    if (action === "off" || action === "full" || action === "normal") {
+      applyReducedMotion(false, { persist: true });
+      return { lines: [messages.motionChangedFull || "Reduced motion disabled."] };
+    }
+    return { lines: [messages.motionUsage || "Use: motion [on|off|status]"] };
+  }
+
   function handlePetCommand(args) {
     const messages = getMessages();
     const action = String(args?.[0] || "").trim().toLowerCase();
@@ -3001,6 +3655,9 @@ import {
     }
 
     if (action === "off" || action === "hide") {
+      if (PET_ALWAYS_ACTIVE) {
+        return { lines: [messages.petAlwaysOn || "Mascote fixo: sempre ativo."] };
+      }
       if (!state.pet.active) {
         return { lines: [messages.petAlreadyInactive || "Mascote ja oculto."] };
       }
@@ -3009,9 +3666,7 @@ import {
     }
 
     if (action === "status") {
-      return {
-        lines: [state.pet.active ? messages.petStatusOn || "Mascote: ativo" : messages.petStatusOff || "Mascote: oculto"]
-      };
+      return { lines: [messages.petStatusOn || "Mascote: ativo"] };
     }
 
     if (action === "sheet" || action === "sprites") {
@@ -3026,7 +3681,7 @@ import {
       return { lines };
     }
 
-    return { lines: [isPt ? "Use: pet | pet on | pet off | pet status | pet sheet" : "Use: pet | pet on | pet off | pet status | pet sheet"] };
+    return { lines: [isPt ? "Use: pet | pet on | pet status | pet sheet" : "Use: pet | pet on | pet status | pet sheet"] };
   }
 
   function applyAction(action, origin) {
@@ -3076,6 +3731,7 @@ import {
   function setMode(mode) {
     const previousMode = state.mode;
     state.mode = mode;
+    writeStoredValue(STORAGE_KEYS.mode, mode);
     if (mode === "gui") {
       hideMode(dom.terminal);
       showMode(dom.gui);
@@ -3102,7 +3758,12 @@ import {
 
   function toggleStartMenu(event) {
     event.stopPropagation();
+    const willOpen = dom.startMenu.classList.contains("hidden");
     dom.startMenu.classList.toggle("hidden");
+    if (willOpen) {
+      const firstItem = getStartMenuItems()[0];
+      focusStartMenuItem(firstItem);
+    }
   }
 
   function showMode(element) {
@@ -3154,6 +3815,101 @@ import {
     runGuiCommand(command, "gui");
   }
 
+  function focusStartMenuItem(item) {
+    if (!item) return;
+    item.focus({ preventScroll: true });
+  }
+
+  function getStartMenuItems() {
+    return Array.from(dom.startMenu?.querySelectorAll("li[data-command]") || []);
+  }
+
+  function handleStartMenuKeydown(event) {
+    const items = getStartMenuItems();
+    if (!items.length) return;
+    const current = event.target.closest("li[data-command]");
+    const currentIndex = Math.max(0, items.indexOf(current));
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      dom.startMenu.classList.add("hidden");
+      dom.startButton?.focus({ preventScroll: true });
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusStartMenuItem(items[(currentIndex + 1) % items.length]);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusStartMenuItem(items[(currentIndex - 1 + items.length) % items.length]);
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      focusStartMenuItem(items[0]);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      focusStartMenuItem(items[items.length - 1]);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      if (!current) return;
+      event.preventDefault();
+      dom.startMenu.classList.add("hidden");
+      reactPetForGuiIcon(current.dataset.command, "open");
+      runGuiCommand(current.dataset.command, "gui");
+    }
+  }
+
+  function getDesktopIcons() {
+    return Array.from(dom.desktop?.querySelectorAll(".desktop-icon") || []);
+  }
+
+  function scoreDesktopCandidate(currentRect, candidateRect, direction) {
+    const dx = candidateRect.left - currentRect.left;
+    const dy = candidateRect.top - currentRect.top;
+    const axisGapX = Math.abs(dx);
+    const axisGapY = Math.abs(dy);
+
+    if (direction === "ArrowLeft" && dx >= -4) return Number.POSITIVE_INFINITY;
+    if (direction === "ArrowRight" && dx <= 4) return Number.POSITIVE_INFINITY;
+    if (direction === "ArrowUp" && dy >= -4) return Number.POSITIVE_INFINITY;
+    if (direction === "ArrowDown" && dy <= 4) return Number.POSITIVE_INFINITY;
+
+    const major = direction === "ArrowLeft" || direction === "ArrowRight" ? axisGapX : axisGapY;
+    const minor = direction === "ArrowLeft" || direction === "ArrowRight" ? axisGapY : axisGapX;
+    return major * 100 + minor;
+  }
+
+  function focusNextDesktopIcon(currentIcon, direction) {
+    const icons = getDesktopIcons();
+    if (!icons.length) return;
+    const currentRect = currentIcon.getBoundingClientRect();
+    let bestIcon = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    icons.forEach((icon) => {
+      if (icon === currentIcon) return;
+      const score = scoreDesktopCandidate(currentRect, icon.getBoundingClientRect(), direction);
+      if (score < bestScore) {
+        bestScore = score;
+        bestIcon = icon;
+      }
+    });
+
+    if (!bestIcon) return;
+    selectDesktopIcon(bestIcon);
+  }
+
   function selectDesktopIcon(icon) {
     if (selectedDesktopIcon && selectedDesktopIcon !== icon) {
       selectedDesktopIcon.classList.remove("selected");
@@ -3197,6 +3953,11 @@ import {
   function handleDesktopKeydown(event) {
     const icon = event.target.closest(".desktop-icon");
     if (!icon) return;
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+      event.preventDefault();
+      focusNextDesktopIcon(icon, event.key);
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       const command = icon.dataset.command;
@@ -3241,7 +4002,7 @@ import {
   function shouldTypeLines(lines) {
     if (!lines || lines.length === 0) return false;
     const totalChars = lines.reduce((sum, line) => sum + String(line || "").length, 0);
-    return lines.length >= 5 || totalChars >= 240;
+    return lines.length >= 8 || totalChars >= 420;
   }
 
   function appendOutputLines(lines, options = {}) {
@@ -3267,13 +4028,16 @@ import {
       const lineEl = document.createElement("div");
       lineEl.className = "terminal-line";
       dom.terminalOutput.append(lineEl);
+      trimTerminalOutput();
       scrollToBottom();
 
       const safeLine = line == null ? "" : String(line);
       const plain = removeAnsi(safeLine);
       let i = 0;
+      const chunk = plain.length >= 280 ? 6 : plain.length >= 160 ? 4 : plain.length >= 80 ? 3 : 2;
+      const tickMs = Math.max(1, Number(speed) || 1);
       const interval = setInterval(() => {
-        i += 1;
+        i += chunk;
         lineEl.textContent = plain.slice(0, i);
         scrollToBottom();
         if (i >= plain.length) {
@@ -3282,7 +4046,7 @@ import {
           renderLineContent(lineEl, safeLine);
           resolve();
         }
-      }, speed);
+      }, tickMs);
     });
   }
 
@@ -3299,6 +4063,7 @@ import {
       renderLineContent(lineEl, line);
     }
     dom.terminalOutput.append(lineEl);
+    trimTerminalOutput();
     scrollToBottom();
   }
 
@@ -3477,7 +4242,7 @@ import {
     }
   }
 
-  function setTheme(theme) {
+  function setTheme(theme, options = {}) {
     const normalized = String(theme || "").toLowerCase();
     const themeClass = normalized === "secret" ? "theme-secret" : `theme-${normalized}`;
     const allowed = normalized === "secret" ? state.secretUnlocked : THEMES.includes(normalized);
@@ -3488,6 +4253,9 @@ import {
     state.theme = normalized;
     updateThemeColor(normalized);
     updateMatrixState();
+    if (options.persist !== false) {
+      writeStoredValue(STORAGE_KEYS.theme, normalized);
+    }
     if (state.pet.active && previousTheme !== normalized) {
       reactPet("themeChange", { meta: { theme: normalized }, persistMs: PET_PERSIST_MS.themeChange });
     }
@@ -3498,15 +4266,48 @@ import {
     state.guiMono = Boolean(enabled);
     document.body.classList.toggle("gui-mono", state.guiMono);
     if (options.persist) {
-      localStorage.setItem("portfolioGuiMono", state.guiMono ? "1" : "0");
+      writeStoredValue(STORAGE_KEYS.guiMono, state.guiMono ? "1" : "0");
     }
     updateMonoToggle();
   }
 
-  function restoreGuiPreferences() {
-    const stored = localStorage.getItem("portfolioGuiMono");
-    if (stored != null) {
-      applyGuiMono(stored === "1");
+  function applyReducedMotion(enabled, options = {}) {
+    state.options.reducedMotion = Boolean(enabled);
+    document.body.classList.toggle("reduced-motion", state.options.reducedMotion);
+    if (options.persist) {
+      writeStoredValue(STORAGE_KEYS.reducedMotion, state.options.reducedMotion ? "1" : "0");
+    }
+  }
+
+  function restoreUserPreferences() {
+    const storedTheme = String(readStoredValue(STORAGE_KEYS.theme) || "").toLowerCase();
+    if (storedTheme && (THEMES.includes(storedTheme) || (storedTheme === "secret" && state.secretUnlocked))) {
+      state.theme = storedTheme;
+    }
+
+    const storedMode = String(readStoredValue(STORAGE_KEYS.mode) || "").toLowerCase();
+    if (storedMode === "cli" || storedMode === "gui") {
+      state.mode = storedMode;
+    }
+
+    const storedTypingSpeed = toFiniteNumber(readStoredValue(STORAGE_KEYS.typingSpeed), state.options.typingSpeed);
+    state.options.typingSpeed = Math.min(18, Math.max(1, Math.round(storedTypingSpeed)));
+
+    const storedGuiMono = normalizeStoredBoolean(readStoredValue(STORAGE_KEYS.guiMono));
+    if (storedGuiMono != null) {
+      applyGuiMono(storedGuiMono, { persist: false });
+    }
+
+    const systemReducedMotion =
+      Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const storedReducedMotion = normalizeStoredBoolean(readStoredValue(STORAGE_KEYS.reducedMotion));
+    applyReducedMotion(storedReducedMotion == null ? systemReducedMotion : storedReducedMotion, {
+      persist: false
+    });
+
+    const storedPetActive = normalizeStoredBoolean(readStoredValue(STORAGE_KEYS.petActive));
+    if (storedPetActive != null) {
+      state.pet.active = PET_ALWAYS_ACTIVE ? true : storedPetActive;
     }
   }
 
@@ -3717,7 +4518,19 @@ import {
         appendEducationContent(wrapper, content.education);
         break;
       case "algorithms":
-        wrapper.append(createAlgorithmViewer());
+        {
+          const shell = document.createElement("div");
+          shell.className = "algo-viewer";
+          shell.textContent = messages.algoStatusReady || "Pronto para iniciar.";
+          shell.__windowMeta = {
+            size: { width: 520, height: 420 },
+            onClose: () => {
+              shell.__cleanup?.();
+            }
+          };
+          wrapper.append(shell);
+          loadAlgorithmViewer(shell);
+        }
         break;
       case "cnn":
         {
@@ -3732,7 +4545,22 @@ import {
         }
         break;
       case "snake":
-        wrapper.append(createSnakeGame());
+        {
+          const shell = document.createElement("div");
+          shell.className = "snake-game";
+          shell.textContent = messages.snakeHint || "Loading Snake...";
+          shell.__windowMeta = {
+            size: { width: 360, height: 420 },
+            onClose: () => {
+              shell.__cleanup?.();
+            },
+            onFocus: () => {
+              shell.__focus?.();
+            }
+          };
+          wrapper.append(shell);
+          loadSnakeGame(shell);
+        }
         break;
       default:
         wrapper.textContent = getUi().noContent;
@@ -3749,7 +4577,55 @@ import {
       })
       .catch(() => {
         container.textContent = getMessages().cnnStatusError || "Erro ao carregar o modelo.";
+        showErrorBanner(container.textContent, 2600);
       });
+  }
+
+  function loadAlgorithmViewer(container) {
+    import(`./modules/algorithmViewer.js?v=${APP_VERSION}`)
+      .then((mod) => {
+        container.textContent = "";
+        mod.mountAlgorithmViewer(container, { getMessages, createGuiButton });
+      })
+      .catch((error) => {
+        const fallback =
+          state.language === "pt"
+            ? "Erro ao carregar visualizador de algoritmos."
+            : "Failed to load algorithm viewer.";
+        container.textContent = fallback;
+        showErrorBanner(fallback, 2600);
+        logClientError("loadAlgorithmViewer", error);
+      });
+  }
+
+  function loadSnakeGame(container) {
+    import(`./modules/snakeGame.js?v=${APP_VERSION}`)
+      .then((mod) => {
+        container.textContent = "";
+        mod.mountSnakeGame(container, {
+          getMessages,
+          createGuiButton,
+          formatTemplate,
+          isGuiMode: () => state.mode === "gui"
+        });
+      })
+      .catch((error) => {
+        const fallback = state.language === "pt" ? "Erro ao carregar Snake." : "Failed to load Snake.";
+        container.textContent = fallback;
+        showErrorBanner(fallback, 2600);
+        logClientError("loadSnakeGame", error);
+      });
+  }
+
+  function prewarmGuiModules() {
+    const defer = window.requestIdleCallback
+      ? (cb) => window.requestIdleCallback(cb, { timeout: 2200 })
+      : (cb) => setTimeout(cb, 900);
+    defer(() => {
+      import(`./modules/algorithmViewer.js?v=${APP_VERSION}`).catch(() => null);
+      import(`./modules/snakeGame.js?v=${APP_VERSION}`).catch(() => null);
+      import(`./modules/cnnDemo.js?v=${APP_VERSION}`).catch(() => null);
+    });
   }
 
   function createGuiButton(label, onClick) {
@@ -3761,932 +4637,6 @@ import {
       button.addEventListener("click", onClick);
     }
     return button;
-  }
-
-  function createAlgorithmViewer() {
-    const messages = getMessages();
-    const wrapper = document.createElement("div");
-    wrapper.className = "algo-viewer";
-
-    const hint = document.createElement("div");
-    hint.className = "algo-hint";
-    hint.textContent = messages.algoHint;
-    wrapper.append(hint);
-
-    const controls = document.createElement("div");
-    controls.className = "algo-controls";
-
-    const algoSelect = document.createElement("select");
-    algoSelect.className = "gui-select";
-    algoSelect.setAttribute("aria-label", messages.algoSelectLabel || "Select algorithm");
-    [
-      { value: "bubble", label: messages.algoBubbleLabel },
-      { value: "selection", label: messages.algoSelectionLabel },
-      { value: "merge", label: messages.algoMergeLabel },
-      { value: "quick", label: messages.algoQuickLabel },
-      { value: "heap", label: messages.algoHeapLabel },
-      { value: "dijkstra", label: messages.algoDijkstraLabel }
-    ].forEach((algo) => {
-      const option = document.createElement("option");
-      option.value = algo.value;
-      option.textContent = algo.label;
-      algoSelect.append(option);
-    });
-
-    const randomBtn = createGuiButton(messages.algoRandom, () => randomize());
-    const runBtn = createGuiButton(messages.algoRun, () => toggleRun());
-    const stepBtn = createGuiButton(messages.algoStep, () => stepOnce());
-
-    controls.append(algoSelect, randomBtn, runBtn, stepBtn);
-    wrapper.append(controls);
-
-    const view = document.createElement("div");
-    view.className = "algo-view";
-
-    const bars = document.createElement("div");
-    bars.className = "algo-bars";
-
-    const graph = document.createElement("div");
-    graph.className = "algo-graph";
-
-    view.append(bars, graph);
-    wrapper.append(view);
-
-    const status = document.createElement("div");
-    status.className = "algo-status";
-    status.textContent = messages.algoStatusReady;
-    wrapper.append(status);
-
-    const BAR_COUNT = 18;
-    const graphData = buildDijkstraGraph();
-    const graphElements = buildGraphSvg(graphData, graph);
-    let values = buildRandomValues();
-    let steps = [];
-    let stepIndex = 0;
-    let running = false;
-    let intervalId = null;
-
-    function buildRandomValues() {
-      return Array.from({ length: BAR_COUNT }, () => Math.floor(20 + Math.random() * 80));
-    }
-
-    function isGraphAlgo(algo) {
-      return algo === "dijkstra";
-    }
-
-    function buildDijkstraGraph() {
-      return {
-        nodes: [
-          { id: "A", x: 40, y: 40 },
-          { id: "B", x: 140, y: 20 },
-          { id: "C", x: 240, y: 50 },
-          { id: "D", x: 70, y: 130 },
-          { id: "E", x: 170, y: 120 },
-          { id: "F", x: 260, y: 140 }
-        ],
-        edges: [
-          { from: "A", to: "B", weight: 4 },
-          { from: "A", to: "D", weight: 2 },
-          { from: "B", to: "C", weight: 6 },
-          { from: "B", to: "E", weight: 5 },
-          { from: "D", to: "E", weight: 1 },
-          { from: "E", to: "C", weight: 2 },
-          { from: "D", to: "F", weight: 7 },
-          { from: "E", to: "F", weight: 3 }
-        ]
-      };
-    }
-
-    function getEdgeKey(from, to) {
-      return [from, to].sort().join("-");
-    }
-
-    function buildDistanceLabels(distances) {
-      const labels = {};
-      graphNodeIds.forEach((id) => {
-        const value = distances?.[id];
-        labels[id] = Number.isFinite(value) ? String(value) : "INF";
-      });
-      return labels;
-    }
-
-    function buildGraphSvg(data, container) {
-      container.innerHTML = "";
-      const svgNS = "http://www.w3.org/2000/svg";
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", "0 0 300 180");
-      svg.setAttribute("aria-hidden", "true");
-      svg.classList.add("algo-graph-svg");
-
-      const nodeMap = new Map(data.nodes.map((node) => [node.id, node]));
-      const edgeEls = new Map();
-      const nodeEls = new Map();
-      const distEls = new Map();
-
-      data.edges.forEach((edge) => {
-        const from = nodeMap.get(edge.from);
-        const to = nodeMap.get(edge.to);
-        if (!from || !to) return;
-        const line = document.createElementNS(svgNS, "line");
-        line.setAttribute("x1", from.x);
-        line.setAttribute("y1", from.y);
-        line.setAttribute("x2", to.x);
-        line.setAttribute("y2", to.y);
-        line.classList.add("algo-edge");
-        const key = getEdgeKey(edge.from, edge.to);
-        line.dataset.edge = key;
-        edgeEls.set(key, line);
-        svg.append(line);
-
-        const weight = document.createElementNS(svgNS, "text");
-        weight.setAttribute("x", (from.x + to.x) / 2);
-        weight.setAttribute("y", (from.y + to.y) / 2 - 4);
-        weight.classList.add("algo-edge-weight");
-        weight.textContent = edge.weight;
-        svg.append(weight);
-      });
-
-      data.nodes.forEach((node) => {
-        const group = document.createElementNS(svgNS, "g");
-        group.classList.add("algo-node");
-        group.dataset.node = node.id;
-
-        const circle = document.createElementNS(svgNS, "circle");
-        circle.setAttribute("cx", node.x);
-        circle.setAttribute("cy", node.y);
-        circle.setAttribute("r", "14");
-        group.append(circle);
-
-        const label = document.createElementNS(svgNS, "text");
-        label.setAttribute("x", node.x);
-        label.setAttribute("y", node.y + 4);
-        label.classList.add("algo-node-label");
-        label.textContent = node.id;
-        group.append(label);
-
-        const dist = document.createElementNS(svgNS, "text");
-        dist.setAttribute("x", node.x);
-        dist.setAttribute("y", node.y + 26);
-        dist.classList.add("algo-node-distance");
-        dist.textContent = "INF";
-        group.append(dist);
-
-        nodeEls.set(node.id, group);
-        distEls.set(node.id, dist);
-        svg.append(group);
-      });
-
-      container.append(svg);
-      return { svg, nodeEls, distEls, edgeEls };
-    }
-
-    function buildSteps() {
-      const algo = algoSelect.value;
-      if (algo === "selection") {
-        return buildSelectionSteps(values);
-      }
-      if (algo === "merge") {
-        return buildMergeSteps(values);
-      }
-      if (algo === "quick") {
-        return buildQuickSteps(values);
-      }
-      if (algo === "heap") {
-        return buildHeapSteps(values);
-      }
-      if (algo === "dijkstra") {
-        return buildDijkstraSteps(graphData);
-      }
-      return buildBubbleSteps(values);
-    }
-
-    function buildBubbleSteps(source) {
-      const arr = source.slice();
-      const output = [];
-      for (let i = 0; i < arr.length; i += 1) {
-        for (let j = 0; j < arr.length - i - 1; j += 1) {
-          output.push({ values: arr.slice(), highlight: [j, j + 1], swap: false });
-          if (arr[j] > arr[j + 1]) {
-            const temp = arr[j];
-            arr[j] = arr[j + 1];
-            arr[j + 1] = temp;
-            output.push({ values: arr.slice(), highlight: [j, j + 1], swap: true });
-          }
-        }
-      }
-      return output;
-    }
-
-    function buildSelectionSteps(source) {
-      const arr = source.slice();
-      const output = [];
-      for (let i = 0; i < arr.length - 1; i += 1) {
-        let minIndex = i;
-        for (let j = i + 1; j < arr.length; j += 1) {
-          output.push({ values: arr.slice(), highlight: [minIndex, j], swap: false });
-          if (arr[j] < arr[minIndex]) {
-            minIndex = j;
-          }
-        }
-        if (minIndex !== i) {
-          const temp = arr[i];
-          arr[i] = arr[minIndex];
-          arr[minIndex] = temp;
-          output.push({ values: arr.slice(), highlight: [i, minIndex], swap: true });
-        }
-      }
-      return output;
-    }
-
-    function buildMergeSteps(source) {
-      const arr = source.slice();
-      const temp = source.slice();
-      const output = [];
-
-      function mergeSort(start, end) {
-        if (end - start <= 1) return;
-        const mid = Math.floor((start + end) / 2);
-        mergeSort(start, mid);
-        mergeSort(mid, end);
-        let i = start;
-        let j = mid;
-        let k = start;
-        while (i < mid || j < end) {
-          if (j >= end || (i < mid && arr[i] <= arr[j])) {
-            temp[k] = arr[i];
-            i += 1;
-          } else {
-            temp[k] = arr[j];
-            j += 1;
-          }
-          output.push({ values: temp.slice(), highlight: [k], swap: false });
-          k += 1;
-        }
-        for (let idx = start; idx < end; idx += 1) {
-          arr[idx] = temp[idx];
-          output.push({ values: arr.slice(), highlight: [idx], swap: true });
-        }
-      }
-
-      mergeSort(0, arr.length);
-      return output;
-    }
-
-    function buildQuickSteps(source) {
-      const arr = source.slice();
-      const output = [];
-
-      function swap(i, j) {
-        const temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-      }
-
-      function partition(low, high) {
-        const pivotValue = arr[high];
-        let i = low;
-        for (let j = low; j < high; j += 1) {
-          output.push({
-            values: arr.slice(),
-            highlight: [j, high],
-            pivot: high,
-            swap: false
-          });
-          if (arr[j] < pivotValue) {
-            if (i !== j) {
-              swap(i, j);
-              output.push({
-                values: arr.slice(),
-                highlight: [i, j],
-                pivot: high,
-                swap: true
-              });
-            }
-            i += 1;
-          }
-        }
-        if (i !== high) {
-          swap(i, high);
-          output.push({
-            values: arr.slice(),
-            highlight: [i, high],
-            pivot: i,
-            swap: true
-          });
-        }
-        return i;
-      }
-
-      function quickSort(low, high) {
-        if (low >= high) return;
-        const pivotIndex = partition(low, high);
-        quickSort(low, pivotIndex - 1);
-        quickSort(pivotIndex + 1, high);
-      }
-
-      quickSort(0, arr.length - 1);
-      return output;
-    }
-
-    function buildHeapSteps(source) {
-      const arr = source.slice();
-      const output = [];
-      const size = arr.length;
-
-      function swap(i, j) {
-        const temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-      }
-
-      function heapify(heapSize, rootIndex) {
-        let largest = rootIndex;
-        const left = rootIndex * 2 + 1;
-        const right = rootIndex * 2 + 2;
-
-        if (left < heapSize) {
-          output.push({
-            values: arr.slice(),
-            highlight: [rootIndex, left],
-            swap: false
-          });
-          if (arr[left] > arr[largest]) {
-            largest = left;
-          }
-        }
-
-        if (right < heapSize) {
-          output.push({
-            values: arr.slice(),
-            highlight: [rootIndex, right],
-            swap: false
-          });
-          if (arr[right] > arr[largest]) {
-            largest = right;
-          }
-        }
-
-        if (largest !== rootIndex) {
-          swap(rootIndex, largest);
-          output.push({
-            values: arr.slice(),
-            highlight: [rootIndex, largest],
-            swap: true
-          });
-          heapify(heapSize, largest);
-        }
-      }
-
-      for (let i = Math.floor(size / 2) - 1; i >= 0; i -= 1) {
-        heapify(size, i);
-      }
-
-      for (let end = size - 1; end > 0; end -= 1) {
-        swap(0, end);
-        output.push({
-          values: arr.slice(),
-          highlight: [0, end],
-          swap: true
-        });
-        heapify(end, 0);
-      }
-
-      return output;
-    }
-
-    function buildDijkstraSteps(data) {
-      const nodes = data.nodes.map((node) => node.id);
-      const adjacency = new Map(nodes.map((id) => [id, []]));
-      data.edges.forEach((edge) => {
-        adjacency.get(edge.from)?.push({ node: edge.to, weight: edge.weight });
-        adjacency.get(edge.to)?.push({ node: edge.from, weight: edge.weight });
-      });
-
-      const distances = {};
-      nodes.forEach((id) => {
-        distances[id] = Number.POSITIVE_INFINITY;
-      });
-      const start = nodes[0];
-      distances[start] = 0;
-
-      const visited = new Set();
-      const output = [];
-
-      while (visited.size < nodes.length) {
-        let current = null;
-        let best = Number.POSITIVE_INFINITY;
-        nodes.forEach((id) => {
-          if (!visited.has(id) && distances[id] < best) {
-            best = distances[id];
-            current = id;
-          }
-        });
-        if (!current) break;
-        output.push({
-          type: "graph",
-          current,
-          visited: Array.from(visited),
-          distances: { ...distances }
-        });
-        visited.add(current);
-        const neighbors = adjacency.get(current) || [];
-        neighbors.forEach((neighbor) => {
-          if (visited.has(neighbor.node)) return;
-          const candidate = distances[current] + neighbor.weight;
-          if (candidate < distances[neighbor.node]) {
-            distances[neighbor.node] = candidate;
-            output.push({
-              type: "graph",
-              current,
-              edge: { from: current, to: neighbor.node },
-              visited: Array.from(visited),
-              distances: { ...distances }
-            });
-          }
-        });
-      }
-
-      output.push({
-        type: "graph",
-        current: null,
-        visited: Array.from(visited),
-        distances: { ...distances },
-        done: true
-      });
-
-      return output;
-    }
-
-    function ensureBars() {
-      if (bars.children.length === BAR_COUNT) return;
-      bars.innerHTML = "";
-      for (let i = 0; i < BAR_COUNT; i += 1) {
-        const bar = document.createElement("div");
-        bar.className = "algo-bar";
-        bars.append(bar);
-      }
-    }
-
-    function renderBars(step) {
-      ensureBars();
-      const highlights = step?.highlight || [];
-      const isSwap = step?.swap;
-      const pivotIndex = Number.isInteger(step?.pivot) ? step.pivot : null;
-      Array.from(bars.children).forEach((bar, index) => {
-        bar.style.height = `${values[index]}%`;
-        bar.classList.toggle("active", highlights.includes(index));
-        bar.classList.toggle("swap", isSwap && highlights.includes(index));
-        bar.classList.toggle("pivot", pivotIndex === index);
-      });
-    }
-
-    function renderGraphBase() {
-      renderGraph({
-        current: null,
-        visited: [],
-        distances: buildInitialDistances(graphData)
-      });
-    }
-
-    function renderGraph(step) {
-      if (!graphElements) return;
-      const visited = new Set(step?.visited || []);
-      const current = step?.current;
-      const labels =
-        step?.labels ||
-        buildDistanceLabels(step?.distances || buildInitialDistances(graphData));
-      graphElements.nodeEls.forEach((group, id) => {
-        group.classList.toggle("visited", visited.has(id));
-        group.classList.toggle("current", current === id);
-        const distEl = graphElements.distEls.get(id);
-        if (distEl) {
-          distEl.textContent = labels[id] ?? "";
-        }
-      });
-
-      graphElements.edgeEls.forEach((line) => line.classList.remove("active", "selected"));
-      const selectedEdges = step?.selectedEdges || [];
-      selectedEdges.forEach((edge) => {
-        const key = getEdgeKey(edge.from, edge.to);
-        const edgeEl = graphElements.edgeEls.get(key);
-        if (edgeEl) edgeEl.classList.add("selected");
-      });
-      if (step?.edge) {
-        const key = getEdgeKey(step.edge.from, step.edge.to);
-        const edgeEl = graphElements.edgeEls.get(key);
-        if (edgeEl) edgeEl.classList.add("active");
-      }
-    }
-
-    function buildInitialDistances(data) {
-      const distances = {};
-      data.nodes.forEach((node, index) => {
-        distances[node.id] = index === 0 ? 0 : Number.POSITIVE_INFINITY;
-      });
-      return distances;
-    }
-
-    function prepareView() {
-      const graphMode = isGraphAlgo(algoSelect.value);
-      bars.style.display = graphMode ? "none" : "flex";
-      graph.style.display = graphMode ? "block" : "none";
-      randomBtn.textContent = graphMode ? messages.algoReset : messages.algoRandom;
-    }
-
-    function updateRunLabel() {
-      runBtn.textContent = running ? messages.algoPause : messages.algoRun;
-    }
-
-    function updateStatus(text) {
-      status.textContent = text;
-    }
-
-    function resetSteps() {
-      steps = [];
-      stepIndex = 0;
-      updateStatus(messages.algoStatusReady);
-      if (isGraphAlgo(algoSelect.value)) {
-        renderGraphBase();
-      }
-    }
-
-    function randomize() {
-      if (isGraphAlgo(algoSelect.value)) {
-        running = false;
-        clearInterval(intervalId);
-        intervalId = null;
-        resetSteps();
-        updateRunLabel();
-        return;
-      }
-      values = buildRandomValues();
-      running = false;
-      clearInterval(intervalId);
-      intervalId = null;
-      resetSteps();
-      updateRunLabel();
-      renderBars();
-    }
-
-    function applyStep() {
-      const step = steps[stepIndex];
-      if (!step) return false;
-      if (isGraphAlgo(algoSelect.value)) {
-        renderGraph(step);
-      } else {
-        values = step.values.slice();
-        renderBars(step);
-      }
-      stepIndex += 1;
-      return stepIndex < steps.length;
-    }
-
-    function stepOnce() {
-      if (!steps.length || stepIndex >= steps.length) {
-        steps = buildSteps();
-        stepIndex = 0;
-      }
-      if (!applyStep()) {
-        updateStatus(messages.algoStatusDone);
-      } else {
-        updateStatus(messages.algoStatusRunning);
-      }
-    }
-
-    function startRun() {
-      if (!steps.length || stepIndex >= steps.length) {
-        steps = buildSteps();
-        stepIndex = 0;
-      }
-      if (!steps.length) {
-        updateStatus(messages.algoStatusDone);
-        return;
-      }
-      running = true;
-      updateRunLabel();
-      updateStatus(messages.algoStatusRunning);
-      intervalId = setInterval(() => {
-        const hasMore = applyStep();
-        if (!hasMore) {
-          stopRun();
-          updateStatus(messages.algoStatusDone);
-        }
-      }, 140);
-    }
-
-    function stopRun() {
-      running = false;
-      clearInterval(intervalId);
-      intervalId = null;
-      updateRunLabel();
-    }
-
-    function toggleRun() {
-      if (running) {
-        stopRun();
-        updateStatus(messages.algoStatusReady);
-        return;
-      }
-      startRun();
-    }
-
-    algoSelect.addEventListener("change", () => {
-      stopRun();
-      resetSteps();
-      prepareView();
-      if (!isGraphAlgo(algoSelect.value)) {
-        renderBars();
-      }
-    });
-
-    prepareView();
-    renderBars();
-    updateRunLabel();
-
-    wrapper.__windowMeta = {
-      size: { width: 520, height: 420 },
-      onClose: () => {
-        clearInterval(intervalId);
-      }
-    };
-
-    return wrapper;
-  }
-
-  function createSnakeGame() {
-    const messages = getMessages();
-    const wrapper = document.createElement("div");
-    wrapper.className = "snake-game";
-    wrapper.tabIndex = 0;
-
-    const hint = document.createElement("div");
-    hint.className = "snake-hint";
-    hint.textContent = messages.snakeHint;
-    wrapper.append(hint);
-
-    const controls = document.createElement("div");
-    controls.className = "snake-controls";
-
-    const startBtn = createGuiButton(messages.snakeStart, () => toggleRun());
-    const restartBtn = createGuiButton(messages.snakeRestart, () => resetGame());
-    controls.append(startBtn, restartBtn);
-    wrapper.append(controls);
-
-    const score = document.createElement("div");
-    score.className = "snake-score";
-    wrapper.append(score);
-
-    const status = document.createElement("div");
-    status.className = "snake-status";
-    wrapper.append(status);
-
-    const canvas = document.createElement("canvas");
-    canvas.className = "snake-canvas";
-    const gridSize = 16;
-    const cellSize = 16;
-    canvas.width = gridSize * cellSize;
-    canvas.height = gridSize * cellSize;
-    wrapper.append(canvas);
-
-    const ctx = canvas.getContext("2d");
-    let snake = [];
-    let direction = { x: 1, y: 0 };
-    let pendingDirection = { x: 1, y: 0 };
-    let food = null;
-    let scoreValue = 0;
-    let running = false;
-    let intervalId = null;
-    let gameOver = false;
-    let touchStart = null;
-    let touchMoved = false;
-    const SWIPE_THRESHOLD = 14;
-
-    function updateScore() {
-      score.textContent = formatTemplate(messages.snakeScore, { score: scoreValue });
-    }
-
-    function setStatus(text) {
-      status.textContent = text;
-    }
-
-    function buildInitialSnake() {
-      return [
-        { x: 8, y: 8 },
-        { x: 7, y: 8 },
-        { x: 6, y: 8 }
-      ];
-    }
-
-    function spawnFood() {
-      let candidate = null;
-      let attempts = 0;
-      do {
-        candidate = {
-          x: Math.floor(Math.random() * gridSize),
-          y: Math.floor(Math.random() * gridSize)
-        };
-        attempts += 1;
-      } while (snake.some((segment) => segment.x === candidate.x && segment.y === candidate.y) && attempts < 200);
-      return candidate;
-    }
-
-    function resetGame() {
-      stopRun();
-      snake = buildInitialSnake();
-      direction = { x: 1, y: 0 };
-      pendingDirection = { x: 1, y: 0 };
-      food = spawnFood();
-      scoreValue = 0;
-      gameOver = false;
-      updateScore();
-      setStatus("");
-      render();
-      updateStartLabel();
-    }
-
-    function updateStartLabel() {
-      if (gameOver) {
-        startBtn.textContent = messages.snakeStart;
-        return;
-      }
-      startBtn.textContent = running ? messages.snakePause : messages.snakeStart;
-    }
-
-    function stopRun() {
-      running = false;
-      clearInterval(intervalId);
-      intervalId = null;
-      updateStartLabel();
-    }
-
-    function startRun() {
-      if (gameOver) {
-        resetGame();
-      }
-      running = true;
-      updateStartLabel();
-      setStatus("");
-      intervalId = setInterval(step, 140);
-    }
-
-    function toggleRun() {
-      if (running) {
-        stopRun();
-        return;
-      }
-      startRun();
-    }
-
-    function step() {
-      direction = pendingDirection;
-      const head = { ...snake[0] };
-      head.x += direction.x;
-      head.y += direction.y;
-
-      if (head.x < 0 || head.y < 0 || head.x >= gridSize || head.y >= gridSize) {
-        endGame();
-        return;
-      }
-      if (snake.some((segment) => segment.x === head.x && segment.y === head.y)) {
-        endGame();
-        return;
-      }
-
-      snake.unshift(head);
-      if (food && head.x === food.x && head.y === food.y) {
-        scoreValue += 1;
-        food = spawnFood();
-        updateScore();
-      } else {
-        snake.pop();
-      }
-      render();
-    }
-
-    function endGame() {
-      gameOver = true;
-      stopRun();
-      setStatus(messages.snakeGameOver);
-    }
-
-    function renderGrid() {
-      ctx.fillStyle = "#f2f2f2";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = "#d0d0d0";
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= gridSize; i += 1) {
-        const pos = i * cellSize;
-        ctx.beginPath();
-        ctx.moveTo(pos, 0);
-        ctx.lineTo(pos, canvas.height);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, pos);
-        ctx.lineTo(canvas.width, pos);
-        ctx.stroke();
-      }
-    }
-
-    function render() {
-      renderGrid();
-      ctx.fillStyle = "#1f7a1f";
-      snake.forEach((segment, index) => {
-        ctx.fillStyle = index === 0 ? "#0c5a0c" : "#1f7a1f";
-        ctx.fillRect(segment.x * cellSize + 1, segment.y * cellSize + 1, cellSize - 2, cellSize - 2);
-      });
-      if (food) {
-        ctx.fillStyle = "#b33a3a";
-        ctx.fillRect(food.x * cellSize + 2, food.y * cellSize + 2, cellSize - 4, cellSize - 4);
-      }
-    }
-
-    function handleKey(event) {
-      if (state.mode !== "gui") return;
-      if (!wrapper.contains(document.activeElement)) return;
-      const key = event.key.toLowerCase();
-      if (key === " " || key === "spacebar") {
-        event.preventDefault();
-        toggleRun();
-        return;
-      }
-      const next = {
-        arrowup: { x: 0, y: -1 },
-        w: { x: 0, y: -1 },
-        arrowdown: { x: 0, y: 1 },
-        s: { x: 0, y: 1 },
-        arrowleft: { x: -1, y: 0 },
-        a: { x: -1, y: 0 },
-        arrowright: { x: 1, y: 0 },
-        d: { x: 1, y: 0 }
-      }[key];
-      if (!next) return;
-      event.preventDefault();
-      if (next.x === -direction.x && next.y === -direction.y) return;
-      pendingDirection = next;
-    }
-
-    function handleTouchStart(event) {
-      if (state.mode !== "gui") return;
-      const touch = event.touches?.[0];
-      if (!touch) return;
-      touchStart = { x: touch.clientX, y: touch.clientY };
-      touchMoved = false;
-    }
-
-    function handleTouchMove(event) {
-      if (!touchStart) return;
-      const touch = event.touches?.[0];
-      if (!touch) return;
-      const dx = touch.clientX - touchStart.x;
-      const dy = touch.clientY - touchStart.y;
-      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
-      event.preventDefault();
-      touchMoved = true;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        const next = dx > 0 ? { x: 1, y: 0 } : { x: -1, y: 0 };
-        if (!(next.x === -direction.x && next.y === -direction.y)) {
-          pendingDirection = next;
-        }
-      } else {
-        const next = dy > 0 ? { x: 0, y: 1 } : { x: 0, y: -1 };
-        if (!(next.x === -direction.x && next.y === -direction.y)) {
-          pendingDirection = next;
-        }
-      }
-      touchStart = null;
-    }
-
-    function handleTouchEnd() {
-      if (!touchStart) return;
-      if (!touchMoved) {
-        toggleRun();
-      }
-      touchStart = null;
-    }
-
-    wrapper.addEventListener("pointerdown", () => wrapper.focus({ preventScroll: true }));
-    canvas.addEventListener("touchstart", handleTouchStart, { passive: true });
-    canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
-    canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
-    window.addEventListener("keydown", handleKey);
-
-    resetGame();
-
-    wrapper.__windowMeta = {
-      size: { width: 360, height: 420 },
-      onClose: () => {
-        clearInterval(intervalId);
-        window.removeEventListener("keydown", handleKey);
-        canvas.removeEventListener("touchstart", handleTouchStart);
-        canvas.removeEventListener("touchmove", handleTouchMove);
-        canvas.removeEventListener("touchend", handleTouchEnd);
-      },
-      onFocus: () => {
-        wrapper.focus({ preventScroll: true });
-      }
-    };
-
-    return wrapper;
   }
 
   function appendAboutContent(wrapper, content) {
@@ -4991,6 +4941,15 @@ import {
     dom.terminal.scrollTop = dom.terminal.scrollHeight;
   }
 
+  function trimTerminalOutput(maxLines = TERMINAL_MAX_LINES) {
+    if (!dom.terminalOutput) return;
+    const overflow = dom.terminalOutput.children.length - maxLines;
+    if (overflow <= 0) return;
+    for (let i = 0; i < overflow; i += 1) {
+      dom.terminalOutput.firstElementChild?.remove();
+    }
+  }
+
   function cleanupServiceWorkerForLocalDev() {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker
@@ -5048,8 +5007,9 @@ import {
           });
         });
       })
-      .catch(() => {
-        // Silent failure: app should keep running even if SW registration fails.
+      .catch((error) => {
+        // Falha silenciosa: o aplicativo deve continuar em execução mesmo se o registro do software falhar.
+        logClientError("registerServiceWorker", error);
       });
   }
 
@@ -5060,12 +5020,14 @@ import {
     initCustomCursor();
     state.language = resolveInitialLanguage();
     state.locale = getLocaleForLanguage(state.language);
+    restoreUserPreferences();
     registerServiceWorker();
     await loadContent();
     applyLanguage(state.language, { persist: false, announce: false });
-    setTheme(state.theme);
-    restoreGuiPreferences();
+    setTheme(state.theme, { persist: false });
     initTerminal();
+    setPetActive(state.pet.active || PET_ALWAYS_ACTIVE);
+    prewarmGuiModules();
   }
 
   init();

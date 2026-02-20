@@ -19,6 +19,10 @@
   --gui-taskbar: #c0c0c0;
   --gui-start: #c0c0c0;
   --taskbar-height: 40px;
+  --pet-panel-width: 220px;
+  --pet-art-width: 164px;
+  --pet-art-height: 92px;
+  --pet-bubble-max-width: 220px;
   --pet-bubble-border: rgba(138, 226, 52, 0.45);
   --pet-bubble-bg: rgba(8, 10, 16, 0.92);
   --pet-shell-border: rgba(255, 255, 255, 0.2);
@@ -122,6 +126,31 @@ body.has-custom-cursor textarea {
   cursor: text;
 }
 
+.error-banner {
+  position: fixed;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -12px);
+  z-index: 4100;
+  min-width: min(420px, 88vw);
+  max-width: min(640px, 92vw);
+  padding: 8px 12px;
+  border: 1px solid #ef2929;
+  background: rgba(30, 8, 8, 0.95);
+  color: #ffd8d8;
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.error-banner.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 #custom-cursor {
   position: fixed;
   width: 24px;
@@ -167,8 +196,13 @@ body.has-custom-cursor textarea {
   position: fixed;
   right: 14px;
   bottom: calc(var(--taskbar-height) + 14px + env(safe-area-inset-bottom, 0px));
-  min-width: 144px;
+  width: var(--pet-panel-width);
+  min-width: var(--pet-panel-width);
+  max-width: var(--pet-panel-width);
+  height: var(--pet-art-height);
   z-index: 2600;
+  display: block;
+  overflow: visible;
   pointer-events: none;
   -webkit-user-select: none;
   user-select: none;
@@ -180,26 +214,13 @@ body.has-custom-cursor textarea {
   animation: petFloat 2.8s ease-in-out infinite;
 }
 
-#pet-mascot.is-react-click {
-  transform: translateY(-2px) scale(1.05);
-}
-
-#pet-mascot.is-react-key {
-  transform: translateY(1px) scale(0.98);
-}
-
-#pet-mascot.is-react-command {
-  transform: translateY(-1px) scale(1.02);
-}
-
-#pet-mascot.is-react-error {
-  transform: translateY(1px) scale(0.97);
-}
-
 .pet-bubble {
-  margin: 0 0 6px auto;
-  max-width: 220px;
-  width: max-content;
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--pet-art-height) + 8px);
+  margin: 0;
+  max-width: var(--pet-bubble-max-width);
+  width: fit-content;
   padding: 6px 9px;
   border: 1px solid var(--pet-bubble-border);
   background: var(--pet-bubble-bg);
@@ -207,38 +228,400 @@ body.has-custom-cursor textarea {
   font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Cascadia Mono", "Consolas", monospace;
   font-size: 12px;
   line-height: 1.2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  transform-origin: bottom right;
+  pointer-events: none;
   opacity: 0;
   transform: translateY(4px);
+  will-change: transform, opacity;
   transition: opacity 120ms ease, transform 120ms ease;
 }
 
 .pet-bubble.is-visible {
   opacity: 1;
   transform: translateY(0);
+  animation: petBubblePop 180ms cubic-bezier(0.2, 0.85, 0.25, 1.2) both;
+}
+
+.pet-bubble::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: -7px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid var(--pet-bubble-border);
+  filter: drop-shadow(0 1px 0 var(--pet-bubble-bg));
 }
 
 .pet-ascii {
-  margin: 0;
+  margin: 0 0 0 auto;
+  width: var(--pet-art-width);
+  min-width: var(--pet-art-width);
+  max-width: var(--pet-art-width);
+  height: var(--pet-art-height);
+  min-height: var(--pet-art-height);
+  max-height: var(--pet-art-height);
   padding: 8px 10px;
   border: 1px solid var(--pet-shell-border);
   background: linear-gradient(180deg, var(--pet-shell-bg-start), var(--pet-shell-bg-end));
   color: var(--terminal-accent);
   font-size: 16px;
   line-height: 1.1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   white-space: pre;
+  overflow: hidden;
   font-family: "Ubuntu Mono", "DejaVu Sans Mono", "Cascadia Mono", "Consolas", monospace;
   border-radius: 4px;
+  animation: petAura 2.6s ease-in-out infinite;
+  transition: color 0.3s ease, filter 0.2s ease;
 }
 
 @keyframes petFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-4px) rotate(-0.6deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0deg);
+  }
+  80% {
+    transform: translateY(-3px) rotate(0.5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes petAura {
   0%,
   100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.12) saturate(1.08);
+  }
+}
+
+@keyframes petBubblePop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes petBounce {
+  0% {
+    transform: scaleX(1) scaleY(1) translateY(0);
+  }
+  18% {
+    transform: scaleX(0.94) scaleY(1.08) translateY(-16px);
+  }
+  36% {
+    transform: scaleX(1.08) scaleY(0.92) translateY(0);
+  }
+  50% {
+    transform: scaleX(0.97) scaleY(1.05) translateY(-7px);
+  }
+  65% {
+    transform: scaleX(1.04) scaleY(0.96) translateY(0);
+  }
+  80% {
+    transform: scaleX(0.99) scaleY(1.02) translateY(-2px);
+  }
+  100% {
+    transform: scaleX(1) scaleY(1) translateY(0);
+  }
+}
+
+@keyframes petShake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10% {
+    transform: translateX(-9px) rotate(-3deg);
+  }
+  20% {
+    transform: translateX(9px) rotate(3deg);
+  }
+  30% {
+    transform: translateX(-7px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(7px) rotate(2deg);
+  }
+  50% {
+    transform: translateX(-5px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(5px) rotate(1deg);
+  }
+  70% {
+    transform: translateX(-3px) rotate(0deg);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+  90% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes petSpin {
+  0% {
+    transform: rotateY(0deg) scale(1);
+  }
+  25% {
+    transform: rotateY(90deg) scale(0.7);
+  }
+  50% {
+    transform: rotateY(180deg) scale(0.8);
+  }
+  75% {
+    transform: rotateY(270deg) scale(0.7);
+  }
+  100% {
+    transform: rotateY(360deg) scale(1);
+  }
+}
+
+@keyframes petWiggle {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  15% {
+    transform: rotate(-9deg) translateY(-4px);
+  }
+  30% {
+    transform: rotate(9deg) translateY(-8px);
+  }
+  45% {
+    transform: rotate(-6deg) translateY(-4px);
+  }
+  60% {
+    transform: rotate(6deg) translateY(-2px);
+  }
+  75% {
+    transform: rotate(-2deg) translateY(-1px);
+  }
+}
+
+@keyframes petPop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.22) rotate(6deg);
+  }
+  50% {
+    transform: scale(0.9) rotate(-4deg);
+  }
+  70% {
+    transform: scale(1.08) rotate(2deg);
+  }
+  85% {
+    transform: scale(0.97) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes petMicro {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  40% {
+    transform: translateY(3px) scaleY(0.94);
+  }
+}
+
+@keyframes petPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes petSparkFly {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+@keyframes terminalLineReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes terminalInputGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes desktopIconBob {
+  0% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
   }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes desktopIconSelectedPulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+@keyframes taskButtonPulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes startMenuReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes windowSpawn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#pet-mascot.anim-bounce {
+  animation: petBounce 0.58s cubic-bezier(0.28, 0.84, 0.42, 1) both !important;
+}
+
+#pet-mascot.anim-shake {
+  animation: petShake 0.48s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+#pet-mascot.anim-spin {
+  animation: petSpin 0.62s ease both !important;
+}
+
+#pet-mascot.anim-wiggle {
+  animation: petWiggle 0.48s ease both !important;
+}
+
+#pet-mascot.anim-pop {
+  animation: petPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+#pet-mascot.anim-micro {
+  animation: petMicro 0.22s ease both !important;
+}
+
+#pet-mascot.anim-pulse {
+  animation: petPulse 1.8s ease-in-out infinite !important;
+}
+
+#pet-mascot.anim-bounce .pet-ascii,
+#pet-mascot.anim-pop .pet-ascii,
+#pet-mascot.anim-wiggle .pet-ascii {
+  filter: brightness(1.14) saturate(1.1);
+}
+
+#pet-mascot.anim-shake .pet-ascii {
+  filter: brightness(1.2) saturate(1.22);
+}
+
+#pet-mascot.anim-spin .pet-ascii {
+  filter: hue-rotate(8deg) brightness(1.16);
+}
+
+#pet-mascot.is-react-click {
+  transform: none;
+}
+
+#pet-mascot.is-react-key {
+  transform: none;
+}
+
+#pet-mascot.is-react-command {
+  transform: none;
+}
+
+#pet-mascot.is-react-error {
+  transform: none;
+}
+
+.pet-spark {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3000;
+  animation: petSparkFly var(--dur, 0.65s) ease-out forwards;
+}
+
+.pet-spark.is-star {
+  width: 9px;
+  height: 9px;
+  border-radius: 0;
+  clip-path: polygon(
+    50% 0%, 61% 35%, 98% 35%, 68% 57%,
+    79% 91%, 50% 70%, 21% 91%, 32% 57%,
+    2% 35%, 39% 35%
+  );
 }
 
 #app {
@@ -313,7 +696,7 @@ body.has-custom-cursor textarea {
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--terminal-fg);
-  animation: none;
+  animation: terminalLineReveal 120ms steps(4, end);
 }
 
 .terminal-line.error {
@@ -353,6 +736,27 @@ body.has-custom-cursor textarea {
   z-index: 1;
   border-top: 1px solid rgba(173, 172, 168, 0.26);
   padding-top: 8px;
+}
+
+#terminal-input-line::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--terminal-accent), transparent);
+  background-size: 200% 100%;
+  transform: scaleX(0.35);
+  transform-origin: center;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+#terminal-input-line:focus-within::after {
+  opacity: 0.92;
+  transform: scaleX(1);
+  animation: terminalInputGlow 1.2s linear infinite;
 }
 
 #prompt {
@@ -413,6 +817,18 @@ button,
   touch-action: manipulation;
 }
 
+button:focus-visible,
+.desktop-icon:focus-visible,
+#start-menu li:focus-visible,
+.task-button:focus-visible,
+.window-btn:focus-visible,
+.command-item:focus-visible,
+.gui-button:focus-visible,
+.gui-select:focus-visible {
+  outline: 2px dotted #f2c94c;
+  outline-offset: 2px;
+}
+
 .command-menu-panel {
   width: min(520px, 92vw);
   background: #0f141a;
@@ -458,11 +874,14 @@ button,
   justify-content: space-between;
   gap: 10px;
   cursor: pointer;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
 .command-item:hover,
 .command-item.active {
   background: #18304a;
+  border-color: #315172;
+  transform: translateX(2px);
 }
 
 .command-item span {
@@ -628,6 +1047,16 @@ button,
   cursor: pointer;
   padding: 4px;
   border-radius: 2px;
+  transition: transform 90ms steps(2, end), filter 120ms ease;
+  transform: translateY(0);
+}
+
+.desktop-icon:hover {
+  transform: translateY(-2px);
+}
+
+.desktop-icon:active {
+  transform: translateY(1px);
 }
 
 .desktop-icon:focus-visible {
@@ -650,6 +1079,7 @@ button,
 .desktop-icon.selected .icon-glyph {
   border-color: #ffffff;
   box-shadow: 1px 1px 0 #000000;
+  animation: desktopIconSelectedPulse 1.2s ease-in-out infinite;
 }
 
 .icon-glyph {
@@ -662,6 +1092,12 @@ button,
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.desktop-icon:hover .icon-glyph {
+  animation: desktopIconBob 620ms steps(6, end) infinite;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
 }
 
 .icon-image {
@@ -719,6 +1155,12 @@ button,
   display: block;
   font-size: 14px;
   text-shadow: 1px 1px 0 #0b0b0b;
+  transition: text-shadow 120ms ease, transform 120ms ease;
+}
+
+.desktop-icon:hover .icon-label {
+  text-shadow: 1px 1px 0 #0b0b0b, 0 0 6px rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
 }
 
 #taskbar {
@@ -746,6 +1188,12 @@ button,
   font-weight: 600;
   cursor: pointer;
   box-shadow: inset 1px 1px 0 #ffffff;
+  transition: transform 90ms steps(2, end), filter 120ms ease;
+}
+
+#start-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 #start-button:active {
@@ -774,6 +1222,12 @@ button,
   font-size: 12px;
   white-space: nowrap;
   box-shadow: inset 1px 1px 0 #ffffff;
+  transition: transform 90ms steps(2, end), filter 120ms ease;
+}
+
+.task-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .task-button.active {
@@ -783,6 +1237,7 @@ button,
   border-right-color: var(--gui-border-light);
   border-bottom-color: var(--gui-border-light);
   box-shadow: inset 1px 1px 0 #7a7a7a;
+  animation: taskButtonPulse 1.5s ease-in-out infinite;
 }
 
 #taskbar-clock {
@@ -811,6 +1266,11 @@ button,
   z-index: 1000;
   display: flex;
   align-items: stretch;
+}
+
+#start-menu:not(.hidden) {
+  animation: startMenuReveal 140ms steps(4, end);
+  transform-origin: bottom left;
 }
 
 .start-rail {
@@ -858,11 +1318,13 @@ button,
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background-color 110ms ease, color 110ms ease, transform 110ms ease;
 }
 
 #start-menu li:hover {
   background: #000080;
   color: #ffffff;
+  transform: translateX(2px);
 }
 
 .start-icon {
@@ -878,6 +1340,12 @@ button,
   font-size: 11px;
   font-weight: 700;
   color: #1a1a1a;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+#start-menu li:hover .start-icon {
+  transform: scale(1.08);
+  filter: brightness(1.08);
 }
 
 .start-icon-img {
@@ -912,6 +1380,10 @@ button,
   border-right-color: var(--gui-border-dark);
   border-bottom-color: var(--gui-border-dark);
   box-shadow: 2px 2px 0 var(--gui-border-dark);
+  animation: windowSpawn 150ms steps(5, end);
+  transform-origin: center top;
+  will-change: transform, opacity;
+  transition: box-shadow 120ms ease;
 }
 
 .window.minimized {
@@ -932,6 +1404,10 @@ button,
 .window.active .window-titlebar {
   background: linear-gradient(90deg, #000080 0%, var(--gui-title) 100%);
   color: var(--gui-title-text);
+}
+
+.window.active {
+  box-shadow: 2px 2px 0 var(--gui-border-dark), 0 0 0 1px rgba(10, 62, 154, 0.45);
 }
 
 .window-title {
@@ -1706,7 +2182,10 @@ button,
 
   #pet-mascot {
     right: 8px;
-    min-width: 118px;
+    --pet-panel-width: 178px;
+    --pet-art-width: 136px;
+    --pet-art-height: 80px;
+    --pet-bubble-max-width: 172px;
   }
 
   .pet-ascii {
@@ -1715,7 +2194,6 @@ button,
   }
 
   .pet-bubble {
-    max-width: 176px;
     font-size: 11px;
   }
 }
@@ -1735,4 +2213,43 @@ button,
     font-size: 11px;
     padding: 2px 4px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pet-mascot,
+  .pet-ascii,
+  .pet-bubble,
+  .terminal-line,
+  .desktop-icon,
+  .icon-glyph,
+  .icon-label,
+  #start-button,
+  .task-button,
+  #start-menu,
+  #start-menu li,
+  .start-icon,
+  .window,
+  .window.active {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+body.reduced-motion #pet-mascot,
+body.reduced-motion .pet-ascii,
+body.reduced-motion .pet-bubble,
+body.reduced-motion .terminal-line,
+body.reduced-motion .desktop-icon,
+body.reduced-motion .icon-glyph,
+body.reduced-motion .icon-label,
+body.reduced-motion #start-button,
+body.reduced-motion .task-button,
+body.reduced-motion #start-menu,
+body.reduced-motion #start-menu li,
+body.reduced-motion .start-icon,
+body.reduced-motion .window,
+body.reduced-motion .window.active,
+body.reduced-motion #terminal-input-line::after {
+  animation: none !important;
+  transition: none !important;
 }
