@@ -294,6 +294,7 @@ import {
 
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
+  const SW_CACHE_PREFIX = "portfolio-cache-";
   const SUPPORTED_LANGS = ["pt", "en"];
 
   const DEFAULT_I18N = {
@@ -4990,13 +4991,39 @@ import {
     dom.terminal.scrollTop = dom.terminal.scrollHeight;
   }
 
+  function cleanupServiceWorkerForLocalDev() {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister()))
+      )
+      .catch(() => null);
+
+    if (!("caches" in window)) return;
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(SW_CACHE_PREFIX))
+            .map((key) => caches.delete(key))
+        )
+      )
+      .catch(() => null);
+  }
+
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     const isLocalHost =
       location.hostname === "localhost" ||
       location.hostname === "127.0.0.1" ||
       location.hostname === "::1";
-    if (location.protocol !== "https:" && !isLocalHost) return;
+    if (isLocalHost) {
+      cleanupServiceWorkerForLocalDev();
+      return;
+    }
+    if (location.protocol !== "https:") return;
 
     let reloading = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
