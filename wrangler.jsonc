@@ -1,5 +1,5 @@
 {
-  "name": "portfolio-me-api",
+  "name": "portifolio-web",
   "main": "worker/src/index.ts",
   "compatibility_date": "2026-02-20",
   "ai": {
