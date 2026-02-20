@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://maitai0981.github.io/portifolio-web/sitemap.xml

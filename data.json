@@ -172,7 +172,7 @@
         {
           "institution": "Escola Aloys Joao Mann",
           "years": "2013 - 2016",
-          "logo": "assets/edu/aloys-joao-mann.png"
+          "logo": "assets/edu/aloys-joao-mann.webp"
         }
       ],
       "resume": [
@@ -413,7 +413,7 @@
         {
           "institution": "Aloys Joao Mann School",
           "years": "2013 - 2016",
-          "logo": "assets/edu/aloys-joao-mann.png"
+          "logo": "assets/edu/aloys-joao-mann.webp"
         }
       ],
       "resume": [
@@ -495,3 +495,4 @@
     }
   }
 }
+

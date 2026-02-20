@@ -4,24 +4,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portfolio Terminal + GUI</title>
-  <meta name="description" content="Portfolio interativo com terminal Ubuntu e GUI retro estilo Windows 95." />
+  <title>Matheus Saragoca | Portfolio de Software</title>
+  <meta name="description"
+    content="Portfolio interativo de Matheus Saragoca com terminal no navegador, GUI retro e projetos de desenvolvimento, algoritmos e IA." />
   <meta name="keywords" content="portfolio, terminal, windows 95, frontend, javascript, desenvolvimento web" />
   <meta name="author" content="Matheus Saragoca" />
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Portfolio Terminal + GUI" />
-  <meta property="og:description" content="Experiência interativa com terminal Ubuntu e GUI retro estilo Windows 95." />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" id="theme-color-meta" content="#0b0d10" />
+  <meta property="og:title" content="Matheus Saragoca | Portfolio de Software" />
+  <meta property="og:description"
+    content="Experiencia interativa com terminal no navegador, GUI retro e projetos de software, algoritmos e IA." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="assets/Matheus.jpg" />
-  <meta property="og:site_name" content="Matheus Saragoça Portfolio">
-  <meta property="og:url" content="https://maitai0981.github.io/portifolio-web/">
+  <meta property="og:image" content="https://maitai0981.github.io/portifolio-web/assets/Matheus.webp" />
+  <meta property="og:site_name" content="Matheus Saragoca Portfolio" />
+  <meta property="og:url" content="https://maitai0981.github.io/portifolio-web/" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Portfolio Terminal + GUI" />
-  <meta name="twitter:description" content="Terminal Ubuntu + GUI retro em uma SPA." />
-  <link rel="icon" href="assets/icons8.png" type="image/png" />
+  <meta name="twitter:title" content="Matheus Saragoca | Portfolio de Software" />
+  <meta name="twitter:description" content="Terminal interativo, GUI retro e projetos de desenvolvimento, algoritmos e IA." />
+  <meta name="twitter:image" content="https://maitai0981.github.io/portifolio-web/assets/Matheus.webp" />
+  <link rel="icon" href="./assets/icons8.png" type="image/png" />
+  <link rel="apple-touch-icon" href="./assets/icons8.png" />
+  <link rel="manifest" href="./manifest.webmanifest?v=2026-02-20-01" />
   <link rel="canonical" href="https://maitai0981.github.io/portifolio-web/" />
   <script>
     (function () {
+      var params = new URLSearchParams(window.location.search);
+      var redirectedPath = params.get("p");
+      if (!redirectedPath || redirectedPath.charAt(0) !== "/") return;
+      params.delete("p");
+      var extraQuery = params.toString();
+      var separator = redirectedPath.indexOf("?") >= 0 ? "&" : "?";
+      var target = redirectedPath + (extraQuery ? separator + extraQuery : "");
+      window.__ROUTE_RESTORED_FROM_404__ = true;
+      window.history.replaceState(null, "", target);
+    })();
+  </script>
+  <script>
+    (function () {
+      if (window.__ROUTE_RESTORED_FROM_404__) return;
       var path = window.location.pathname;
       if (!path.endsWith("/") && !path.split("/").pop().includes(".")) {
         window.location.replace(path + "/" + window.location.search + window.location.hash);
@@ -29,9 +49,22 @@
     })();
   </script>
   <script>
-    window.__APP_VERSION__ = "2026-02-15-01";
+    window.__APP_VERSION__ = "2026-02-20-01";
   </script>
-  <link rel="stylesheet" href="./styles.css?v=2026-02-15-01" />
+  <link rel="stylesheet" href="./styles.css?v=2026-02-20-01" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Matheus Saragoca",
+      "jobTitle": "Software Developer",
+      "url": "https://maitai0981.github.io/portifolio-web/",
+      "sameAs": [
+        "https://github.com/Maitai0981",
+        "https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/"
+      ]
+    }
+  </script>
 </head>
 
 <body>
@@ -203,7 +236,7 @@
     </section>
   </div>
 
-  <script type="module" src="./main.js?v=2026-02-15-01"></script>
+  <script type="module" src="./main.js?v=2026-02-20-01"></script>
 </body>
 
 </html>

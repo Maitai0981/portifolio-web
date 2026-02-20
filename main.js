@@ -1763,7 +1763,7 @@ import {
     appendOutputLine(messages.loading, "info");
     announceToScreenReader(messages.loading);
     try {
-      const response = await fetch(`./data.json?v=${APP_VERSION}`, { cache: "no-store" });
+      const response = await fetch(`./data.json?v=${APP_VERSION}`);
       if (!response.ok) {
         throw new Error("Failed to load data.json");
       }
@@ -4695,7 +4695,7 @@ import {
     header.className = "about-header";
     const photo = document.createElement("img");
     photo.className = "about-photo";
-    photo.src = "assets/Matheus.jpg";
+    photo.src = "assets/Matheus.webp";
     photo.alt = meta.name ? `Foto de ${meta.name}` : "Foto de perfil";
     header.append(photo);
 
@@ -4815,7 +4815,7 @@ import {
     );
     if (match) {
       const [, owner, repo, branch, path] = match;
-      return `https://github.com/Maitai0981/Curriculo/blob/main/Matheus_Sarago%C3%A7a_curr%C3%ADculo.pdf`;
+      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
     }
     return url;
   }
@@ -4990,14 +4990,40 @@ import {
     dom.terminal.scrollTop = dom.terminal.scrollHeight;
   }
 
-  function unregisterServiceWorkers() {
+  function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => registration.unregister());
+    const isLocalHost =
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1" ||
+      location.hostname === "::1";
+    if (location.protocol !== "https:" && !isLocalHost) return;
+
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
     });
-    if ("caches" in window) {
-      caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
-    }
+
+    navigator.serviceWorker
+      .register(`./service-worker.js?v=${APP_VERSION}`, { scope: "./" })
+      .then((registration) => {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+        registration.addEventListener("updatefound", () => {
+          const worker = registration.installing;
+          if (!worker) return;
+          worker.addEventListener("statechange", () => {
+            if (worker.state === "installed" && navigator.serviceWorker.controller) {
+              worker.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch(() => {
+        // Silent failure: app should keep running even if SW registration fails.
+      });
   }
 
   async function init() {
@@ -5007,7 +5033,7 @@ import {
     initCustomCursor();
     state.language = resolveInitialLanguage();
     state.locale = getLocaleForLanguage(state.language);
-    unregisterServiceWorkers();
+    registerServiceWorker();
     await loadContent();
     applyLanguage(state.language, { persist: false, announce: false });
     setTheme(state.theme);

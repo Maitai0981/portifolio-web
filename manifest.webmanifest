@@ -1,7 +1,10 @@
 {
-  "name": "Portfolio Terminal + GUI",
+  "name": "Matheus Saragoca | Portfolio Terminal + GUI",
   "short_name": "Portfolio",
+  "description": "Portfolio interativo com terminal no navegador e GUI retro inspirada no Windows 95.",
+  "id": "./",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0b0d10",
   "theme_color": "#0b0d10",
@@ -9,7 +12,8 @@
     {
       "src": "assets/icons8.png",
       "sizes": "48x48",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
