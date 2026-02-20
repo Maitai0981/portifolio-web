@@ -43,6 +43,8 @@ No projeto de Worker no Cloudflare:
 
 Importante: agora existe `wrangler.jsonc` no root, entao `wrangler deploy` encontra o entrypoint em `worker/src/index.ts`.
 
+Se o Cloudflare mostrar aviso de `Worker name mismatch`, alinhe o campo `name` no `wrangler.jsonc` com o nome esperado pelo projeto de Build conectado (neste repo: `portifolio-web`).
+
 ## Integracao no frontend
 
 No `index.html`, configure:
