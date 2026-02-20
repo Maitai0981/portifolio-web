@@ -403,6 +403,8 @@ import {
   const SUPPORTED_LANGS = ["pt", "en"];
   const ME_API_TIMEOUT_MS = 14000;
   const ME_HISTORY_WINDOW = 6;
+  const ME_DEBUG_LOG_KEY = "portfolioMeRequestLog";
+  const ME_DEBUG_MAX_ITEMS = 120;
   const RAW_ME_API_URL = String(
     window.__ME_API_URL__ || document.querySelector('meta[name="me-api-url"]')?.getAttribute("content") || ""
   ).trim();
@@ -1102,6 +1104,61 @@ import {
     } catch {
       return false;
     }
+  }
+
+  function readStoredJson(key, fallback = null) {
+    const raw = readStoredValue(key);
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }
+
+  function writeStoredJson(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function truncateDebugText(value, max = 420) {
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    if (text.length <= max) return text;
+    return `${text.slice(0, Math.max(0, max - 3))}...`;
+  }
+
+  function appendMeDebugLog(entry) {
+    if (!entry || typeof entry !== "object") return;
+    const current = readStoredJson(ME_DEBUG_LOG_KEY, []);
+    const list = Array.isArray(current) ? current : [];
+    const normalized = {
+      id: String(entry.id || `${Date.now()}`),
+      timestamp: String(entry.timestamp || new Date().toISOString()),
+      question: truncateDebugText(entry.question || "", 260),
+      lang: String(entry.lang || state.language || "pt"),
+      endpoint: String(entry.endpoint || ME_API_ENDPOINT || ""),
+      path: String(entry.path || window.location.pathname || "/"),
+      origin: String(entry.origin || window.location.origin || ""),
+      status: Number.isFinite(Number(entry.status)) ? Number(entry.status) : null,
+      ok: Boolean(entry.ok),
+      result: String(entry.result || "unknown"),
+      durationMs: Math.max(0, Number(entry.durationMs) || 0),
+      error: truncateDebugText(entry.error || "", 320),
+      answerPreview: truncateDebugText(entry.answerPreview || "", 480),
+      responsePreview: truncateDebugText(entry.responsePreview || "", 480),
+      sourcesCount: Math.max(0, Number(entry.sourcesCount) || 0),
+      requestHistory: Array.isArray(entry.requestHistory) ? entry.requestHistory.slice(0, 8) : []
+    };
+
+    list.unshift(normalized);
+    if (list.length > ME_DEBUG_MAX_ITEMS) {
+      list.length = ME_DEBUG_MAX_ITEMS;
+    }
+    writeStoredJson(ME_DEBUG_LOG_KEY, list);
   }
 
   function normalizeStoredBoolean(value) {
@@ -3287,7 +3344,29 @@ import {
   async function requestMeFromApi(question) {
     if (!ME_API_ENDPOINT) return null;
     const controller = new AbortController();
+    const startedAt = performance.now();
     const timeout = setTimeout(() => controller.abort(), ME_API_TIMEOUT_MS);
+    const debugEntry = {
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      question,
+      lang: state.language,
+      endpoint: ME_API_ENDPOINT,
+      path: window.location.pathname,
+      origin: window.location.origin,
+      status: null,
+      ok: false,
+      result: "",
+      durationMs: 0,
+      error: "",
+      answerPreview: "",
+      responsePreview: "",
+      sourcesCount: 0,
+      requestHistory: state.me.history.slice(-ME_HISTORY_WINDOW).map((item) => ({
+        role: String(item?.role || ""),
+        text: truncateDebugText(item?.text || "", 140)
+      }))
+    };
     try {
       const response = await fetch(ME_API_ENDPOINT, {
         method: "POST",
@@ -3301,21 +3380,30 @@ import {
           history: state.me.history.slice(-ME_HISTORY_WINDOW)
         })
       });
+      debugEntry.status = response.status;
 
       if (!response.ok) {
+        debugEntry.result = "http_error";
+        debugEntry.responsePreview = truncateDebugText(await response.text().catch(() => ""), 480);
         throw new Error(`me api status ${response.status}`);
       }
 
       const payload = await response.json().catch(() => ({}));
       const answer = String(payload?.answer || payload?.text || "").trim();
-      if (!answer) return null;
+      const rawSources = payload?.sources || payload?.reposUsed || [];
+      debugEntry.sourcesCount = Array.isArray(rawSources) ? rawSources.length : 0;
+      debugEntry.answerPreview = truncateDebugText(answer, 480);
+      if (!answer) {
+        debugEntry.result = "empty_answer";
+        return null;
+      }
 
       let lines = answer
         .split(/\r?\n/g)
         .map((line) => String(line || ""))
         .slice(0, 30);
 
-      const sourceLines = formatMeSources(payload?.sources || payload?.reposUsed || []);
+      const sourceLines = formatMeSources(rawSources);
       if (sourceLines.length) {
         const firstSourceLine = lines.findIndex((line) => isMeSourceHeading(line));
         if (firstSourceLine >= 0) {
@@ -3323,14 +3411,23 @@ import {
         }
       }
 
+      debugEntry.ok = true;
+      debugEntry.result = "success";
+
       return {
         lines: normalizeMeBodyLines(lines),
         sources: sourceLines
       };
     } catch (error) {
+      if (!debugEntry.result) {
+        debugEntry.result = controller.signal.aborted ? "timeout_or_abort" : "network_or_cors_error";
+      }
+      debugEntry.error = error instanceof Error ? error.message : String(error || "");
       logClientError("me-api", error, { endpoint: ME_API_ENDPOINT });
       return null;
     } finally {
+      debugEntry.durationMs = Math.max(0, Math.round(performance.now() - startedAt));
+      appendMeDebugLog(debugEntry);
       clearTimeout(timeout);
     }
   }
@@ -3372,13 +3469,13 @@ import {
       output.push("");
     }
 
-    output.push(`\u001b[36m${messages.meResponseLabel || "Answer"}\u001b[0m`);
+    output.push(`\u001b[90m${messages.meResponseLabel || "Answer"}\u001b[0m`);
     output.push("");
     output.push(...body);
 
     if (sources.length) {
       output.push("");
-      output.push(`\u001b[33m${messages.meSourcesLabel || "Sources"}\u001b[0m`);
+      output.push(`\u001b[90m${messages.meSourcesLabel || "Sources"}\u001b[0m`);
       output.push(...sources);
     }
 
@@ -3388,25 +3485,36 @@ import {
   function normalizeMeBodyLines(lines) {
     if (!Array.isArray(lines)) return [];
     const normalized = [];
+    let lastWasBlank = false;
 
     lines.forEach((line) => {
-      let text = String(line || "")
-        .replace(/\t+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      const raw = String(line == null ? "" : line).replace(/\t/g, "  ").trimEnd();
+      const trimmed = raw.trim();
 
-      if (!text) return;
+      if (!trimmed) {
+        if (!lastWasBlank && normalized.length > 0) {
+          normalized.push("");
+        }
+        lastWasBlank = true;
+        return;
+      }
 
-      text = text
+      let text = trimmed
         .replace(/^#{1,6}\s*/, "")
         .replace(/^[-*]\s+/, "- ")
-        .replace(/^\u2022\s+/, "- ");
+        .replace(/^\u2022\s+/, "- ")
+        .replace(/^(\d+)\)\s+/, "$1. ");
 
       const wrapped = wrapMeLine(text, 104);
       normalized.push(...wrapped);
+      lastWasBlank = false;
     });
 
-    return normalized.slice(0, 28);
+    while (normalized.length > 0 && !String(normalized[normalized.length - 1] || "").trim()) {
+      normalized.pop();
+    }
+
+    return normalized.slice(0, 36);
   }
 
   function wrapMeLine(line, maxWidth = 104) {
@@ -3647,11 +3755,19 @@ import {
   }
 
   function prefixAgentLines(lines) {
-    return lines.map((line) => {
+    if (!Array.isArray(lines) || lines.length === 0) return [];
+    const output = ["\u001b[36mMatheus AI\u001b[0m"];
+
+    lines.forEach((line) => {
       const text = String(line == null ? "" : line);
-      if (!text.trim()) return "";
-      return `\u001b[36mMatheus AI:\u001b[0m ${text}`;
+      if (!text.trim()) {
+        output.push("");
+        return;
+      }
+      output.push(`  ${text}`);
     });
+
+    return output;
   }
 
   function normalizeText(text) {

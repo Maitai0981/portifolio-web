@@ -10,6 +10,7 @@ const COPY_LIST = [
   "assets",
   "data.json",
   "index.html",
+  "me-inspector.html",
   "main.js",
   "manifest.webmanifest",
   "modules",

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "portfolio-cache-";
-const CACHE_VERSION = "2026-02-20-16";
+const CACHE_VERSION = "2026-02-20-17";
 const CORE_CACHE_NAME = `${CACHE_PREFIX}core-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
@@ -7,6 +7,7 @@ const RUNTIME_MAX_ENTRIES = 80;
 const PRECACHE_ASSETS = [
   "./",
   "./index.html",
+  "./me-inspector.html",
   "./404.html",
   "./styles.css",
   "./main.js",
