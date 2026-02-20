@@ -35,17 +35,36 @@ const readmeCache = new Map<string, { expiresAt: number; text: string }>();
 function corsHeaders(origin: string): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     Vary: "Origin"
   };
 }
 
+function normalizeOrigin(origin: string): string {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
+function parseAllowedOrigins(envOrigin: string | undefined): string[] {
+  const raw = String(envOrigin || "").trim();
+  if (!raw) return [];
+  if (raw === "*") return ["*"];
+  return raw
+    .split(",")
+    .map((item) => normalizeOrigin(item))
+    .filter(Boolean);
+}
+
 function resolveAllowedOrigin(envOrigin: string | undefined, requestOrigin: string | null): string {
-  const configured = String(envOrigin || "").trim();
-  if (!configured || configured === "*") return "*";
-  if (!requestOrigin) return configured;
-  return requestOrigin === configured ? configured : "null";
+  const configuredOrigins = parseAllowedOrigins(envOrigin);
+  if (!configuredOrigins.length || configuredOrigins.includes("*")) return "*";
+
+  if (!requestOrigin) {
+    return configuredOrigins[0];
+  }
+
+  const normalizedRequestOrigin = normalizeOrigin(requestOrigin);
+  return configuredOrigins.includes(normalizedRequestOrigin) ? normalizedRequestOrigin : "null";
 }
 
 function jsonResponse(data: unknown, status: number, allowOrigin: string): Response {
@@ -257,11 +276,32 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.pathname === "/health") {
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+
+    if (path === "/") {
+      return jsonResponse(
+        {
+          ok: true,
+          service: "portfolio-me-api",
+          endpoints: {
+            health: "GET /health",
+            me: "POST /me"
+          }
+        },
+        200,
+        allowOrigin
+      );
+    }
+
+    if (path === "/health") {
       return jsonResponse({ ok: true, service: "portfolio-me-api" }, 200, allowOrigin);
     }
 
-    if (url.pathname !== "/me" || request.method !== "POST") {
+    if (path === "/me" && request.method !== "POST") {
+      return jsonResponse({ error: "Use POST /me" }, 405, allowOrigin);
+    }
+
+    if (path !== "/me" || request.method !== "POST") {
       return jsonResponse({ error: "Not found" }, 404, allowOrigin);
     }
 

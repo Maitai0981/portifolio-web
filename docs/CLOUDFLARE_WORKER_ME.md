@@ -22,7 +22,7 @@ Este projeto foi preparado para usar um backend serverless gratuito via Cloudfla
 ### Vars
 
 - `GITHUB_USERNAME` (ex: `Maitai0981`)
-- `ALLOWED_ORIGIN` (ex: `https://maitai0981.github.io`)
+- `ALLOWED_ORIGIN` (uma ou mais origens separadas por virgula, ex: `https://maitai0981.github.io,http://localhost:8080`)
 
 ### Secrets
 

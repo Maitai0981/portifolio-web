@@ -496,6 +496,7 @@ import {
         meUnknown: "Nao entendi a pergunta. Pergunte sobre meus projetos ou perfil.",
         meApiUnavailable: "A IA remota nao respondeu. Usei o contexto local.",
         meSourcesLabel: "Fontes",
+        meResponseLabel: "Resposta",
         meApiNotConfigured: "IA remota nao configurada. Defina me-api-url no index.html.",
         localTimeLine: "Local em Londrina, Brasil: {{datetime}} {{tz}}",
         projectNoDescription: "Sem descricao.",
@@ -686,6 +687,7 @@ import {
         meUnknown: "I didn't get the question. Ask about my projects or profile.",
         meApiUnavailable: "Remote AI did not respond. I used local context.",
         meSourcesLabel: "Sources",
+        meResponseLabel: "Answer",
         meApiNotConfigured: "Remote AI is not configured. Set me-api-url in index.html.",
         localTimeLine: "Local time in Londrina, Brazil is {{datetime}} {{tz}}",
         projectNoDescription: "No description.",
@@ -3265,10 +3267,15 @@ import {
     }
 
     const remote = await requestMeFromApi(message);
-    let response = remote?.lines?.length ? remote.lines : buildMeResponse(message);
-    if (!remote?.lines?.length && ME_API_ENDPOINT) {
-      response = [messages.meApiUnavailable || "Remote AI did not respond.", ...response];
-    }
+    const fallback = buildMeResponse(message);
+    const warning =
+      !remote?.lines?.length && ME_API_ENDPOINT
+        ? messages.meApiUnavailable || "Remote AI did not respond."
+        : "";
+    const response = formatMeResponseLines(remote?.lines?.length ? remote.lines : fallback, {
+      warning,
+      sources: remote?.sources || []
+    });
 
     state.me.history.push({ role: "assistant", text: response.join("\n") });
     if (state.me.history.length > 40) {
@@ -3303,17 +3310,23 @@ import {
       const answer = String(payload?.answer || payload?.text || "").trim();
       if (!answer) return null;
 
-      const lines = answer
+      let lines = answer
         .split(/\r?\n/g)
-        .map((line) => String(line || "").trim())
-        .filter(Boolean)
-        .slice(0, 14);
+        .map((line) => String(line || ""))
+        .slice(0, 30);
 
       const sourceLines = formatMeSources(payload?.sources || payload?.reposUsed || []);
       if (sourceLines.length) {
-        lines.push(...sourceLines);
+        const firstSourceLine = lines.findIndex((line) => isMeSourceHeading(line));
+        if (firstSourceLine >= 0) {
+          lines = lines.slice(0, firstSourceLine);
+        }
       }
-      return { lines };
+
+      return {
+        lines: normalizeMeBodyLines(lines),
+        sources: sourceLines
+      };
     } catch (error) {
       logClientError("me-api", error, { endpoint: ME_API_ENDPOINT });
       return null;
@@ -3324,24 +3337,114 @@ import {
 
   function formatMeSources(sources) {
     if (!Array.isArray(sources) || sources.length === 0) return [];
-    const messages = getMessages();
-    const lines = [`${messages.meSourcesLabel || "Sources"}:`];
+    const lines = [];
     sources.slice(0, 5).forEach((item) => {
       if (typeof item === "string") {
-        lines.push(`- ${item}`);
+        lines.push(...wrapMeLine(`- ${String(item || "").trim()}`, 104));
         return;
       }
       const name = String(item?.name || item?.repo || item?.title || "").trim();
       const url = String(item?.url || item?.html_url || "").trim();
+      const description = String(item?.description || "").trim();
       if (name && url) {
-        lines.push(`- ${name}: ${url}`);
+        lines.push(...wrapMeLine(`- ${name}: ${url}`, 104));
       } else if (url) {
-        lines.push(`- ${url}`);
+        lines.push(...wrapMeLine(`- ${url}`, 104));
       } else if (name) {
-        lines.push(`- ${name}`);
+        lines.push(...wrapMeLine(`- ${name}`, 104));
+      }
+      if (description) {
+        lines.push(...wrapMeLine(`  ${description}`, 104));
       }
     });
     return lines;
+  }
+
+  function formatMeResponseLines(lines, options = {}) {
+    const messages = getMessages();
+    const warning = String(options.warning || "").trim();
+    const body = normalizeMeBodyLines(lines);
+    const sources = Array.isArray(options.sources) ? options.sources.filter(Boolean) : [];
+    const output = [];
+
+    if (warning) {
+      output.push(`\u001b[33m${warning}\u001b[0m`);
+      output.push("");
+    }
+
+    output.push(`\u001b[36m${messages.meResponseLabel || "Answer"}\u001b[0m`);
+    output.push("");
+    output.push(...body);
+
+    if (sources.length) {
+      output.push("");
+      output.push(`\u001b[33m${messages.meSourcesLabel || "Sources"}\u001b[0m`);
+      output.push(...sources);
+    }
+
+    return output;
+  }
+
+  function normalizeMeBodyLines(lines) {
+    if (!Array.isArray(lines)) return [];
+    const normalized = [];
+
+    lines.forEach((line) => {
+      let text = String(line || "")
+        .replace(/\t+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!text) return;
+
+      text = text
+        .replace(/^#{1,6}\s*/, "")
+        .replace(/^[-*]\s+/, "- ")
+        .replace(/^\u2022\s+/, "- ");
+
+      const wrapped = wrapMeLine(text, 104);
+      normalized.push(...wrapped);
+    });
+
+    return normalized.slice(0, 28);
+  }
+
+  function wrapMeLine(line, maxWidth = 104) {
+    const text = String(line || "").trimEnd();
+    if (!text) return [""];
+    if (removeAnsi(text).length <= maxWidth) return [text];
+
+    const bulletMatch = text.match(/^(-\s+|\d+\.\s+)/);
+    const prefix = bulletMatch ? bulletMatch[0] : "";
+    const content = prefix ? text.slice(prefix.length).trim() : text.trim();
+    if (!content || content.includes("http://") || content.includes("https://")) {
+      return [text];
+    }
+
+    const indent = " ".repeat(prefix.length);
+    const words = content.split(/\s+/g).filter(Boolean);
+    const lines = [];
+    let current = prefix;
+
+    words.forEach((word) => {
+      const next = current.trim().length ? `${current} ${word}` : `${prefix}${word}`;
+      if (removeAnsi(next).length <= maxWidth) {
+        current = next;
+        return;
+      }
+      lines.push(current);
+      current = `${indent}${word}`;
+    });
+
+    if (current.trim().length) {
+      lines.push(current);
+    }
+    return lines.length ? lines : [text];
+  }
+
+  function isMeSourceHeading(line) {
+    const normalized = normalizeText(String(line || "")).replace(/[:\s]+/g, "");
+    return normalized === "fontes" || normalized === "sources";
   }
 
   function isMeExit(message) {
@@ -3544,7 +3647,11 @@ import {
   }
 
   function prefixAgentLines(lines) {
-    return lines.map((line) => `\u001b[36mMatheus AI:\u001b[0m ${line}`);
+    return lines.map((line) => {
+      const text = String(line == null ? "" : line);
+      if (!text.trim()) return "";
+      return `\u001b[36mMatheus AI:\u001b[0m ${text}`;
+    });
   }
 
   function normalizeText(text) {
