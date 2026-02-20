@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-me-api",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-02-20",
+  "ai": {
+    "binding": "AI"
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://maitai0981.github.io",
+    "GITHUB_USERNAME": "Maitai0981"
+  }
+}

@@ -40,6 +40,10 @@ Servidor local:
 - `npm run dev`: sobe o servidor local (`server.js`).
 - `npm start`: alias de `npm run dev`.
 - `npm run build`: gera `dist/` com arquivos minificados para deploy estatico.
+- `npm run lint`: validacoes de JS/TS + checks basicos de HTML.
+- `npm run worker:dev`: executa o Worker localmente (Cloudflare).
+- `npm run worker:deploy`: publica o Worker no Cloudflare.
+- `npm run worker:tail`: acompanha logs do Worker.
 
 ## Build de producao
 
@@ -79,8 +83,10 @@ Arquivos de suporte ao Pages:
 - `main.js`: estado global, comandos, GUI, i18n, registro de SW.
 - `styles.css`: tema terminal + GUI.
 - `data.json`: conteudo textual (pt/en), projetos e metadados.
-- `modules/`: modulos auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`).
+- `modules/`: modulos auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`, `algorithmViewer`, `snakeGame`).
 - `service-worker.js`: cache e fallback offline.
+- `wrangler.jsonc`: configuracao do Cloudflare Worker (backend do comando `me`).
+- `worker/src/index.ts`: API `/me` com GitHub + Llama 3 (Workers AI).
 - `manifest.webmanifest`: metadados PWA.
 - `server.js`: servidor HTTP local sem dependencias externas.
 - `assets/`: imagens, sprites, capas e modelo CNN.
@@ -132,3 +138,4 @@ Para atualizar portfolio:
 - `docs/ARCHITECTURE.md`
 - `docs/DEPLOY_GITHUB_PAGES.md`
 - `docs/TROUBLESHOOTING.md`
+- `docs/CLOUDFLARE_WORKER_ME.md`

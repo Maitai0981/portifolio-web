@@ -401,6 +401,14 @@ import {
   const APP_VERSION = window.__APP_VERSION__ || "dev";
   const SW_CACHE_PREFIX = "portfolio-cache-";
   const SUPPORTED_LANGS = ["pt", "en"];
+  const ME_API_TIMEOUT_MS = 14000;
+  const ME_HISTORY_WINDOW = 6;
+  const RAW_ME_API_URL = String(
+    window.__ME_API_URL__ || document.querySelector('meta[name="me-api-url"]')?.getAttribute("content") || ""
+  ).trim();
+  const ME_API_ENDPOINT = RAW_ME_API_URL
+    ? (RAW_ME_API_URL.endsWith("/me") ? RAW_ME_API_URL : `${RAW_ME_API_URL.replace(/\/+$/, "")}/me`)
+    : "";
 
   const DEFAULT_I18N = {
     pt: {
@@ -486,6 +494,9 @@ import {
         meProjectsIntro: "Aqui estao meus projetos:",
         meNoMatchIntro: "Nao entendi a pergunta. Posso falar sobre:",
         meUnknown: "Nao entendi a pergunta. Pergunte sobre meus projetos ou perfil.",
+        meApiUnavailable: "A IA remota nao respondeu. Usei o contexto local.",
+        meSourcesLabel: "Fontes",
+        meApiNotConfigured: "IA remota nao configurada. Defina me-api-url no index.html.",
         localTimeLine: "Local em Londrina, Brasil: {{datetime}} {{tz}}",
         projectNoDescription: "Sem descricao.",
         projectNoDetails: "Sem detalhes cadastrados.",
@@ -673,6 +684,9 @@ import {
         meProjectsIntro: "Here are my projects:",
         meNoMatchIntro: "I didn't get the question. I can talk about:",
         meUnknown: "I didn't get the question. Ask about my projects or profile.",
+        meApiUnavailable: "Remote AI did not respond. I used local context.",
+        meSourcesLabel: "Sources",
+        meApiNotConfigured: "Remote AI is not configured. Set me-api-url in index.html.",
         localTimeLine: "Local time in Londrina, Brazil is {{datetime}} {{tz}}",
         projectNoDescription: "No description.",
         projectNoDetails: "No details provided.",
@@ -2689,7 +2703,7 @@ import {
     if (!command) return;
     const startedAt = performance.now();
     try {
-      const result = getCommandResult(command, args);
+      const result = await getCommandResult(command, args);
 
       if (result.error) {
         appendOutputLine(result.error, "error");
@@ -2766,7 +2780,7 @@ import {
     return { command, args };
   }
 
-  function getCommandResult(command, args) {
+  async function getCommandResult(command, args) {
     const content = getContent();
     const messages = getMessages();
     switch (command) {
@@ -2785,7 +2799,7 @@ import {
       case "lang":
         return handleLangCommand(args);
       case "me":
-        return handleMeCommand(args);
+        return await handleMeCommand(args);
       case "about":
         return { lines: highlightLinesWithAnsi(content?.about || [], content?.aboutKeywords || []) };
       case "social":
@@ -3224,13 +3238,17 @@ import {
     return { lines };
   }
 
-  function handleMeCommand(args) {
+  async function handleMeCommand(args) {
     const messages = getMessages();
     const message = args.join(" ").trim();
     if (!message) {
       state.me.active = true;
+      const intro = [...(messages.meIntro || [])];
+      if (!ME_API_ENDPOINT) {
+        intro.push(messages.meApiNotConfigured || "Remote AI is not configured.");
+      }
       return {
-        lines: prefixAgentLines(messages.meIntro || [])
+        lines: prefixAgentLines(intro)
       };
     }
 
@@ -3242,9 +3260,88 @@ import {
 
     state.me.active = true;
     state.me.history.push({ role: "user", text: message });
-    const response = buildMeResponse(message);
+    if (state.me.history.length > 40) {
+      state.me.history.splice(0, state.me.history.length - 40);
+    }
+
+    const remote = await requestMeFromApi(message);
+    let response = remote?.lines?.length ? remote.lines : buildMeResponse(message);
+    if (!remote?.lines?.length && ME_API_ENDPOINT) {
+      response = [messages.meApiUnavailable || "Remote AI did not respond.", ...response];
+    }
+
     state.me.history.push({ role: "assistant", text: response.join("\n") });
+    if (state.me.history.length > 40) {
+      state.me.history.splice(0, state.me.history.length - 40);
+    }
     return { lines: prefixAgentLines(response) };
+  }
+
+  async function requestMeFromApi(question) {
+    if (!ME_API_ENDPOINT) return null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), ME_API_TIMEOUT_MS);
+    try {
+      const response = await fetch(ME_API_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          question,
+          lang: state.language,
+          history: state.me.history.slice(-ME_HISTORY_WINDOW)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`me api status ${response.status}`);
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      const answer = String(payload?.answer || payload?.text || "").trim();
+      if (!answer) return null;
+
+      const lines = answer
+        .split(/\r?\n/g)
+        .map((line) => String(line || "").trim())
+        .filter(Boolean)
+        .slice(0, 14);
+
+      const sourceLines = formatMeSources(payload?.sources || payload?.reposUsed || []);
+      if (sourceLines.length) {
+        lines.push(...sourceLines);
+      }
+      return { lines };
+    } catch (error) {
+      logClientError("me-api", error, { endpoint: ME_API_ENDPOINT });
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function formatMeSources(sources) {
+    if (!Array.isArray(sources) || sources.length === 0) return [];
+    const messages = getMessages();
+    const lines = [`${messages.meSourcesLabel || "Sources"}:`];
+    sources.slice(0, 5).forEach((item) => {
+      if (typeof item === "string") {
+        lines.push(`- ${item}`);
+        return;
+      }
+      const name = String(item?.name || item?.repo || item?.title || "").trim();
+      const url = String(item?.url || item?.html_url || "").trim();
+      if (name && url) {
+        lines.push(`- ${name}: ${url}`);
+      } else if (url) {
+        lines.push(`- ${url}`);
+      } else if (name) {
+        lines.push(`- ${name}`);
+      }
+    });
+    return lines;
   }
 
   function isMeExit(message) {

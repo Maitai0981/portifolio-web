@@ -8,7 +8,8 @@ const JS_TARGETS = [
   "service-worker.js",
   "scripts/build.mjs",
   "scripts/lint.mjs",
-  "modules"
+  "modules",
+  "worker"
 ];
 
 async function walk(dir, files = []) {
@@ -19,7 +20,7 @@ async function walk(dir, files = []) {
       await walk(filePath, files);
       continue;
     }
-    if (/\.(m?js)$/i.test(entry.name)) {
+    if (/\.(m?js|ts)$/i.test(entry.name)) {
       files.push(filePath);
     }
   }
@@ -43,8 +44,10 @@ async function resolveTargets() {
 
 async function lintJs(filePath) {
   const source = await readFile(filePath, "utf8");
+  const ext = path.extname(filePath).toLowerCase();
+  const loader = ext === ".ts" ? "ts" : "js";
   await transform(source, {
-    loader: "js",
+    loader,
     target: "es2020",
     charset: "utf8",
     sourcemap: false

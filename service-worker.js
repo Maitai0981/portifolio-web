@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "portfolio-cache-";
-const CACHE_VERSION = "2026-02-20-14";
+const CACHE_VERSION = "2026-02-20-15";
 const CORE_CACHE_NAME = `${CACHE_PREFIX}core-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `${CACHE_PREFIX}runtime-${CACHE_VERSION}`;
 const RUNTIME_MAX_ENTRIES = 80;
