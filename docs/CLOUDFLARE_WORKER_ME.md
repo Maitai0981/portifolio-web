@@ -10,12 +10,15 @@ Este projeto foi preparado para usar um backend serverless gratuito via Cloudfla
 ## O que o Worker faz
 
 - Endpoint `POST /me`
+- Endpoint `POST /inspector-auth` (valida senha do `me-inspector`)
+- Endpoint `GET /metrics` (metrica basica de requests/erros/latencia)
 - Busca repositorios no GitHub do usuario em `GITHUB_USERNAME`
 - Busca README dos repos mais relevantes para a pergunta
 - Usa Llama 3 via Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
 - Retorna:
   - `answer` (texto da resposta)
   - `sources` (repos usados)
+  - `meta.schema` (contrato `me.v1`)
 
 ## Variaveis no Cloudflare (Dashboard > Worker > Settings > Variables)
 
@@ -27,6 +30,14 @@ Este projeto foi preparado para usar um backend serverless gratuito via Cloudfla
 ### Secrets
 
 - `GITHUB_TOKEN` (token de leitura do GitHub)
+- `INSPECTOR_PASSWORD_HASH` (hash SHA-256 da senha do `me-inspector`)
+- `METRICS_KEY` (opcional, chave para proteger `GET /metrics`)
+
+Exemplo para gerar hash SHA-256 da senha:
+
+```bash
+node -e "const c=require('crypto'); const s='SUA-SENHA-FORTE'; console.log(c.createHash('sha256').update(s).digest('hex'));"
+```
 
 ## Deploy via CLI (local)
 
@@ -69,6 +80,20 @@ Pergunta:
 curl -X POST https://SEU-WORKER.workers.dev/me \
   -H "Content-Type: application/json" \
   -d "{\"question\":\"me fale dos meus projetos de IA\",\"lang\":\"pt\"}"
+```
+
+Autenticacao do inspector:
+
+```bash
+curl -X POST https://SEU-WORKER.workers.dev/inspector-auth \
+  -H "Content-Type: application/json" \
+  -d "{\"password\":\"SUA-SENHA-FORTE\"}"
+```
+
+Metricas:
+
+```bash
+curl https://SEU-WORKER.workers.dev/metrics -H "x-metrics-key: SUA_CHAVE"
 ```
 
 ## Observacoes

@@ -20,6 +20,16 @@ const COPY_LIST = [
   "styles.css"
 ];
 
+function getBuildVersion() {
+  const fromEnv = String(process.env.BUILD_VERSION || "").trim();
+  if (fromEnv) return fromEnv;
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}-${pad(
+    now.getUTCHours()
+  )}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
+}
+
 async function safeCopy(relativePath) {
   const source = path.join(ROOT, relativePath);
   const destination = path.join(DIST, relativePath);
@@ -54,13 +64,33 @@ async function minifyFile(filePath) {
   await writeFile(filePath, result.code, "utf8");
 }
 
+async function injectBuildVersion(version) {
+  const indexPath = path.join(DIST, "index.html");
+  const swPath = path.join(DIST, "service-worker.js");
+
+  const indexSource = await readFile(indexPath, "utf8");
+  const nextIndex = indexSource
+    .replace(/window\.__APP_VERSION__\s*=\s*"[^"]*"/, `window.__APP_VERSION__ = "${version}"`)
+    .replace(/(manifest\.webmanifest\?v=)[^"]+/g, `$1${version}`)
+    .replace(/(styles\.css\?v=)[^"]+/g, `$1${version}`)
+    .replace(/(main\.js\?v=)[^"]+/g, `$1${version}`);
+  await writeFile(indexPath, nextIndex, "utf8");
+
+  const swSource = await readFile(swPath, "utf8");
+  const nextSw = swSource.replace(/const CACHE_VERSION = "[^"]+";/, `const CACHE_VERSION = "${version}";`);
+  await writeFile(swPath, nextSw, "utf8");
+}
+
 async function build() {
+  const buildVersion = getBuildVersion();
   await rm(DIST, { recursive: true, force: true });
   await mkdir(DIST, { recursive: true });
 
   for (const item of COPY_LIST) {
     await safeCopy(item);
   }
+
+  await injectBuildVersion(buildVersion);
 
   const allFiles = await walkFiles(DIST);
   await Promise.all(
@@ -71,7 +101,7 @@ async function build() {
     })
   );
 
-  console.log("Build concluido em ./dist");
+  console.log(`Build concluido em ./dist (version: ${buildVersion})`);
 }
 
 build().catch((error) => {

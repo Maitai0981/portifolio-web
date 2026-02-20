@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="me-api-url" content="https://portifolio-web.matheussaragoca2017.workers.dev/me" />
   <title>ME Request Inspector</title>
   <style>
     :root {
@@ -183,7 +184,8 @@
     <h1>Acesso Restrito</h1>
     <div class="muted">Digite sua senha para abrir o ME Request Inspector.</div>
     <div class="controls">
-      <input id="password-input" type="password" autocomplete="current-password" placeholder="Senha" />
+      <label for="password-input">Senha</label>
+      <input id="password-input" type="password" autocomplete="current-password" placeholder="Senha" aria-describedby="auth-message" />
       <button id="unlock-btn" type="button">Entrar</button>
     </div>
     <div id="auth-message" class="muted" style="margin-top: 10px;"></div>
@@ -233,10 +235,14 @@
   <script>
     (function () {
       var STORAGE_KEY = "portfolioMeRequestLog";
-      var AUTH_PASSWORD_HASH = "a5a525daa5354cdf05d8fbd0d01ce5c5b122ec808ebc484eda0f21ef43ff7195";
       var AUTH_SESSION_KEY = "portfolioMeInspectorSessionUntil";
       var AUTH_SESSION_MS = 45 * 60 * 1000;
       var AUTO_INTERVAL_MS = 2500;
+      var RAW_API_URL = String(
+        (window.__ME_API_URL__ || document.querySelector('meta[name=\"me-api-url\"]')?.getAttribute("content") || "")
+      ).trim();
+      var API_BASE = "";
+      var AUTH_ENDPOINT = "";
       var autoTimer = null;
       var autoEnabled = true;
 
@@ -254,22 +260,20 @@
       var toggleAutoBtn = document.getElementById("toggle-auto-btn");
       var logoutBtn = document.getElementById("logout-btn");
 
-      function timingSafeEqual(a, b) {
-        var aa = String(a || "");
-        var bb = String(b || "");
-        if (aa.length !== bb.length) return false;
-        var mismatch = 0;
-        for (var i = 0; i < aa.length; i += 1) {
-          mismatch |= aa.charCodeAt(i) ^ bb.charCodeAt(i);
+      function resolveApiBase(url) {
+        var value = String(url || "").trim();
+        if (!value) return "";
+        value = value.replace(/\/+$/, "");
+        if (value.toLowerCase().endsWith("/me")) {
+          value = value.slice(0, -3);
         }
-        return mismatch === 0;
+        return value;
       }
 
-      async function sha256Hex(text) {
-        var data = new TextEncoder().encode(String(text || ""));
-        var digest = await crypto.subtle.digest("SHA-256", data);
-        var bytes = Array.from(new Uint8Array(digest));
-        return bytes.map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+      function initializeApiConfig() {
+        var queryApi = String(new URLSearchParams(window.location.search).get("api") || "").trim();
+        API_BASE = resolveApiBase(queryApi || RAW_API_URL);
+        AUTH_ENDPOINT = API_BASE ? API_BASE + "/inspector-auth" : "";
       }
 
       function setSession() {
@@ -322,6 +326,10 @@
 
       async function tryUnlock() {
         var password = String(passwordInput.value || "");
+        if (!AUTH_ENDPOINT) {
+          setAuthMessage("Endpoint da API nao configurado em me-inspector.html.", true);
+          return;
+        }
         if (!password) {
           setAuthMessage("Informe a senha.", true);
           return;
@@ -329,16 +337,25 @@
         unlockBtn.disabled = true;
         setAuthMessage("Validando...");
         try {
-          var hash = await sha256Hex(password);
-          var ok = timingSafeEqual(hash, AUTH_PASSWORD_HASH);
-          if (!ok) {
-            setAuthMessage("Senha incorreta.", true);
+          var response = await fetch(AUTH_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: password })
+          });
+          if (!response.ok) {
+            var text = await response.text().catch(function () { return ""; });
+            var msg = "Senha incorreta.";
+            try {
+              var payload = JSON.parse(text || "{}");
+              msg = payload.error || msg;
+            } catch (_ignored) { }
+            setAuthMessage(msg, true);
             return;
           }
           setSession();
           showUnlocked();
         } catch (_err) {
-          setAuthMessage("Falha ao validar senha.", true);
+          setAuthMessage("Falha ao validar senha no Worker.", true);
         } finally {
           unlockBtn.disabled = false;
         }
@@ -477,8 +494,10 @@
       });
 
       if (hasValidSession()) {
+        initializeApiConfig();
         showUnlocked();
       } else {
+        initializeApiConfig();
         showLocked("Acesso protegido por senha.");
       }
     })();

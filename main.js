@@ -176,7 +176,8 @@ import {
     click: 120,
     key: 90,
     command: 140,
-    error: 140
+    error: 140,
+    guiIcon: 220
   });
   const PET_KEY_BURST_WINDOW_MS = 170;
   const PET_ALWAYS_ACTIVE = true;
@@ -404,6 +405,9 @@ import {
   const SW_CACHE_PREFIX = "portfolio-cache-";
   const SUPPORTED_LANGS = ["pt", "en"];
   const ME_API_TIMEOUT_MS = 14000;
+  const ME_API_ATTEMPT_TIMEOUTS_MS = [5000, 9000, 14000];
+  const ME_API_RETRY_LIMIT = 2;
+  const ME_API_RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
   const ME_HISTORY_WINDOW = 6;
   const ME_DEBUG_LOG_KEY = "portfolioMeRequestLog";
   const ME_DEBUG_MAX_ITEMS = 120;
@@ -1162,6 +1166,47 @@ import {
     return "";
   }
 
+  function normalizeMeSourceItems(items) {
+    if (!Array.isArray(items)) return [];
+    const output = [];
+    items.slice(0, 8).forEach((item) => {
+      if (typeof item === "string") {
+        const text = String(item || "").trim();
+        if (text) output.push({ name: "", url: "", description: text });
+        return;
+      }
+      const name = String(item?.name || item?.repo || item?.title || "").trim();
+      const url = String(item?.url || item?.html_url || "").trim();
+      const description = String(item?.description || "").trim();
+      if (name || url || description) {
+        output.push({ name, url, description });
+      }
+    });
+    return output;
+  }
+
+  function normalizeMeApiPayload(payload) {
+    const answer = extractMeAnswerText(payload);
+    const sources = normalizeMeSourceItems(payload?.sources || payload?.reposUsed || []);
+    const schema = String(payload?.meta?.schema || payload?.schema || "unknown");
+    return { answer, sources, schema };
+  }
+
+  function classifyMeApiError(status, isAbort) {
+    if (Number.isFinite(status)) {
+      if (status === 429) return "rate_limited";
+      if (status >= 500) return "server_error";
+      if (status === 401 || status === 403) return "auth_or_cors";
+      if (status >= 400) return "client_error";
+    }
+    if (isAbort) return "timeout_or_abort";
+    return "network_or_cors_error";
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+  }
+
   function appendMeDebugLog(entry) {
     if (!entry || typeof entry !== "object") return;
     const current = readStoredJson(ME_DEBUG_LOG_KEY, []);
@@ -1182,7 +1227,16 @@ import {
       answerPreview: truncateDebugText(entry.answerPreview || "", 480),
       responsePreview: truncateDebugText(entry.responsePreview || "", 480),
       sourcesCount: Math.max(0, Number(entry.sourcesCount) || 0),
-      requestHistory: Array.isArray(entry.requestHistory) ? entry.requestHistory.slice(0, 8) : []
+      requestHistory: Array.isArray(entry.requestHistory) ? entry.requestHistory.slice(0, 8) : [],
+      attempts: Array.isArray(entry.attempts)
+        ? entry.attempts.slice(0, 6).map((attempt) => ({
+          attempt: Math.max(1, Number(attempt?.attempt) || 1),
+          status: Number.isFinite(Number(attempt?.status)) ? Number(attempt.status) : null,
+          result: String(attempt?.result || ""),
+          durationMs: Math.max(0, Number(attempt?.durationMs) || 0),
+          error: truncateDebugText(attempt?.error || "", 180)
+        }))
+        : []
     };
 
     list.unshift(normalized);
@@ -3405,9 +3459,7 @@ import {
 
   async function requestMeFromApi(question) {
     if (!ME_API_ENDPOINT) return null;
-    const controller = new AbortController();
     const startedAt = performance.now();
-    const timeout = setTimeout(() => controller.abort(), ME_API_TIMEOUT_MS);
     const debugEntry = {
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: new Date().toISOString(),
@@ -3424,73 +3476,136 @@ import {
       answerPreview: "",
       responsePreview: "",
       sourcesCount: 0,
+      attempts: [],
       requestHistory: state.me.history.slice(-ME_HISTORY_WINDOW).map((item) => ({
         role: String(item?.role || ""),
         text: truncateDebugText(item?.text || "", 140)
       }))
     };
     try {
-      const response = await fetch(ME_API_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          question,
-          lang: state.language,
-          history: state.me.history.slice(-ME_HISTORY_WINDOW)
-        })
-      });
-      debugEntry.status = response.status;
+      const maxAttempts = Math.max(1, ME_API_RETRY_LIMIT + 1);
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const timeoutMs = Math.max(
+          1200,
+          Number(ME_API_ATTEMPT_TIMEOUTS_MS[attempt] || ME_API_TIMEOUT_MS || 14000)
+        );
+        const controller = new AbortController();
+        const attemptStartedAt = performance.now();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!response.ok) {
-        debugEntry.result = "http_error";
-        debugEntry.responsePreview = truncateDebugText(await response.text().catch(() => ""), 480);
-        throw new Error(`me api status ${response.status}`);
-      }
+        try {
+          const response = await fetch(ME_API_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              question,
+              lang: state.language,
+              history: state.me.history.slice(-ME_HISTORY_WINDOW)
+            })
+          });
 
-      const payload = await response.json().catch(() => ({}));
-      const answer = extractMeAnswerText(payload);
-      const rawSources = payload?.sources || payload?.reposUsed || [];
-      debugEntry.sourcesCount = Array.isArray(rawSources) ? rawSources.length : 0;
-      debugEntry.answerPreview = truncateDebugText(answer, 480);
-      if (!answer) {
-        debugEntry.result = "empty_answer";
-        return null;
-      }
+          const responseText = await response.text().catch(() => "");
+          debugEntry.status = response.status;
+          debugEntry.responsePreview = truncateDebugText(responseText, 480);
 
-      let lines = answer
-        .split(/\r?\n/g)
-        .map((line) => String(line || ""))
-        .slice(0, 30);
+          if (!response.ok) {
+            const errorType = classifyMeApiError(response.status, false);
+            debugEntry.result = errorType;
+            debugEntry.attempts.push({
+              attempt: attempt + 1,
+              status: response.status,
+              result: errorType,
+              durationMs: Math.max(0, Math.round(performance.now() - attemptStartedAt)),
+              error: `me api status ${response.status}`
+            });
+            if (attempt < maxAttempts - 1 && ME_API_RETRYABLE_STATUS.has(response.status)) {
+              await sleep(180 * (attempt + 1));
+              continue;
+            }
+            throw new Error(`me api status ${response.status}`);
+          }
 
-      const sourceLines = formatMeSources(rawSources);
-      if (sourceLines.length) {
-        const firstSourceLine = lines.findIndex((line) => isMeSourceHeading(line));
-        if (firstSourceLine >= 0) {
-          lines = lines.slice(0, firstSourceLine);
+          const payload = responseText ? JSON.parse(responseText) : {};
+          const normalized = normalizeMeApiPayload(payload);
+          const answer = normalized.answer;
+          debugEntry.sourcesCount = normalized.sources.length;
+          debugEntry.answerPreview = truncateDebugText(answer, 480);
+          if (!answer) {
+            debugEntry.result = "invalid_payload";
+            debugEntry.attempts.push({
+              attempt: attempt + 1,
+              status: response.status,
+              result: "invalid_payload",
+              durationMs: Math.max(0, Math.round(performance.now() - attemptStartedAt)),
+              error: "Missing answer text in payload."
+            });
+            if (attempt < maxAttempts - 1) {
+              await sleep(120 * (attempt + 1));
+              continue;
+            }
+            return null;
+          }
+
+          let lines = answer
+            .split(/\r?\n/g)
+            .map((line) => String(line || ""))
+            .slice(0, 30);
+
+          const sourceLines = formatMeSources(normalized.sources);
+          if (sourceLines.length) {
+            const firstSourceLine = lines.findIndex((line) => isMeSourceHeading(line));
+            if (firstSourceLine >= 0) {
+              lines = lines.slice(0, firstSourceLine);
+            }
+          }
+
+          debugEntry.ok = true;
+          debugEntry.result = normalized.schema === "me.v1" ? "success" : "success_schema_unknown";
+          debugEntry.attempts.push({
+            attempt: attempt + 1,
+            status: response.status,
+            result: debugEntry.result,
+            durationMs: Math.max(0, Math.round(performance.now() - attemptStartedAt)),
+            error: ""
+          });
+
+          return {
+            lines: normalizeMeBodyLines(lines),
+            sources: sourceLines
+          };
+        } catch (error) {
+          const isAbort = Boolean(controller.signal.aborted);
+          const errorType = classifyMeApiError(debugEntry.status, isAbort);
+          if (!debugEntry.result || debugEntry.result === "success") {
+            debugEntry.result = errorType;
+          }
+          const message = error instanceof Error ? error.message : String(error || "");
+          debugEntry.error = message;
+          debugEntry.attempts.push({
+            attempt: attempt + 1,
+            status: Number.isFinite(debugEntry.status) ? debugEntry.status : null,
+            result: errorType,
+            durationMs: Math.max(0, Math.round(performance.now() - attemptStartedAt)),
+            error: message
+          });
+          const canRetry = attempt < maxAttempts - 1 && (isAbort || errorType === "network_or_cors_error");
+          if (canRetry) {
+            await sleep(220 * (attempt + 1));
+            continue;
+          }
+          logClientError("me-api", error, { endpoint: ME_API_ENDPOINT, errorType });
+          return null;
+        } finally {
+          clearTimeout(timeout);
         }
       }
-
-      debugEntry.ok = true;
-      debugEntry.result = "success";
-
-      return {
-        lines: normalizeMeBodyLines(lines),
-        sources: sourceLines
-      };
-    } catch (error) {
-      if (!debugEntry.result) {
-        debugEntry.result = controller.signal.aborted ? "timeout_or_abort" : "network_or_cors_error";
-      }
-      debugEntry.error = error instanceof Error ? error.message : String(error || "");
-      logClientError("me-api", error, { endpoint: ME_API_ENDPOINT });
       return null;
     } finally {
       debugEntry.durationMs = Math.max(0, Math.round(performance.now() - startedAt));
       appendMeDebugLog(debugEntry);
-      clearTimeout(timeout);
     }
   }
 
@@ -5003,14 +5118,29 @@ import {
       });
   }
 
+  function canPrewarmGuiModules() {
+    const nav = navigator;
+    const conn = nav.connection || nav.mozConnection || nav.webkitConnection;
+    if (conn?.saveData) return false;
+    const effectiveType = String(conn?.effectiveType || "").toLowerCase();
+    if (["slow-2g", "2g", "3g"].includes(effectiveType)) return false;
+    const deviceMemory = Number(nav.deviceMemory || 4);
+    return deviceMemory >= 4;
+  }
+
   function prewarmGuiModules() {
+    if (!canPrewarmGuiModules()) return;
     const defer = window.requestIdleCallback
-      ? (cb) => window.requestIdleCallback(cb, { timeout: 2200 })
-      : (cb) => setTimeout(cb, 900);
+      ? (cb) => window.requestIdleCallback(cb, { timeout: 2400 })
+      : (cb) => setTimeout(cb, 1000);
     defer(() => {
       import(`./modules/algorithmViewer.js?v=${APP_VERSION}`).catch(() => null);
-      import(`./modules/snakeGame.js?v=${APP_VERSION}`).catch(() => null);
-      import(`./modules/cnnDemo.js?v=${APP_VERSION}`).catch(() => null);
+      setTimeout(() => {
+        import(`./modules/snakeGame.js?v=${APP_VERSION}`).catch(() => null);
+      }, 600);
+      setTimeout(() => {
+        import(`./modules/cnnDemo.js?v=${APP_VERSION}`).catch(() => null);
+      }, 1200);
     });
   }
 

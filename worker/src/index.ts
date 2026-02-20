@@ -5,6 +5,8 @@ interface Env {
   GITHUB_TOKEN?: string;
   GITHUB_USERNAME?: string;
   ALLOWED_ORIGIN?: string;
+  INSPECTOR_PASSWORD_HASH?: string;
+  METRICS_KEY?: string;
 }
 
 interface RepoSummary {
@@ -28,9 +30,21 @@ const REPO_CACHE_TTL_MS = 10 * 60 * 1000;
 const README_CACHE_TTL_MS = 20 * 60 * 1000;
 const MAX_REPOS_FOR_CONTEXT = 7;
 const MAX_README_CHARS = 2200;
+const API_SCHEMA = "me.v1";
 
 const repoCache = new Map<string, RepoCacheEntry>();
 const readmeCache = new Map<string, { expiresAt: number; text: string }>();
+const workerMetrics = {
+  startedAt: Date.now(),
+  totalRequests: 0,
+  totalErrors: 0,
+  meRequests: 0,
+  meSuccess: 0,
+  meFailure: 0,
+  meLatencyTotalMs: 0,
+  byStatus: {} as Record<string, number>,
+  byErrorCode: {} as Record<string, number>
+};
 
 function corsHeaders(origin: string): Record<string, string> {
   return {
@@ -77,6 +91,69 @@ function jsonResponse(data: unknown, status: number, allowOrigin: string): Respo
   });
 }
 
+function incCounter(counter: Record<string, number>, key: string): void {
+  if (!key) return;
+  counter[key] = (counter[key] || 0) + 1;
+}
+
+function recordMetrics(
+  path: string,
+  method: string,
+  status: number,
+  durationMs: number,
+  errorCode = ""
+): void {
+  workerMetrics.totalRequests += 1;
+  if (status >= 400) workerMetrics.totalErrors += 1;
+  incCounter(workerMetrics.byStatus, String(status));
+  if (errorCode) {
+    incCounter(workerMetrics.byErrorCode, errorCode);
+  }
+  if (path === "/me" && method === "POST") {
+    workerMetrics.meRequests += 1;
+    workerMetrics.meLatencyTotalMs += Math.max(0, Number(durationMs) || 0);
+    if (status >= 200 && status < 300) {
+      workerMetrics.meSuccess += 1;
+    } else {
+      workerMetrics.meFailure += 1;
+    }
+  }
+}
+
+function metricsSnapshot() {
+  const meRequests = Math.max(0, workerMetrics.meRequests);
+  const avgMs = meRequests > 0 ? Math.round(workerMetrics.meLatencyTotalMs / meRequests) : 0;
+  return {
+    schema: "metrics.v1",
+    startedAt: new Date(workerMetrics.startedAt).toISOString(),
+    uptimeMs: Math.max(0, Date.now() - workerMetrics.startedAt),
+    totalRequests: workerMetrics.totalRequests,
+    totalErrors: workerMetrics.totalErrors,
+    me: {
+      requests: meRequests,
+      success: workerMetrics.meSuccess,
+      failure: workerMetrics.meFailure,
+      avgLatencyMs: avgMs
+    },
+    byStatus: workerMetrics.byStatus,
+    byErrorCode: workerMetrics.byErrorCode
+  };
+}
+
+function timedJsonResponse(
+  path: string,
+  method: string,
+  startedAt: number,
+  data: unknown,
+  status: number,
+  allowOrigin: string,
+  errorCode = ""
+): Response {
+  const durationMs = Math.max(0, Date.now() - startedAt);
+  recordMetrics(path, method, status, durationMs, errorCode);
+  return jsonResponse(data, status, allowOrigin);
+}
+
 function normalizeText(value: string): string {
   return String(value || "")
     .toLowerCase()
@@ -115,6 +192,24 @@ function sanitizePlainTextAnswer(value: string): string {
     .replace(/[ \u00A0]+/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const data = new TextEncoder().encode(String(value || ""));
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const bytes = Array.from(new Uint8Array(digest));
+  return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  const aa = String(a || "");
+  const bb = String(b || "");
+  if (aa.length !== bb.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < aa.length; i += 1) {
+    mismatch |= aa.charCodeAt(i) ^ bb.charCodeAt(i);
+  }
+  return mismatch === 0;
 }
 
 function buildFallbackAnswer(question: string, repos: RepoSummary[], lang: string): string {
@@ -271,10 +366,15 @@ async function runAssistant(env: Env, question: string, lang: string, repos: Rep
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const startedAt = Date.now();
+    const method = String(request.method || "GET").toUpperCase();
     const requestOrigin = request.headers.get("Origin");
     const allowOrigin = resolveAllowedOrigin(env.ALLOWED_ORIGIN, requestOrigin);
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, "") || "/";
 
-    if (request.method === "OPTIONS") {
+    if (method === "OPTIONS") {
+      recordMetrics(path, method, 204, Date.now() - startedAt, "");
       return new Response(null, {
         status: 204,
         headers: corsHeaders(allowOrigin)
@@ -282,20 +382,106 @@ export default {
     }
 
     if (allowOrigin === "null") {
-      return jsonResponse({ error: "Origin not allowed" }, 403, "null");
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: "Origin not allowed", code: "origin_not_allowed" },
+        403,
+        "null",
+        "origin_not_allowed"
+      );
     }
 
-    const url = new URL(request.url);
-    const path = url.pathname.replace(/\/+$/, "") || "/";
+    if (path === "/metrics") {
+      const expectedKey = String(env.METRICS_KEY || "").trim();
+      const providedKey = String(request.headers.get("x-metrics-key") || "").trim();
+      if (expectedKey && !timingSafeEqual(expectedKey, providedKey)) {
+        return timedJsonResponse(
+          path,
+          method,
+          startedAt,
+          { error: "Metrics key required", code: "metrics_key_required" },
+          403,
+          allowOrigin,
+          "metrics_key_required"
+        );
+      }
+      return timedJsonResponse(path, method, startedAt, metricsSnapshot(), 200, allowOrigin);
+    }
+
+    if (path === "/inspector-auth") {
+      if (method !== "POST") {
+        return timedJsonResponse(
+          path,
+          method,
+          startedAt,
+          { error: "Use POST /inspector-auth", code: "method_not_allowed" },
+          405,
+          allowOrigin,
+          "method_not_allowed"
+        );
+      }
+      const expectedHash = String(env.INSPECTOR_PASSWORD_HASH || "").trim().toLowerCase();
+      if (!expectedHash) {
+        return timedJsonResponse(
+          path,
+          method,
+          startedAt,
+          { error: "Inspector auth is not configured", code: "auth_not_configured" },
+          503,
+          allowOrigin,
+          "auth_not_configured"
+        );
+      }
+      const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+      const password = String(body.password || "").trim();
+      if (!password) {
+        return timedJsonResponse(
+          path,
+          method,
+          startedAt,
+          { error: "Password is required", code: "password_required" },
+          400,
+          allowOrigin,
+          "password_required"
+        );
+      }
+      const givenHash = await sha256Hex(password);
+      if (!timingSafeEqual(givenHash, expectedHash)) {
+        return timedJsonResponse(
+          path,
+          method,
+          startedAt,
+          { error: "Invalid credentials", code: "invalid_credentials" },
+          401,
+          allowOrigin,
+          "invalid_credentials"
+        );
+      }
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { ok: true, mode: "worker_password" },
+        200,
+        allowOrigin
+      );
+    }
 
     if (path === "/") {
-      return jsonResponse(
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
         {
           ok: true,
           service: "portfolio-me-api",
           endpoints: {
             health: "GET /health",
-            me: "POST /me"
+            me: "POST /me",
+            inspectorAuth: "POST /inspector-auth",
+            metrics: "GET /metrics"
           }
         },
         200,
@@ -304,15 +490,38 @@ export default {
     }
 
     if (path === "/health") {
-      return jsonResponse({ ok: true, service: "portfolio-me-api" }, 200, allowOrigin);
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { ok: true, service: "portfolio-me-api", schema: API_SCHEMA },
+        200,
+        allowOrigin
+      );
     }
 
-    if (path === "/me" && request.method !== "POST") {
-      return jsonResponse({ error: "Use POST /me" }, 405, allowOrigin);
+    if (path === "/me" && method !== "POST") {
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: "Use POST /me", code: "method_not_allowed" },
+        405,
+        allowOrigin,
+        "method_not_allowed"
+      );
     }
 
-    if (path !== "/me" || request.method !== "POST") {
-      return jsonResponse({ error: "Not found" }, 404, allowOrigin);
+    if (path !== "/me" || method !== "POST") {
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: "Not found", code: "not_found" },
+        404,
+        allowOrigin,
+        "not_found"
+      );
     }
 
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
@@ -321,10 +530,26 @@ export default {
     const username = String(env.GITHUB_USERNAME || "").trim();
 
     if (!username) {
-      return jsonResponse({ error: "Missing GITHUB_USERNAME variable" }, 500, allowOrigin);
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: "Missing GITHUB_USERNAME variable", code: "missing_username" },
+        500,
+        allowOrigin,
+        "missing_username"
+      );
     }
     if (!question) {
-      return jsonResponse({ error: "Question is required" }, 400, allowOrigin);
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: "Question is required", code: "question_required" },
+        400,
+        allowOrigin,
+        "question_required"
+      );
     }
 
     try {
@@ -354,7 +579,10 @@ export default {
       }
       answer = sanitizePlainTextAnswer(answer);
 
-      return jsonResponse(
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
         {
           answer,
           sources: withReadme.map((repo) => ({
@@ -362,14 +590,27 @@ export default {
             url: repo.url,
             description: repo.description,
             updatedAt: repo.updatedAt
-          }))
+          })),
+          meta: {
+            schema: API_SCHEMA,
+            generatedAt: new Date().toISOString(),
+            sourceCount: withReadme.length
+          }
         },
         200,
         allowOrigin
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected worker error";
-      return jsonResponse({ error: message }, 500, allowOrigin);
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        { error: message, code: "worker_error" },
+        500,
+        allowOrigin,
+        "worker_error"
+      );
     }
   }
 };
