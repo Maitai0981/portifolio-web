@@ -55,6 +55,8 @@ import {
       bubble: null,
       art: null,
       hideBubbleTimer: null,
+      bubbleVisibleUntil: 0,
+      pendingBubble: null,
       idleTimer: null,
       microAnimationTimer: null,
       reactionTimer: null,
@@ -135,7 +137,7 @@ import {
     secret: "#05030f"
   });
   const PET_TIMING = Object.freeze({
-    bubbleMs: 2000,
+    bubbleMs: 1500,
     idleMs: 12000,
     neutralMs: 1500,
     microMinMs: 2400,
@@ -1707,20 +1709,49 @@ import {
       clearTimeout(state.pet.reactionQueueTimer);
       state.pet.reactionQueueTimer = null;
     }
+    if (state.pet.bubble) {
+      state.pet.bubble.classList.remove("is-visible");
+      state.pet.bubble.textContent = "";
+    }
+    state.pet.bubbleVisibleUntil = 0;
+    state.pet.pendingBubble = null;
     state.pet.reactionQueue = [];
     state.pet.reactionInFlight = null;
     stopPetAnimation();
   }
 
-  function showPetBubble(text, duration = PET_TIMING.bubbleMs) {
+  function showPetBubble(text, duration = PET_TIMING.bubbleMs, options = {}) {
     if (!state.pet.bubble) return;
+    const content = String(text || "").trim();
+    if (!content) return;
+    const now = Date.now();
+    const safeDuration = Math.max(250, Number(duration) || PET_TIMING.bubbleMs);
+    const isVisible = state.pet.bubble.classList.contains("is-visible");
+    const locked =
+      isVisible &&
+      state.pet.bubbleVisibleUntil > 0 &&
+      now < state.pet.bubbleVisibleUntil;
+
+    if (locked && !options.force) {
+      state.pet.pendingBubble = { text: content, duration: safeDuration };
+      return;
+    }
+
     clearTimeout(state.pet.hideBubbleTimer);
-    state.pet.bubble.textContent = text;
+    state.pet.pendingBubble = null;
+    state.pet.bubble.textContent = content;
     state.pet.bubble.classList.add("is-visible");
+    state.pet.bubbleVisibleUntil = now + safeDuration;
     state.pet.hideBubbleTimer = setTimeout(() => {
       state.pet.bubble.classList.remove("is-visible");
+      state.pet.bubbleVisibleUntil = 0;
       state.pet.hideBubbleTimer = null;
-    }, duration);
+      const nextBubble = state.pet.pendingBubble;
+      state.pet.pendingBubble = null;
+      if (nextBubble && state.pet.active) {
+        showPetBubble(nextBubble.text, nextBubble.duration, { force: true });
+      }
+    }, safeDuration);
   }
 
   function resetPetIdleTimer() {
@@ -1912,8 +1943,10 @@ import {
   function performPetReaction(type, options = {}) {
     updatePetInsight(type, options.meta || {});
     const messages = getPetPhrases(type, options.meta || {});
-    if (messages.length) {
-      showPetBubble(getRandomItem(messages), options.bubbleDuration || PET_TIMING.bubbleMs);
+    if (messages.length && !options.skipBubble) {
+      showPetBubble(getRandomItem(messages), options.bubbleDuration || PET_TIMING.bubbleMs, {
+        force: Boolean(options.forceBubble)
+      });
     }
     const allAnimClasses = [
       "is-react-click",
@@ -4142,7 +4175,12 @@ import {
 
   function reactPetForGuiIcon(command, phase = "open") {
     const persistMs = phase === "select" ? PET_PERSIST_MS.guiSelect : PET_PERSIST_MS.guiOpen;
-    reactPet("guiIcon", { meta: { command, phase }, persistMs });
+    reactPet("guiIcon", {
+      meta: { command, phase },
+      persistMs,
+      skipBubble: phase === "select",
+      forceBubble: phase === "open"
+    });
   }
 
   function runGuiCommand(command, origin = "gui") {

@@ -184,8 +184,6 @@
       "help": [
         "Comandos disponiveis:",
         "about - resumo profissional",
-        "algorithms - abre o visualizador de algoritmos",
-        "cnn - demo de CNN no navegador",
         "banner - mostra o banner inicial",
         "clear - limpa o terminal",
         "cls - alias de clear",
@@ -203,7 +201,6 @@
         "projects - lista de projetos",
         "reload - reinicia o estado da sessao",
         "resume - link do curriculo",
-        "snake - jogo da cobrinha",
         "social - links para redes sociais",
         "sudo - tenta executar um comando com permissao elevada",
         "terminal - sinonimo de exit-gui",
@@ -419,8 +416,6 @@
       "help": [
         "Available commands:",
         "about - professional summary",
-        "algorithms - open algorithm visualizer",
-        "cnn - CNN demo in the browser",
         "banner - show startup banner",
         "clear - clear the terminal",
         "cls - alias for clear",
@@ -438,7 +433,6 @@
         "projects - project list",
         "reload - reset session state",
         "resume - resume link",
-        "snake - play snake game",
         "social - social links",
         "sudo - attempt to run a command with elevated permissions",
         "terminal - alias for exit-gui",
