@@ -107,6 +107,16 @@ function extractAiText(output: Record<string, unknown> | null | undefined): stri
   return "";
 }
 
+function sanitizePlainTextAnswer(value: string): string {
+  return String(value || "")
+    .replace(/\r/g, "")
+    .replace(/\u0000/g, "")
+    .replace(/\t/g, "  ")
+    .replace(/[ \u00A0]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function buildFallbackAnswer(question: string, repos: RepoSummary[], lang: string): string {
   const isPt = lang.startsWith("pt");
   if (!repos.length) {
@@ -243,8 +253,8 @@ function buildPrompt(question: string, lang: string, repos: RepoSummary[]): stri
     .join("\n\n");
 
   const answerGuide = isPt
-    ? "Responda em portugues. Seja objetivo, cite stack, objetivo e resultados. Termine com 'Fontes:' e liste URLs usadas."
-    : "Answer in English. Be concise, include stack, objective and outcomes. End with 'Sources:' listing used URLs.";
+    ? "Responda em portugues em TEXTO PLANO. Nao use markdown, JSON, HTML, tabelas ou blocos de codigo. Seja objetivo, cite stack, objetivo e resultados. Termine com 'Fontes:' e liste URLs usadas."
+    : "Answer in English in PLAIN TEXT. Do not use markdown, JSON, HTML, tables, or code blocks. Be concise, include stack, objective and outcomes. End with 'Sources:' and list used URLs.";
 
   return `${header}\n\nPergunta: ${question}\n\nContexto de repositorios:\n${reposContext}\n\n${answerGuide}`;
 }
@@ -256,7 +266,7 @@ async function runAssistant(env: Env, question: string, lang: string, repos: Rep
     temperature: 0.2,
     max_tokens: 720
   });
-  return extractAiText(aiOutput);
+  return sanitizePlainTextAnswer(extractAiText(aiOutput));
 }
 
 export default {
@@ -342,6 +352,7 @@ export default {
       if (!answer) {
         answer = buildFallbackAnswer(question, withReadme, lang);
       }
+      answer = sanitizePlainTextAnswer(answer);
 
       return jsonResponse(
         {

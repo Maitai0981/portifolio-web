@@ -1131,6 +1131,35 @@ import {
     return `${text.slice(0, Math.max(0, max - 3))}...`;
   }
 
+  function toPlainText(value) {
+    return String(value || "")
+      .replace(/\r/g, "")
+      .replace(/```[a-zA-Z0-9_-]*\n?/g, "")
+      .replace(/```/g, "")
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/__([^_]+)__/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1: $2")
+      .replace(/^>\s?/gm, "")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  function extractMeAnswerText(payload) {
+    const directCandidates = [payload?.answer, payload?.text, payload?.response, payload?.result];
+    for (const candidate of directCandidates) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return toPlainText(candidate);
+      }
+      if (Array.isArray(candidate)) {
+        const joined = candidate.map((item) => String(item || "")).join("\n").trim();
+        if (joined) return toPlainText(joined);
+      }
+    }
+    return "";
+  }
+
   function appendMeDebugLog(entry) {
     if (!entry || typeof entry !== "object") return;
     const current = readStoredJson(ME_DEBUG_LOG_KEY, []);
@@ -3389,7 +3418,7 @@ import {
       }
 
       const payload = await response.json().catch(() => ({}));
-      const answer = String(payload?.answer || payload?.text || "").trim();
+      const answer = extractMeAnswerText(payload);
       const rawSources = payload?.sources || payload?.reposUsed || [];
       debugEntry.sourcesCount = Array.isArray(rawSources) ? rawSources.length : 0;
       debugEntry.answerPreview = truncateDebugText(answer, 480);
@@ -4605,10 +4634,9 @@ import {
       state.theme = storedTheme;
     }
 
-    const storedMode = String(readStoredValue(STORAGE_KEYS.mode) || "").toLowerCase();
-    if (storedMode === "cli" || storedMode === "gui") {
-      state.mode = storedMode;
-    }
+    // Sempre iniciar em GUI, ignorando modo persistido de sessões anteriores.
+    state.mode = INITIAL_MODE;
+    removeStoredValue(STORAGE_KEYS.mode);
 
     const storedTypingSpeed = toFiniteNumber(readStoredValue(STORAGE_KEYS.typingSpeed), state.options.typingSpeed);
     state.options.typingSpeed = Math.min(18, Math.max(1, Math.round(storedTypingSpeed)));

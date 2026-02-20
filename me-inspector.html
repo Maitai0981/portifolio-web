@@ -73,6 +73,22 @@
       filter: brightness(1.12);
     }
 
+    input[type="password"] {
+      border: 1px solid #2e4b70;
+      color: #dcebff;
+      background: #0f2138;
+      border-radius: 6px;
+      padding: 8px 10px;
+      min-width: 220px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    input[type="password"]:focus {
+      border-color: #4ea7ff;
+      box-shadow: 0 0 0 2px rgba(78, 167, 255, 0.22);
+    }
+
     .stats {
       display: flex;
       flex-wrap: wrap;
@@ -163,51 +179,72 @@
   </style>
 </head>
 <body>
-  <section class="panel">
-    <h1>ME Request Inspector</h1>
-    <div class="muted">
-      Pagina oculta para verificar requests do comando <code>me</code> gravados no browser localStorage.
-      URL sugerida: <code>/portifolio-web/me-inspector.html</code> (GitHub Pages) ou <code>/me-inspector.html</code> (local).
-    </div>
+  <section id="auth-panel" class="panel">
+    <h1>Acesso Restrito</h1>
+    <div class="muted">Digite sua senha para abrir o ME Request Inspector.</div>
     <div class="controls">
-      <button id="refresh-btn" type="button">Atualizar</button>
-      <button id="clear-btn" type="button">Limpar logs</button>
-      <button id="export-btn" type="button">Exportar JSON</button>
-      <button id="toggle-auto-btn" type="button">Auto refresh: ON</button>
+      <input id="password-input" type="password" autocomplete="current-password" placeholder="Senha" />
+      <button id="unlock-btn" type="button">Entrar</button>
     </div>
-    <div class="stats" id="stats"></div>
+    <div id="auth-message" class="muted" style="margin-top: 10px;"></div>
   </section>
 
-  <section class="panel">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Resultado</th>
-            <th>Status</th>
-            <th>Duracao</th>
-            <th>Pergunta</th>
-            <th>Erro</th>
-          </tr>
-        </thead>
-        <tbody id="log-body"></tbody>
-      </table>
-    </div>
-  </section>
+  <main id="inspector-app" hidden>
+    <section class="panel">
+      <h1>ME Request Inspector</h1>
+      <div class="muted">
+        Pagina oculta para verificar requests do comando <code>me</code> gravados no browser localStorage.
+        URL sugerida: <code>/portifolio-web/me-inspector.html</code> (GitHub Pages) ou <code>/me-inspector.html</code> (local).
+      </div>
+      <div class="controls">
+        <button id="refresh-btn" type="button">Atualizar</button>
+        <button id="clear-btn" type="button">Limpar logs</button>
+        <button id="export-btn" type="button">Exportar JSON</button>
+        <button id="toggle-auto-btn" type="button">Auto refresh: ON</button>
+        <button id="logout-btn" type="button">Sair</button>
+      </div>
+      <div class="stats" id="stats"></div>
+    </section>
 
-  <section class="panel">
-    <h2 style="margin-top: 0; font-size: 15px;">Detalhes da linha selecionada</h2>
-    <pre id="details">Clique em uma linha para ver detalhes.</pre>
-  </section>
+    <section class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Resultado</th>
+              <th>Status</th>
+              <th>Duracao</th>
+              <th>Pergunta</th>
+              <th>Erro</th>
+            </tr>
+          </thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top: 0; font-size: 15px;">Detalhes da linha selecionada</h2>
+      <pre id="details">Clique em uma linha para ver detalhes.</pre>
+    </section>
+  </main>
 
   <script>
     (function () {
       var STORAGE_KEY = "portfolioMeRequestLog";
+      var AUTH_PASSWORD_HASH = "a5a525daa5354cdf05d8fbd0d01ce5c5b122ec808ebc484eda0f21ef43ff7195";
+      var AUTH_SESSION_KEY = "portfolioMeInspectorSessionUntil";
+      var AUTH_SESSION_MS = 45 * 60 * 1000;
       var AUTO_INTERVAL_MS = 2500;
       var autoTimer = null;
       var autoEnabled = true;
 
+      var authPanel = document.getElementById("auth-panel");
+      var app = document.getElementById("inspector-app");
+      var passwordInput = document.getElementById("password-input");
+      var unlockBtn = document.getElementById("unlock-btn");
+      var authMessage = document.getElementById("auth-message");
       var tbody = document.getElementById("log-body");
       var details = document.getElementById("details");
       var stats = document.getElementById("stats");
@@ -215,6 +252,97 @@
       var clearBtn = document.getElementById("clear-btn");
       var exportBtn = document.getElementById("export-btn");
       var toggleAutoBtn = document.getElementById("toggle-auto-btn");
+      var logoutBtn = document.getElementById("logout-btn");
+
+      function timingSafeEqual(a, b) {
+        var aa = String(a || "");
+        var bb = String(b || "");
+        if (aa.length !== bb.length) return false;
+        var mismatch = 0;
+        for (var i = 0; i < aa.length; i += 1) {
+          mismatch |= aa.charCodeAt(i) ^ bb.charCodeAt(i);
+        }
+        return mismatch === 0;
+      }
+
+      async function sha256Hex(text) {
+        var data = new TextEncoder().encode(String(text || ""));
+        var digest = await crypto.subtle.digest("SHA-256", data);
+        var bytes = Array.from(new Uint8Array(digest));
+        return bytes.map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+      }
+
+      function setSession() {
+        sessionStorage.setItem(AUTH_SESSION_KEY, String(Date.now() + AUTH_SESSION_MS));
+      }
+
+      function clearSession() {
+        sessionStorage.removeItem(AUTH_SESSION_KEY);
+      }
+
+      function hasValidSession() {
+        var raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+        var until = Number(raw);
+        return Number.isFinite(until) && until > Date.now();
+      }
+
+      function stopAutoRefresh() {
+        if (!autoTimer) return;
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+
+      function startAutoRefresh() {
+        stopAutoRefresh();
+        if (!autoEnabled) return;
+        autoTimer = setInterval(render, AUTO_INTERVAL_MS);
+      }
+
+      function setAuthMessage(text, isError) {
+        authMessage.textContent = text;
+        authMessage.style.color = isError ? "#ff8f8f" : "#8ea5bf";
+      }
+
+      function showUnlocked() {
+        authPanel.hidden = true;
+        app.hidden = false;
+        setAuthMessage("");
+        render();
+        startAutoRefresh();
+      }
+
+      function showLocked(message) {
+        app.hidden = true;
+        authPanel.hidden = false;
+        stopAutoRefresh();
+        setAuthMessage(message || "");
+        passwordInput.value = "";
+        passwordInput.focus();
+      }
+
+      async function tryUnlock() {
+        var password = String(passwordInput.value || "");
+        if (!password) {
+          setAuthMessage("Informe a senha.", true);
+          return;
+        }
+        unlockBtn.disabled = true;
+        setAuthMessage("Validando...");
+        try {
+          var hash = await sha256Hex(password);
+          var ok = timingSafeEqual(hash, AUTH_PASSWORD_HASH);
+          if (!ok) {
+            setAuthMessage("Senha incorreta.", true);
+            return;
+          }
+          setSession();
+          showUnlocked();
+        } catch (_err) {
+          setAuthMessage("Falha ao validar senha.", true);
+        } finally {
+          unlockBtn.disabled = false;
+        }
+      }
 
       function readLogs() {
         try {
@@ -300,10 +428,22 @@
       }
 
       function render() {
+        if (app.hidden) return;
         var logs = readLogs();
         renderStats(logs);
         renderRows(logs);
       }
+
+      unlockBtn.addEventListener("click", function () {
+        tryUnlock();
+      });
+
+      passwordInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          tryUnlock();
+        }
+      });
 
       refreshBtn.addEventListener("click", render);
 
@@ -328,16 +468,19 @@
       toggleAutoBtn.addEventListener("click", function () {
         autoEnabled = !autoEnabled;
         toggleAutoBtn.textContent = "Auto refresh: " + (autoEnabled ? "ON" : "OFF");
-        if (autoEnabled) {
-          autoTimer = setInterval(render, AUTO_INTERVAL_MS);
-        } else if (autoTimer) {
-          clearInterval(autoTimer);
-          autoTimer = null;
-        }
+        startAutoRefresh();
       });
 
-      autoTimer = setInterval(render, AUTO_INTERVAL_MS);
-      render();
+      logoutBtn.addEventListener("click", function () {
+        clearSession();
+        showLocked("Sessao encerrada.");
+      });
+
+      if (hasValidSession()) {
+        showUnlocked();
+      } else {
+        showLocked("Acesso protegido por senha.");
+      }
     })();
   </script>
 </body>
