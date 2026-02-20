@@ -1,23 +1,45 @@
 # Portfolio Terminal + GUI
 
-Portfolio em formato SPA que alterna entre um terminal interativo e uma interface inspirada no Windows 95.
+Portfolio SPA com dois modos de interacao:
+- terminal estilo CLI;
+- GUI retro inspirada no Windows 95.
 
-## Funcionalidades
+## Objetivo
 
-- Terminal com comandos para navegar pelas seções.
-- Interface gráfica com ícones e janelas temáticas.
-- Servidor HTTP simples para servir arquivos estáticos.
+Entregar uma experiencia interativa de apresentacao profissional com foco em:
+- navegacao por comandos;
+- janelas e componentes visuais;
+- deploy estatico no GitHub Pages;
+- suporte offline parcial com Service Worker.
+
+## Stack
+
+- HTML + CSS + JavaScript (ES Modules).
+- Node.js apenas para servidor local e build.
+- `esbuild` para minificacao no build de producao.
+- GitHub Actions para deploy automatico no GitHub Pages.
 
 ## Como rodar localmente
 
-Pré-requisito: Node.js instalado.
+Pre-requisito:
+- Node.js 20+ (recomendado).
+
+Comandos:
 
 ```bash
 npm install
 npm run dev
 ```
 
-O servidor sobe em `http://localhost:8080` (ou na porta definida em `PORT`).
+Servidor local:
+- URL padrao: `http://localhost:8080`
+- Porta customizada: definir `PORT` no ambiente.
+
+## Scripts
+
+- `npm run dev`: sobe o servidor local (`server.js`).
+- `npm start`: alias de `npm run dev`.
+- `npm run build`: gera `dist/` com arquivos minificados para deploy estatico.
 
 ## Build de producao
 
@@ -25,28 +47,88 @@ O servidor sobe em `http://localhost:8080` (ou na porta definida em `PORT`).
 npm run build
 ```
 
-O build gera a pasta `dist/` com assets minificados para deploy estatico.
+Saida:
+- pasta `dist/` pronta para publicacao;
+- JS/CSS minificados;
+- arquivos estaticos copiados automaticamente.
+
+Pipeline de build:
+- arquivo: `scripts/build.mjs`
+- copia arquivos principais;
+- percorre `dist/` e minifica `.js` e `.css`.
 
 ## Deploy no GitHub Pages
 
-- O workflow `.github/workflows/pages.yml` faz deploy automatico ao dar push na branch `main`.
-- A publicacao usa o conteudo de `dist/`.
-- Arquivos de suporte ao Pages:
-  - `404.html` para fallback de rotas SPA.
-  - `.nojekyll` para desativar processamento Jekyll.
-  - `robots.txt` e `sitemap.xml` para indexacao.
+Workflow:
+- arquivo: `.github/workflows/pages.yml`
+- gatilho: push em `main` e execucao manual.
 
-## Estrutura do projeto
+Fluxo:
+- instala dependencias com `npm ci`;
+- executa `npm run build`;
+- publica `dist/` via `actions/deploy-pages`.
 
-- `index.html`: estrutura principal da aplicação.
-- `styles.css`: estilos globais da interface.
-- `main.js`: lógica de interação do terminal e da GUI (ES Modules).
-- `assets/`: imagens e ícones.
-- `data.json`: conteúdo usado nas seções.
-- `server.js`: servidor HTTP simples.
-- `scripts/build.mjs`: pipeline de build e minificacao para producao.
+Arquivos de suporte ao Pages:
+- `404.html`: fallback de rota para SPA;
+- `.nojekyll`: desativa processamento Jekyll;
+- `robots.txt` e `sitemap.xml`: indexacao.
 
-## Scripts disponíveis
+## Estrutura principal
 
-- `npm run dev`: inicia o servidor local.
-- `npm start`: equivalente ao `dev`.
+- `index.html`: bootstrap da aplicacao, meta tags, SEO social, schema JSON-LD.
+- `main.js`: estado global, comandos, GUI, i18n, registro de SW.
+- `styles.css`: tema terminal + GUI.
+- `data.json`: conteudo textual (pt/en), projetos e metadados.
+- `modules/`: modulos auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`).
+- `service-worker.js`: cache e fallback offline.
+- `manifest.webmanifest`: metadados PWA.
+- `server.js`: servidor HTTP local sem dependencias externas.
+- `assets/`: imagens, sprites, capas e modelo CNN.
+
+## Comportamento de cache e Service Worker
+
+- Em producao (HTTPS): Service Worker e registrado.
+- Em localhost: Service Worker e removido automaticamente para evitar cache sujo durante desenvolvimento.
+- Estrategia principal:
+  - navegacao/documento e JSON: `networkFirst` com fallback para `index.html`;
+  - estaticos: `staleWhileRevalidate`.
+
+## SEO e indexacao
+
+- `canonical`, `og:*`, `twitter:*` e `theme-color` configurados.
+- `sitemap.xml` e `robots.txt` incluidos.
+- JSON-LD (`Person`) no `index.html`.
+
+## Roteamento SPA no Pages
+
+- `404.html` redireciona para `/?p=...`.
+- `index.html` restaura a rota original no carregamento.
+- rotas sem extensao tambem recebem barra final para manter consistencia de caminho.
+
+## Conteudo do portfolio
+
+Fonte unica:
+- `data.json`
+
+Para atualizar portfolio:
+- edite `translations.pt` e `translations.en`;
+- atualize links, projetos, educacao e resume no JSON;
+- valide com `npm run build`.
+
+## Troubleshooting rapido
+
+- Erro `refresh.js` com `ws://localhost:8081`:
+  - nao pertence ao projeto;
+  - normalmente vem de extensao de live reload/preview.
+- Mudanca nao aparece no browser:
+  - faca hard reload (`Ctrl+F5`);
+  - limpe SW/caches no DevTools se necessario.
+- Deploy nao atualizou:
+  - confira run do workflow em `Actions`;
+  - confirme que o Pages usa source `GitHub Actions`.
+
+## Documentacao detalhada
+
+- `docs/ARCHITECTURE.md`
+- `docs/DEPLOY_GITHUB_PAGES.md`
+- `docs/TROUBLESHOOTING.md`
