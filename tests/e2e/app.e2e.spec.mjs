@@ -104,3 +104,46 @@ test("comando me usa API e renderiza resposta formatada", async ({ page }) => {
   expect(meOutput.toLowerCase()).toMatch(/answer|resposta/);
   expect(meOutput.toLowerCase()).toMatch(/projects|projetos/);
 });
+
+test("tema fire expõe telemetria e reage ao clique com burst", async ({ page }) => {
+  await page.goto("/");
+  await openTerminal(page);
+  await runCommand(page, "theme fire");
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const t = window.__FIRE_TELEMETRY__;
+          return t && Number(t.fps) > 0 ? 1 : 0;
+        }),
+      { timeout: 12000 }
+    )
+    .toBe(1);
+
+  const before = await page.evaluate(() => {
+    const t = window.__FIRE_TELEMETRY__ || {};
+    return Number(t.burstsTotal || 0);
+  });
+
+  const appBox = await page.locator("#app").boundingBox();
+  if (!appBox) throw new Error("App bounds unavailable");
+  await page.mouse.click(appBox.x + appBox.width * 0.5, appBox.y + appBox.height * 0.45);
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate((previous) => {
+          const t = window.__FIRE_TELEMETRY__ || {};
+          return Number(t.burstsTotal || 0) > Number(previous) ? 1 : 0;
+        }, before),
+      { timeout: 6000 }
+    )
+    .toBe(1);
+
+  const snapshot = await page.evaluate(() => window.__FIRE_TELEMETRY__);
+  expect(snapshot).toBeTruthy();
+  expect(Number(snapshot.fps)).toBeGreaterThan(0);
+  expect(Number(snapshot.avgFrameMs)).toBeLessThan(90);
+  expect(["high", "medium", "low"]).toContain(String(snapshot.tier));
+});

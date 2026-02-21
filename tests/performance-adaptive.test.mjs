@@ -4,6 +4,7 @@ import { loadBundledModule } from "./helpers/loadBundledModule.mjs";
 
 const typing = await loadBundledModule("modules/features/terminal/typing.js");
 const matrixAdaptive = await loadBundledModule("modules/features/effects/matrixAdaptive.js");
+const doomFire = await loadBundledModule("modules/features/effects/doomFire.js");
 
 test("shouldTypeLinesByVolume ativa tipagem para lotes grandes", () => {
   const shortLines = ["a", "b", "c"];
@@ -50,4 +51,44 @@ test("getMatrixQualityConfig e shouldRenderMatrixFrame aplicam throttling espera
   assert.equal(matrixAdaptive.shouldRenderMatrixFrame(100, 0, 16), true);
   assert.equal(matrixAdaptive.shouldRenderMatrixFrame(100, 96, 16), false);
   assert.equal(matrixAdaptive.shouldRenderMatrixFrame(120, 96, 16), true);
+});
+
+test("doom fire queue e burst alteram telemetria e propagacao", () => {
+  const matrixState = {
+    fireCols: 0,
+    fireRows: 0,
+    fireHeat: [],
+    fireBursts: [],
+    fireTelemetry: doomFire.createFireTelemetryState()
+  };
+
+  doomFire.ensureFireGrid(matrixState, 320, 180, 12);
+  const beforeTotal = matrixState.fireTelemetry.burstsTotal;
+  doomFire.queueFireBurst(
+    matrixState,
+    { x: 4, y: 5, radius: 3, power: 1, ttlMs: 250, createdAt: 1000 },
+    1000
+  );
+  assert.equal(matrixState.fireBursts.length > 0, true);
+  assert.equal(matrixState.fireTelemetry.burstsTotal, beforeTotal + 1);
+});
+
+test("resolveFirePerformanceTier aplica fallback por telemetria", () => {
+  const telemetry = doomFire.createFireTelemetryState();
+  telemetry.recommendTier = "low";
+  const tierLow = doomFire.resolveFirePerformanceTier({
+    telemetry,
+    currentTier: "high",
+    reducedMotion: false,
+    now: 5000
+  });
+  assert.equal(tierLow, "low");
+
+  const tierReduced = doomFire.resolveFirePerformanceTier({
+    telemetry,
+    currentTier: "high",
+    reducedMotion: true,
+    now: 7000
+  });
+  assert.equal(tierReduced, "low");
 });

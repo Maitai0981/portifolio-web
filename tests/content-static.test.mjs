@@ -70,6 +70,7 @@ test("main.js segue arquitetura modular de core", () => {
   assert.match(mainSource, /from "\.\/modules\/features\/pet\/config\.js"/);
   assert.match(mainSource, /from "\.\/modules\/features\/pet\/spriteSheet\.js"/);
   assert.match(mainSource, /from "\.\/modules\/features\/effects\/matrixAdaptive\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/effects\/doomFire\.js"/);
   assert.match(mainSource, /createAppState\(/);
   assert.match(mainSource, /createDomRefs\(/);
 });

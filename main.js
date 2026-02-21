@@ -35,6 +35,15 @@ import {
   shouldRenderMatrixFrame,
   updateMatrixPerformanceState
 } from "./modules/features/effects/matrixAdaptive.js";
+import {
+  createFireTelemetryState,
+  ensureFireGrid,
+  getFireColumnWidth,
+  getFireTelemetrySnapshot,
+  queueFireBurst,
+  resolveFirePerformanceTier,
+  runDoomFireFrame
+} from "./modules/features/effects/doomFire.js";
 
 (() => {
   const INITIAL_MODE = "gui";
@@ -945,87 +954,41 @@ import {
     );
   }
 
-  function ensureFireGrid(width, height, columnWidth) {
-    const cols = Math.max(1, Math.floor(width / columnWidth));
-    const rows = Math.max(1, Math.floor(height / columnWidth));
-    const expectedSize = cols * rows;
-    if (
-      state.matrix.fireCols !== cols ||
-      state.matrix.fireRows !== rows ||
-      !Array.isArray(state.matrix.fireHeat) ||
-      state.matrix.fireHeat.length !== expectedSize
-    ) {
-      state.matrix.fireCols = cols;
-      state.matrix.fireRows = rows;
-      state.matrix.fireHeat = Array.from({ length: expectedSize }, () => 0);
-    }
-  }
+  function triggerFireBurstFromPointer(clientX, clientY) {
+    if (state.theme !== "fire" || !state.matrix.active || !state.matrix.canvas) return;
+    if (typeof clientX !== "number" || typeof clientY !== "number") return;
 
-  function runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset, qualityConfig) {
-    const columnWidth = Math.max(
-      8,
-      Math.round((Number(preset.columnWidth) || 12) * (qualityConfig?.columnScale || 1))
+    const rect = state.matrix.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+
+    const preset = getMatrixPreset("fire");
+    const qualityConfig = getMatrixQualityConfig(
+      state.matrix.performanceTier,
+      state.options.reducedMotion,
+      "fire"
     );
-    ensureFireGrid(width, height, columnWidth);
+    const cell = getFireColumnWidth(preset, qualityConfig);
+    ensureFireGrid(state.matrix, state.matrix.width || rect.width, state.matrix.height || rect.height, cell);
+
     const cols = state.matrix.fireCols;
     const rows = state.matrix.fireRows;
-    const heat = state.matrix.fireHeat;
-    const levels = Math.max(8, Number(preset.fireLevels) || 24);
-    const decayMax = Math.max(1, Number(preset.fireDecayMax) || 3);
-    const charPool = String(preset.chars || " .:*#@");
-    const charLast = Math.max(1, charPool.length - 1);
-    const cell = columnWidth;
-    const reduced = state.options.reducedMotion;
+    const gx = clamp(Math.floor((clientX - rect.left) / Math.max(1, cell)), 0, cols - 1);
+    const gy = clamp(Math.floor((clientY - rect.top) / Math.max(1, cell)), 0, rows - 1);
+    const now = performance.now();
 
-    ctx.fillStyle = preset.trail;
-    ctx.fillRect(0, 0, width, height);
-    ctx.font = `${preset.fontSize}px monospace`;
-    ctx.textBaseline = "top";
-    ctx.shadowBlur = reduced ? 0 : Number(qualityConfig?.shadowBlur ?? 8);
-    ctx.shadowColor = preset.glow;
-
-    const bottomRow = rows - 1;
-    const burnChance = reduced ? 0.68 : 0.86;
-    for (let x = 0; x < cols; x += 1) {
-      const idx = bottomRow * cols + x;
-      const base = Math.random() < burnChance ? levels - 1 : levels - 2;
-      heat[idx] = Math.max(0, base - Math.floor(Math.random() * 2));
-    }
-
-    const spreadLoops = reduced ? 1 : Math.min(3, Math.max(1, Math.round(dt * motionFactor)));
-    for (let n = 0; n < spreadLoops; n += 1) {
-      for (let y = rows - 1; y > 0; y -= 1) {
-        for (let x = 0; x < cols; x += 1) {
-          const srcIndex = y * cols + x;
-          const source = heat[srcIndex];
-          if (source <= 0) continue;
-          const decay = Math.floor(Math.random() * decayMax);
-          const shift = Math.floor(Math.random() * 3) - 1;
-          const dstX = clamp(x + shift, 0, cols - 1);
-          const dstIndex = (y - 1) * cols + dstX;
-          heat[dstIndex] = Math.max(0, source - decay);
-        }
-      }
-    }
-
-    const stride = Math.max(1, Number(qualityConfig?.drawStride) || 1);
-    for (let y = 0; y < rows; y += 1) {
-      for (let x = 0; x < cols; x += stride) {
-        const level = heat[y * cols + x];
-        if (level <= 0) continue;
-        const ratio = clamp(level / (levels - 1), 0, 1);
-        const charIndex = clamp(Math.floor(ratio * charLast), 0, charLast);
-        const ch = charPool.charAt(charIndex);
-        const hue = 6 + ratio * 48;
-        const sat = 94;
-        const light = 20 + ratio * 44;
-        const alpha = 0.2 + ratio * 0.8;
-        const flicker = Math.sin(now * 0.018 + x * 0.62 + y * 0.24) * 1.8;
-        ctx.fillStyle = `hsla(${hue + flicker}, ${sat}%, ${light}%, ${alpha})`;
-        ctx.fillText(ch, x * cell, y * cell);
-      }
-    }
-    ctx.shadowBlur = 0;
+    queueFireBurst(
+      state.matrix,
+      {
+        x: gx,
+        y: gy,
+        radius: state.options.reducedMotion ? 2 : 4,
+        power: state.options.reducedMotion ? 0.75 : 1,
+        ttlMs: state.options.reducedMotion ? 110 : 230,
+        createdAt: now
+      },
+      now
+    );
   }
 
   function toFiniteNumber(value, fallback) {
@@ -1935,7 +1898,10 @@ import {
     resetPetIdleTimer();
   }
 
-  function handlePetClick() {
+  function handlePetClick(event) {
+    if (event && typeof event.clientX === "number" && typeof event.clientY === "number") {
+      triggerFireBurstFromPointer(event.clientX, event.clientY);
+    }
     reactPet("click", { persistMs: PET_PERSIST_MS.click });
   }
 
@@ -4621,6 +4587,8 @@ import {
     state.matrix.lastRenderAt = 0;
     state.matrix.smoothedDt = 1;
     state.matrix.performanceTier = state.options.reducedMotion ? "low" : "high";
+    state.matrix.fireBursts = [];
+    state.matrix.fireTelemetry = createFireTelemetryState();
     resizeMatrix();
     runMatrix();
     window.addEventListener("resize", resizeMatrix);
@@ -4646,6 +4614,9 @@ import {
     state.matrix.fireHeat = [];
     state.matrix.fireCols = 0;
     state.matrix.fireRows = 0;
+    state.matrix.fireBursts = [];
+    state.matrix.fireTelemetry = createFireTelemetryState();
+    window.__FIRE_TELEMETRY__ = null;
     window.removeEventListener("resize", resizeMatrix);
   }
 
@@ -4669,11 +4640,8 @@ import {
         state.options.reducedMotion,
         state.theme
       );
-      const fireColumnWidth = Math.max(
-        8,
-        Math.round((Number(preset.columnWidth) || 12) * (qualityConfig.columnScale || 1))
-      );
-      ensureFireGrid(width, height, fireColumnWidth);
+      const fireColumnWidth = getFireColumnWidth(preset, qualityConfig);
+      ensureFireGrid(state.matrix, width, height, fireColumnWidth);
     } else {
       fillMatrixColumns(height, preset.columnWidth, preset);
     }
@@ -4696,7 +4664,16 @@ import {
     state.matrix.lastTs = now;
     const performanceState = updateMatrixPerformanceState(state.matrix, dt, state.options.reducedMotion);
     state.matrix.smoothedDt = performanceState.smoothedDt;
-    state.matrix.performanceTier = performanceState.performanceTier;
+    let nextTier = performanceState.performanceTier;
+    if (state.theme === "fire") {
+      nextTier = resolveFirePerformanceTier({
+        telemetry: state.matrix.fireTelemetry,
+        currentTier: nextTier,
+        reducedMotion: state.options.reducedMotion,
+        now
+      });
+    }
+    state.matrix.performanceTier = nextTier;
     const qualityConfig = getMatrixQualityConfig(
       state.matrix.performanceTier,
       state.options.reducedMotion,
@@ -4712,10 +4689,29 @@ import {
     const width = state.matrix.width || window.innerWidth;
     const height = state.matrix.height || window.innerHeight;
     if (state.theme === "fire") {
-      runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset, qualityConfig);
+      const telemetry = runDoomFireFrame({
+        matrixState: state.matrix,
+        ctx,
+        now,
+        dt,
+        motionFactor,
+        width,
+        height,
+        preset,
+        qualityConfig,
+        reducedMotion: state.options.reducedMotion
+      });
+      state.matrix.performanceTier = resolveFirePerformanceTier({
+        telemetry,
+        currentTier: state.matrix.performanceTier,
+        reducedMotion: state.options.reducedMotion,
+        now
+      });
+      window.__FIRE_TELEMETRY__ = getFireTelemetrySnapshot(state.matrix, state.matrix.performanceTier);
       state.matrix.animationId = requestAnimationFrame(runMatrix);
       return;
     }
+    window.__FIRE_TELEMETRY__ = null;
 
     ctx.fillStyle = preset.trail;
     ctx.fillRect(0, 0, width, height);
