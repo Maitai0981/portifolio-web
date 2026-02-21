@@ -2,7 +2,7 @@
 
 ## Visao geral
 
-Aplicacao SPA com entrada em `index.html` e logica principal em `main.js`.
+Aplicacao SPA com entrada em `index.html` e orquestracao principal em `main.js`.
 
 Modos de interface:
 - CLI (terminal);
@@ -21,25 +21,32 @@ Modos de interface:
 - Apresentacao:
   - `index.html`
   - `styles.css`
-- Aplicacao:
+- Aplicacao (orquestracao):
   - `main.js`
+- Core (estado e configuracao):
+  - `modules/core/appState.js`
+  - `modules/core/themeConfig.js`
+- Features:
+  - `modules/commandSearch.js`
+  - `modules/algorithmViewer.js`
+  - `modules/cnnDemo.js`
+  - `modules/snakeGame.js`
 - Dados:
   - `data.json`
-- Modulos:
-  - `modules/trie.js`
-  - `modules/levenshtein.js`
-  - `modules/commandSearch.js`
-  - `modules/cnnDemo.js`
 
 ## Estado e eventos
 
-`main.js` concentra o estado:
+`main.js` mantém apenas a coordenacao do estado.
+
+Estado-base e referencias de DOM foram extraidos para `modules/core/appState.js`:
 - modo atual (`cli`/`gui`);
 - historico de comandos;
 - idioma;
 - tema;
 - estado de janelas;
 - preferencias persistidas em `localStorage`.
+
+Configuracoes de tema e presets de animacao ASCII foram extraidos para `modules/core/themeConfig.js`.
 
 Eventos principais:
 - teclado no terminal;

@@ -4,119 +4,26 @@ import {
   searchCommands,
   suggestCommands
 } from "./modules/commandSearch.js";
+import { createAppState, createDomRefs } from "./modules/core/appState.js";
+import {
+  THEMES,
+  THEME_CLASSES,
+  THEME_COLOR_MAP,
+  ASCII_THEME_PRESETS,
+  getAsciiThemePreset,
+  isAsciiThemeEnabled
+} from "./modules/core/themeConfig.js";
 
 (() => {
   const INITIAL_MODE = "gui";
 
-  const state = {
-    mode: INITIAL_MODE,
-    sessionActive: true,
-    commandBusy: false,
-    commandQueue: Promise.resolve(),
-    history: [],
-    historyIndex: -1,
-    theme: "dark",
-    guiMono: false,
-    secretUnlocked: false,
-    commandMenuOpen: false,
-    commandMenuIndex: 0,
-    clockInterval: null,
-    language: "pt",
-    locale: "pt-BR",
-    me: {
-      active: false,
-      history: [],
-      lastProject: null
-    },
-    pendingWindowCommand: null,
-    shell: {
-      cwd: "~"
-    },
+  const state = createAppState({
+    initialMode: INITIAL_MODE,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight
+  });
 
-    options: {
-      typing: false,
-      typingSpeed: 12,
-      reducedMotion: false
-    },
-    content: null,
-    matrix: {
-      active: false,
-      canvas: null,
-      ctx: null,
-      animationId: null,
-      columns: 0,
-      drops: [],
-      speeds: [],
-      offsets: [],
-      lastTs: 0,
-      fireHeat: [],
-      fireCols: 0,
-      fireRows: 0,
-      width: 0,
-      height: 0
-    },
-    pet: {
-      active: false,
-      root: null,
-      bubble: null,
-      art: null,
-      hideBubbleTimer: null,
-      bubbleVisibleUntil: 0,
-      pendingBubble: null,
-      idleTimer: null,
-      microAnimationTimer: null,
-      reactionTimer: null,
-      animationTimer: null,
-      currentType: "neutral",
-      frameIndex: 0,
-      frameDirection: 1,
-      lastReactionAt: {
-        click: 0,
-        key: 0,
-        command: 0,
-        error: 0
-      },
-      keyBurst: {
-        count: 0,
-        lastAt: 0
-      },
-      insight: {
-        commandStreak: 0,
-        errorStreak: 0,
-        lastCommand: "",
-        lastDurationMs: 0,
-        lastAction: ""
-      },
-      lookDirection: "center",
-      lastPointerX: window.innerWidth * 0.5,
-      lastPointerY: window.innerHeight * 0.5,
-      reactionQueue: [],
-      reactionQueueSeq: 0,
-      reactionQueueTimer: null,
-      reactionInFlight: null
-    }
-  };
-
-  const dom = {
-    terminal: null,
-    terminalOutput: null,
-    terminalInput: null,
-    terminalInputLabel: null,
-    prompt: null,
-    commandMenu: null,
-    commandSearch: null,
-    commandSearchLabel: null,
-    commandList: null,
-    gui: null,
-    desktop: null,
-    taskbar: null,
-    startButton: null,
-    startMenu: null,
-    taskButtons: null,
-    taskbarClock: null,
-    taskbarAvailability: null,
-    themeColorMeta: null
-  };
+  const dom = createDomRefs();
 
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
   const ANSI_REGEX = /\u001b\[(\d+)m/g;
@@ -133,56 +40,6 @@ import {
     "snake",
     "terminal"
   ];
-  const THEMES = ["dark", "light", "hacker", "retro", "fire"];
-  const THEME_CLASSES = ["theme-dark", "theme-light", "theme-hacker", "theme-retro", "theme-fire", "theme-secret"];
-  const ASCII_THEME_PRESETS = Object.freeze({
-    hacker: {
-      chars: "01<>[]{}#$%&*+-=|/\\",
-      color: "#58ffad",
-      colorAlt: "#9fffd2",
-      trail: "rgba(2, 10, 6, 0.2)",
-      glow: "rgba(88, 255, 173, 0.32)",
-      fontSize: 13,
-      columnWidth: 14,
-      baseSpeed: 0.7,
-      speedVariance: 1.05,
-      resetChance: 0.976
-    },
-    secret: {
-      chars: "░▒▓◇◆✧✦⟡⊹0123456789ABCDEF",
-      color: "#82f0ff",
-      colorAlt: "#ff8af6",
-      trail: "rgba(7, 4, 18, 0.24)",
-      glow: "rgba(255, 138, 246, 0.24)",
-      fontSize: 13,
-      columnWidth: 14,
-      baseSpeed: 0.5,
-      speedVariance: 0.9,
-      resetChance: 0.982
-    },
-    fire: {
-      chars: " .,:;irsXA253hMHGS#9B&@",
-      color: "#ffb347",
-      colorAlt: "#ffde8a",
-      trail: "rgba(14, 4, 1, 0.3)",
-      glow: "rgba(255, 132, 38, 0.38)",
-      fontSize: 13,
-      columnWidth: 12,
-      baseSpeed: 0.3,
-      speedVariance: 0.45,
-      resetChance: 0.96,
-      fireLevels: 24,
-      fireDecayMax: 3
-    }
-  });
-  const THEME_COLOR_MAP = Object.freeze({
-    dark: "#0b0d10",
-    light: "#f5f6f8",
-    hacker: "#020b06",
-    retro: "#190f0a",
-    fire: "#180703",
-    secret: "#05030f"
-  });
   const PET_TIMING = Object.freeze({
     bubbleMs: 1500,
     idleMs: 12000,
@@ -1302,11 +1159,11 @@ import {
   }
 
   function getMatrixPreset(theme = state.theme) {
-    return ASCII_THEME_PRESETS[theme] || ASCII_THEME_PRESETS.hacker;
+    return getAsciiThemePreset(theme);
   }
 
   function isAsciiTheme(theme = state.theme) {
-    return theme === "hacker" || theme === "secret" || theme === "fire";
+    return isAsciiThemeEnabled(theme);
   }
 
   function clamp(value, min, max) {
