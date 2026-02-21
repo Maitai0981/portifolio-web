@@ -9,10 +9,32 @@ import {
   THEMES,
   THEME_CLASSES,
   THEME_COLOR_MAP,
-  ASCII_THEME_PRESETS,
   getAsciiThemePreset,
   isAsciiThemeEnabled
 } from "./modules/core/themeConfig.js";
+import { GUI_WINDOW_COMMANDS } from "./modules/features/gui/config.js";
+import {
+  PET_ALWAYS_ACTIVE,
+  PET_KEY_BURST_WINDOW_MS,
+  PET_PERSIST_MS,
+  PET_QUEUE_MAX,
+  PET_QUEUE_STEP_MS,
+  PET_REACTION_CLASS_BY_TYPE,
+  PET_REACTION_COOLDOWN_MS,
+  PET_REACTION_PRIORITY,
+  PET_TIMING
+} from "./modules/features/pet/config.js";
+import { PET_ASCII_SPRITE_SHEET } from "./modules/features/pet/spriteSheet.js";
+import { COMMANDS, HISTORY_MAX_ITEMS, TERMINAL_MAX_LINES } from "./modules/features/terminal/config.js";
+import {
+  getTypingRenderProfile,
+  shouldTypeLinesByVolume
+} from "./modules/features/terminal/typing.js";
+import {
+  getMatrixQualityConfig,
+  shouldRenderMatrixFrame,
+  updateMatrixPerformanceState
+} from "./modules/features/effects/matrixAdaptive.js";
 
 (() => {
   const INITIAL_MODE = "gui";
@@ -28,84 +50,6 @@ import {
   const LINK_REGEX = /((https?:\/\/[^\s]+)|([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}))/gi;
   const ANSI_REGEX = /\u001b\[(\d+)m/g;
 
-  const GUI_WINDOW_COMMANDS = [
-    "about",
-    "social",
-    "projects",
-    "education",
-    "resume",
-    "email",
-    "algorithms",
-    "cnn",
-    "snake",
-    "terminal"
-  ];
-  const PET_TIMING = Object.freeze({
-    bubbleMs: 1500,
-    idleMs: 12000,
-    neutralMs: 1500,
-    microMinMs: 2400,
-    microMaxMs: 5200,
-    defaultPersistMs: 1600,
-    animationClassMs: 600,
-    pointerDeadzonePx: 44
-  });
-  const PET_PERSIST_MS = Object.freeze({
-    wake: 1800,
-    click: 1200,
-    key: 1100,
-    command: 1300,
-    error: 1800,
-    reload: 1600,
-    modeSwitch: 1600,
-    guiOpen: 1300,
-    guiSelect: 1100,
-    themeChange: 1700,
-    idle: 2600
-  });
-  const PET_REACTION_CLASS_BY_TYPE = Object.freeze({
-    click: "anim-pop",
-    key: "anim-micro",
-    command: "anim-bounce",
-    reload: "anim-spin",
-    modeGui: "anim-wiggle",
-    modeCli: "anim-wiggle",
-    wake: "anim-bounce",
-    guiIcon: "anim-pop",
-    themeChange: "anim-spin",
-    error: "anim-shake",
-    idle: "anim-pulse"
-  });
-  const PET_REACTION_COOLDOWN_MS = Object.freeze({
-    click: 120,
-    key: 90,
-    command: 140,
-    error: 140,
-    guiIcon: 220
-  });
-  const PET_KEY_BURST_WINDOW_MS = 170;
-  const PET_ALWAYS_ACTIVE = true;
-  const PET_REACTION_PRIORITY = Object.freeze({
-    wake: 100,
-    error: 95,
-    reload: 90,
-    command: 80,
-    modeGui: 70,
-    modeCli: 70,
-    themeChange: 68,
-    guiIcon: 62,
-    click: 52,
-    key: 46,
-    idle: 8,
-    idleScan: 6,
-    idleStretch: 6,
-    blink: 5,
-    neutral: 1
-  });
-  const PET_QUEUE_MAX = 10;
-  const PET_QUEUE_STEP_MS = 84;
-  const TERMINAL_MAX_LINES = 280;
-  const HISTORY_MAX_ITEMS = 220;
   const STORAGE_KEYS = Object.freeze({
     lang: "portfolioLang",
     theme: "portfolioTheme",
@@ -115,194 +59,7 @@ import {
     typingSpeed: "portfolioTypingSpeed",
     reducedMotion: "portfolioReducedMotion"
   });
-  const COMMANDS = [
-    "help",
-    "lang",
-    "me",
-    "about",
-    "social",
-    "projects",
-    "education",
-    "resume",
-    "curriculum",
-    "email",
-    "banner",
-    "date",
-    "neofetch",
-    "cowsay",
-    "sudo",
-    "history",
-    "clear",
-    "cls",
-    "reload",
-    "exit",
-    "gui",
-    "exit-gui",
-    "terminal",
-    "theme",
-    "typing",
-    "motion",
-    "pet",
-    "algorithms",
-    "cnn",
-    "snake"
-  ];
-
   const commandIndex = buildCommandIndex(COMMANDS);
-
-  const PET_ASCII_SPRITE_SHEET = {
-    neutral: {
-      fps: 1,
-      loop: true,
-      frames: [
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
-        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
-        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
-        { face: "◕ᴥ◕", body: "/|_|\\", status: "aguardando" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "..." },
-        { face: "•ᴥ•", body: "/|_|\\", status: "..." },
-        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    wake: {
-      fps: 7,
-      loop: false,
-      frames: [
-        { face: "-ᴥ-", body: "/|_|\\", status: "booting..." },
-        { face: "•ᴥ•", body: "/|_|\\", status: "carregando" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "✓ pronto" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "monitorando" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    click: {
-      fps: 10,
-      loop: false,
-      frames: [
-        { face: "⊙ᴥ⊙", body: "/|_|\\", status: "! clique !" },
-        { face: "ಠᴥಠ", body: "/|_|\\", status: "te vi" },
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "confirmado" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
-      ]
-    },
-    key: {
-      fps: 14,
-      loop: false,
-      frames: [
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "⌨..." },
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "digitando" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "input lido" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "..." }
-      ]
-    },
-    idle: {
-      fps: 2,
-      loop: true,
-      frames: [
-        { face: "˘ᴥ˘", body: "/|_|\\", status: "z z z" },
-        { face: "-ᴥ-", body: "/|_|\\", status: "..." },
-        { face: "˘ᴥ˘", body: "/|_|\\", status: "economia" },
-        { face: "-ᴥ-", body: "/|_|\\", status: "..." }
-      ]
-    },
-    idleScan: {
-      fps: 8,
-      loop: false,
-      frames: [
-        { face: "◉ᴥ•", body: "/|_|\\", status: "varrendo..." },
-        { face: "•ᴥ◉", body: "/|_|\\", status: "checando" }
-      ]
-    },
-    idleStretch: {
-      fps: 6,
-      loop: false,
-      frames: [
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "alongando" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
-      ]
-    },
-    blink: {
-      fps: 14,
-      loop: false,
-      frames: [
-        { face: "-ᴥ-", body: "/|_|\\", status: "..." }
-      ]
-    },
-    command: {
-      fps: 8,
-      loop: false,
-      frames: [
-        { face: "•ᴥ•", body: "/|_|\\", status: "processando" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "executando" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "ok! ✓" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "concluido" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    error: {
-      fps: 8,
-      loop: false,
-      frames: [
-        { face: "xᴥx", body: "/|_|\\", status: "!! erro !!" },
-        { face: "ಠᴥಠ", body: "/|_|\\", status: "opa..." },
-        { face: "xᴥx", body: "/|_|\\", status: "!! erro !!" },
-        { face: "ಠᴥಠ", body: "/|_|\\", status: "vamos de novo" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "aguardando" }
-      ]
-    },
-    reload: {
-      fps: 9,
-      loop: false,
-      frames: [
-        { face: "↻ᴥ↻", body: "/|_|\\", status: "recarregando" },
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "limpando..." },
-        { face: "↻ᴥ↻", body: "/|_|\\", status: "quase la" },
-        { face: "ᵔᴥᵔ", body: "/|_|\\", status: "✓ pronto" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    modeGui: {
-      fps: 7,
-      loop: false,
-      frames: [
-        { face: "◕ᴥ◕", body: "/|_|\\", status: "▣ GUI" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "janela aberta" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    modeCli: {
-      fps: 7,
-      loop: false,
-      frames: [
-        { face: "•ᴥ•", body: "/|_|\\", status: "▤ CLI" },
-        { face: "•̀ᴥ•́", body: "/|_|\\", status: "prompt pronto" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    },
-    guiIcon: {
-      fps: 10,
-      loop: false,
-      frames: [
-        { face: "◉ᴥ◉", body: "/|_|\\", status: "icone detectado" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "GUI em ação" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "ok" }
-      ]
-    },
-    themeChange: {
-      fps: 9,
-      loop: false,
-      frames: [
-        { face: "◕ᴥ◕", body: "/|_|\\", status: "trocando tema..." },
-        { face: "⊙ᴥ⊙", body: "/|_|\\", status: "sincronizando" },
-        { face: "＾ᴥ＾", body: "/|_|\\", status: "✓ aplicado" },
-        { face: "•ᴥ•", body: "/|_|\\", status: "on-line" }
-      ]
-    }
-  };
 
   const TRANSITION_MS = 120;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
@@ -1188,8 +945,7 @@ import {
     );
   }
 
-  function ensureFireGrid(width, height, preset) {
-    const columnWidth = Math.max(8, Number(preset.columnWidth) || 12);
+  function ensureFireGrid(width, height, columnWidth) {
     const cols = Math.max(1, Math.floor(width / columnWidth));
     const rows = Math.max(1, Math.floor(height / columnWidth));
     const expectedSize = cols * rows;
@@ -1205,8 +961,12 @@ import {
     }
   }
 
-  function runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset) {
-    ensureFireGrid(width, height, preset);
+  function runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset, qualityConfig) {
+    const columnWidth = Math.max(
+      8,
+      Math.round((Number(preset.columnWidth) || 12) * (qualityConfig?.columnScale || 1))
+    );
+    ensureFireGrid(width, height, columnWidth);
     const cols = state.matrix.fireCols;
     const rows = state.matrix.fireRows;
     const heat = state.matrix.fireHeat;
@@ -1214,14 +974,14 @@ import {
     const decayMax = Math.max(1, Number(preset.fireDecayMax) || 3);
     const charPool = String(preset.chars || " .:*#@");
     const charLast = Math.max(1, charPool.length - 1);
-    const cell = Math.max(8, Number(preset.columnWidth) || 12);
+    const cell = columnWidth;
     const reduced = state.options.reducedMotion;
 
     ctx.fillStyle = preset.trail;
     ctx.fillRect(0, 0, width, height);
     ctx.font = `${preset.fontSize}px monospace`;
     ctx.textBaseline = "top";
-    ctx.shadowBlur = reduced ? 0 : 10;
+    ctx.shadowBlur = reduced ? 0 : Number(qualityConfig?.shadowBlur ?? 8);
     ctx.shadowColor = preset.glow;
 
     const bottomRow = rows - 1;
@@ -1248,8 +1008,9 @@ import {
       }
     }
 
+    const stride = Math.max(1, Number(qualityConfig?.drawStride) || 1);
     for (let y = 0; y < rows; y += 1) {
-      for (let x = 0; x < cols; x += 1) {
+      for (let x = 0; x < cols; x += stride) {
         const level = heat[y * cols + x];
         if (level <= 0) continue;
         const ratio = clamp(level / (levels - 1), 0, 1);
@@ -4519,9 +4280,7 @@ import {
   }
 
   function shouldTypeLines(lines) {
-    if (!lines || lines.length === 0) return false;
-    const totalChars = lines.reduce((sum, line) => sum + String(line || "").length, 0);
-    return lines.length >= 8 || totalChars >= 420;
+    return shouldTypeLinesByVolume(lines);
   }
 
   function appendOutputLines(lines, options = {}) {
@@ -4559,13 +4318,11 @@ import {
       }
 
       let i = 0;
-      const typedSpeed = clamp(Math.round(Number(speed) || state.options.typingSpeed || 12), 1, 18);
-      const speedRatio = typedSpeed / 18;
-      const baseChunk = plain.length >= 320 ? 9 : plain.length >= 180 ? 7 : plain.length >= 90 ? 5 : 4;
-      const chunk = Math.max(4, Math.round(baseChunk + speedRatio * 14));
-      const tickMs = state.options.reducedMotion
-        ? 10
-        : clamp(8 - Math.round(speedRatio * 5), 3, 8);
+      const { chunk, tickMs } = getTypingRenderProfile({
+        lineLength: plain.length,
+        speed: Number(speed) || state.options.typingSpeed || 12,
+        reducedMotion: state.options.reducedMotion
+      });
       const interval = setInterval(() => {
         i += chunk;
         lineEl.textContent = plain.slice(0, i);
@@ -4861,6 +4618,9 @@ import {
     state.matrix.ctx = canvas.getContext("2d");
     state.matrix.active = true;
     state.matrix.lastTs = 0;
+    state.matrix.lastRenderAt = 0;
+    state.matrix.smoothedDt = 1;
+    state.matrix.performanceTier = state.options.reducedMotion ? "low" : "high";
     resizeMatrix();
     runMatrix();
     window.addEventListener("resize", resizeMatrix);
@@ -4880,6 +4640,9 @@ import {
     state.matrix.speeds = [];
     state.matrix.offsets = [];
     state.matrix.lastTs = 0;
+    state.matrix.lastRenderAt = 0;
+    state.matrix.smoothedDt = 1;
+    state.matrix.performanceTier = "high";
     state.matrix.fireHeat = [];
     state.matrix.fireCols = 0;
     state.matrix.fireRows = 0;
@@ -4901,7 +4664,16 @@ import {
     state.matrix.height = height;
     const preset = getMatrixPreset();
     if (state.theme === "fire") {
-      ensureFireGrid(width, height, preset);
+      const qualityConfig = getMatrixQualityConfig(
+        state.matrix.performanceTier,
+        state.options.reducedMotion,
+        state.theme
+      );
+      const fireColumnWidth = Math.max(
+        8,
+        Math.round((Number(preset.columnWidth) || 12) * (qualityConfig.columnScale || 1))
+      );
+      ensureFireGrid(width, height, fireColumnWidth);
     } else {
       fillMatrixColumns(height, preset.columnWidth, preset);
     }
@@ -4922,12 +4694,25 @@ import {
     }
     const dt = clamp((now - state.matrix.lastTs) / 16.67, 0.45, 2.2);
     state.matrix.lastTs = now;
+    const performanceState = updateMatrixPerformanceState(state.matrix, dt, state.options.reducedMotion);
+    state.matrix.smoothedDt = performanceState.smoothedDt;
+    state.matrix.performanceTier = performanceState.performanceTier;
+    const qualityConfig = getMatrixQualityConfig(
+      state.matrix.performanceTier,
+      state.options.reducedMotion,
+      state.theme
+    );
+    if (!shouldRenderMatrixFrame(now, state.matrix.lastRenderAt, qualityConfig.frameIntervalMs)) {
+      state.matrix.animationId = requestAnimationFrame(runMatrix);
+      return;
+    }
+    state.matrix.lastRenderAt = now;
     const motionFactor = state.options.reducedMotion ? 0.38 : 1;
 
     const width = state.matrix.width || window.innerWidth;
     const height = state.matrix.height || window.innerHeight;
     if (state.theme === "fire") {
-      runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset);
+      runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset, qualityConfig);
       state.matrix.animationId = requestAnimationFrame(runMatrix);
       return;
     }
@@ -4937,13 +4722,18 @@ import {
 
     const chars = String(preset.chars || "01");
     const charsLen = chars.length;
-    const columnWidth = preset.columnWidth;
+    const columnWidth = Math.max(
+      10,
+      Math.round((Number(preset.columnWidth) || 14) * (qualityConfig.columnScale || 1))
+    );
+    const drawStride = Math.max(1, Number(qualityConfig.drawStride) || 1);
     ctx.font = `${preset.fontSize}px monospace`;
     ctx.textBaseline = "top";
-    ctx.shadowBlur = state.options.reducedMotion ? 0 : 8;
+    ctx.shadowBlur = state.options.reducedMotion ? 0 : Number(qualityConfig.shadowBlur ?? 8);
     ctx.shadowColor = preset.glow;
 
-    if (state.matrix.drops.length !== state.matrix.columns) {
+    const expectedColumns = Math.max(1, Math.floor(width / columnWidth));
+    if (state.matrix.drops.length !== expectedColumns || state.matrix.columns !== expectedColumns) {
       fillMatrixColumns(height, columnWidth, preset);
     }
     state.matrix.drops.forEach((drop, index) => {
@@ -4957,7 +4747,9 @@ import {
       } else {
         ctx.fillStyle = preset.color;
       }
-      ctx.fillText(text, x, y);
+      if (index % drawStride === 0) {
+        ctx.fillText(text, x, y);
+      }
       if (y > height + columnWidth * 2 && Math.random() > preset.resetChance) {
         state.matrix.drops[index] = Math.random() * 4;
         state.matrix.offsets[index] = randomCharIndex(charsLen);

@@ -1,0 +1,35 @@
+export const TERMINAL_MAX_LINES = 280;
+export const HISTORY_MAX_ITEMS = 220;
+
+export const COMMANDS = [
+  "help",
+  "lang",
+  "me",
+  "about",
+  "social",
+  "projects",
+  "education",
+  "resume",
+  "curriculum",
+  "email",
+  "banner",
+  "date",
+  "neofetch",
+  "cowsay",
+  "sudo",
+  "history",
+  "clear",
+  "cls",
+  "reload",
+  "exit",
+  "gui",
+  "exit-gui",
+  "terminal",
+  "theme",
+  "typing",
+  "motion",
+  "pet",
+  "algorithms",
+  "cnn",
+  "snake"
+];

@@ -64,6 +64,12 @@ test("index.html contém contratos estruturais da aplicação", () => {
 test("main.js segue arquitetura modular de core", () => {
   assert.match(mainSource, /from "\.\/modules\/core\/appState\.js"/);
   assert.match(mainSource, /from "\.\/modules\/core\/themeConfig\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/gui\/config\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/terminal\/config\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/terminal\/typing\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/pet\/config\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/pet\/spriteSheet\.js"/);
+  assert.match(mainSource, /from "\.\/modules\/features\/effects\/matrixAdaptive\.js"/);
   assert.match(mainSource, /createAppState\(/);
   assert.match(mainSource, /createDomRefs\(/);
 });
