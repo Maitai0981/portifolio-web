@@ -85,6 +85,7 @@ body.theme-hacker {
   --pet-shell-border: rgba(47, 255, 128, 0.35);
   --pet-shell-bg-start: rgba(2, 30, 16, 0.95);
   --pet-shell-bg-end: rgba(1, 14, 9, 0.95);
+  --gui-text: #ffe8d6;
 }
 
 body.theme-retro {
@@ -126,6 +127,7 @@ body.theme-fire {
   --pet-shell-border: rgba(255, 179, 124, 0.32);
   --pet-shell-bg-start: rgba(56, 21, 10, 0.95);
   --pet-shell-bg-end: rgba(29, 11, 5, 0.96);
+  --gui-text: #ffe8d6;
 }
 
 body.theme-secret {
@@ -735,18 +737,19 @@ body.has-custom-cursor textarea {
 }
 
 body.theme-hacker #terminal {
-  background: linear-gradient(180deg, rgba(1, 13, 8, 0.74), rgba(2, 17, 11, 0.66));
-  backdrop-filter: blur(1.2px);
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
-
 body.theme-secret #terminal {
-  background: linear-gradient(180deg, rgba(12, 7, 24, 0.74), rgba(19, 10, 34, 0.66));
-  backdrop-filter: blur(1.2px);
-}
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;}
 
 body.theme-fire #terminal {
-  background: linear-gradient(180deg, rgba(30, 10, 5, 0.76), rgba(21, 7, 3, 0.66));
-  backdrop-filter: blur(1.2px);
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 #terminal::-webkit-scrollbar {
@@ -1128,15 +1131,15 @@ button:focus-visible,
 
 body.theme-hacker #gui,
 body.theme-secret #gui {
-  background: linear-gradient(140deg, rgba(8, 18, 12, 0.7) 0%, rgba(4, 11, 8, 0.76) 100%);
+  background: none;
 }
 
-body.theme-secret #gui {
-  background: linear-gradient(140deg, rgba(22, 11, 39, 0.72) 0%, rgba(9, 6, 20, 0.78) 100%);
-}
+/* body.theme-secret #gui {
+  background: none;
+} */
 
 body.theme-fire #gui {
-  background: linear-gradient(138deg, rgba(58, 20, 8, 0.74) 0%, rgba(30, 10, 4, 0.8) 100%);
+  background: none;
 }
 
 body.theme-hacker #gui::before,
@@ -1233,7 +1236,7 @@ body.theme-secret #gui > .window {
 
 #desktop {
   position: absolute;
-  inset: 0 0 calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px)) 0;
+  /* inset: 0 0 calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px)) 0; */
   background: var(--gui-bg);
   z-index: 2;
 }

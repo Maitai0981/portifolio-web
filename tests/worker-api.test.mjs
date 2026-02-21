@@ -1,23 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
 import { createHash } from "node:crypto";
-import { build } from "esbuild";
-
-async function loadBundledModule(entryRelativePath) {
-  const entryPoint = path.join(process.cwd(), entryRelativePath);
-  const result = await build({
-    entryPoints: [entryPoint],
-    bundle: true,
-    platform: "node",
-    format: "esm",
-    target: "es2022",
-    write: false
-  });
-  const code = result.outputFiles[0].text;
-  const dataUrl = `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`;
-  return import(dataUrl);
-}
+import { loadBundledModule } from "./helpers/loadBundledModule.mjs";
 
 const workerModule = await loadBundledModule("worker/src/index.ts");
 const worker = workerModule.default;
@@ -41,6 +25,39 @@ test("GET /health returns 200 and schema", async () => {
   const payload = await response.json();
   assert.equal(payload.ok, true);
   assert.equal(payload.schema, "me.v1");
+});
+
+test("OPTIONS preflight returns 204 with CORS headers", async () => {
+  const env = {
+    AI: { run: async () => ({ response: "ok" }) },
+    ALLOWED_ORIGIN: "http://localhost:8080",
+    GITHUB_USERNAME: "demo"
+  };
+  const request = new Request("https://example.workers.dev/me", {
+    method: "OPTIONS",
+    headers: { Origin: "http://localhost:8080" }
+  });
+  const response = await worker.fetch(request, env);
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "http://localhost:8080");
+  assert.match(String(response.headers.get("Access-Control-Allow-Methods") || ""), /POST/i);
+});
+
+test("disallowed origin returns 403 on protected routes", async () => {
+  const env = {
+    AI: { run: async () => ({ response: "ok" }) },
+    ALLOWED_ORIGIN: "https://allowed.example",
+    GITHUB_USERNAME: "demo"
+  };
+  const request = new Request("https://example.workers.dev/me", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: "http://localhost:8080" },
+    body: JSON.stringify({ question: "oi", lang: "pt" })
+  });
+  const response = await worker.fetch(request, env);
+  assert.equal(response.status, 403);
+  const payload = await response.json();
+  assert.equal(payload.code, "origin_not_allowed");
 });
 
 test("POST /inspector-auth validates password hash", async () => {
@@ -142,4 +159,35 @@ test("GET /metrics can require x-metrics-key", async () => {
     env
   );
   assert.equal(ok.status, 200);
+});
+
+test("GET / returns service endpoints and /me GET returns 405", async () => {
+  const env = {
+    AI: { run: async () => ({ response: "ok" }) },
+    ALLOWED_ORIGIN: "http://localhost:8080",
+    GITHUB_USERNAME: "demo"
+  };
+
+  const rootResponse = await worker.fetch(
+    new Request("https://example.workers.dev/", {
+      method: "GET",
+      headers: { Origin: "http://localhost:8080" }
+    }),
+    env
+  );
+  assert.equal(rootResponse.status, 200);
+  const rootPayload = await rootResponse.json();
+  assert.equal(rootPayload.ok, true);
+  assert.equal(typeof rootPayload.endpoints?.me, "string");
+
+  const meGetResponse = await worker.fetch(
+    new Request("https://example.workers.dev/me", {
+      method: "GET",
+      headers: { Origin: "http://localhost:8080" }
+    }),
+    env
+  );
+  assert.equal(meGetResponse.status, 405);
+  const meGetPayload = await meGetResponse.json();
+  assert.equal(meGetPayload.code, "method_not_allowed");
 });

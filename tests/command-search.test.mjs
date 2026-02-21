@@ -1,22 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import path from "node:path";
-import { build } from "esbuild";
-
-async function loadBundledModule(entryRelativePath) {
-  const entryPoint = path.join(process.cwd(), entryRelativePath);
-  const result = await build({
-    entryPoints: [entryPoint],
-    bundle: true,
-    platform: "node",
-    format: "esm",
-    target: "es2020",
-    write: false
-  });
-  const code = result.outputFiles[0].text;
-  const dataUrl = `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`;
-  return import(dataUrl);
-}
+import { loadBundledModule } from "./helpers/loadBundledModule.mjs";
 
 const commandSearch = await loadBundledModule("modules/commandSearch.js");
 
