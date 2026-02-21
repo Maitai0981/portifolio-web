@@ -28,6 +28,8 @@
   --pet-shell-border: rgba(255, 255, 255, 0.2);
   --pet-shell-bg-start: rgba(44, 0, 30, 0.92);
   --pet-shell-bg-end: rgba(18, 4, 24, 0.94);
+  --ascii-overlay-lines: rgba(0, 0, 0, 0);
+  --ascii-overlay-vignette: rgba(0, 0, 0, 0);
 }
 
 body.theme-dark {
@@ -65,6 +67,19 @@ body.theme-hacker {
   --terminal-accent: #2fff80;
   --terminal-error: #ff6464;
   --terminal-dim: #1e8f5b;
+  --gui-bg: #031b12;
+  --gui-bg-light: #0a2e20;
+  --gui-title: #0f6b43;
+  --gui-title-text: #d8ffe9;
+  --gui-taskbar: #113324;
+  --gui-btn-face: #1a4f35;
+  --gui-btn-shadow: #082013;
+  --gui-btn-highlight: #3f9f72;
+  --gui-border-light: #6fe8b0;
+  --gui-border-mid: #2b7f59;
+  --gui-border-dark: #0f3323;
+  --ascii-overlay-lines: rgba(160, 255, 206, 0.08);
+  --ascii-overlay-vignette: rgba(0, 8, 4, 0.72);
   --pet-bubble-border: rgba(47, 255, 128, 0.46);
   --pet-bubble-bg: rgba(1, 18, 10, 0.94);
   --pet-shell-border: rgba(47, 255, 128, 0.35);
@@ -86,6 +101,33 @@ body.theme-retro {
   --pet-shell-bg-end: rgba(32, 14, 8, 0.95);
 }
 
+body.theme-fire {
+  --terminal-bg: #180703;
+  --terminal-bg-accent: #2f1008;
+  --terminal-fg: #ffd59f;
+  --terminal-accent: #ff8f3f;
+  --terminal-error: #ff5b4a;
+  --terminal-dim: #b96534;
+  --gui-bg: #2b0f08;
+  --gui-bg-light: #4a1a0d;
+  --gui-title: #8f2f18;
+  --gui-title-text: #ffe8d6;
+  --gui-taskbar: #3a140b;
+  --gui-btn-face: #5a2412;
+  --gui-btn-shadow: #2b0d06;
+  --gui-btn-highlight: #a6451f;
+  --gui-border-light: #f4b086;
+  --gui-border-mid: #9e5532;
+  --gui-border-dark: #4a1b0d;
+  --ascii-overlay-lines: rgba(255, 183, 120, 0.09);
+  --ascii-overlay-vignette: rgba(22, 6, 2, 0.78);
+  --pet-bubble-border: rgba(255, 143, 63, 0.52);
+  --pet-bubble-bg: rgba(26, 8, 3, 0.94);
+  --pet-shell-border: rgba(255, 179, 124, 0.32);
+  --pet-shell-bg-start: rgba(56, 21, 10, 0.95);
+  --pet-shell-bg-end: rgba(29, 11, 5, 0.96);
+}
+
 body.theme-secret {
   --terminal-bg: #05030f;
   --terminal-bg-accent: #1a0f2e;
@@ -93,6 +135,19 @@ body.theme-secret {
   --terminal-accent: #ff5cf0;
   --terminal-error: #ff6b6b;
   --terminal-dim: #5d6bff;
+  --gui-bg: #130a24;
+  --gui-bg-light: #231245;
+  --gui-title: #5d2fd4;
+  --gui-title-text: #f8edff;
+  --gui-taskbar: #251247;
+  --gui-btn-face: #3a1f69;
+  --gui-btn-shadow: #150c2a;
+  --gui-btn-highlight: #8355ff;
+  --gui-border-light: #d0b8ff;
+  --gui-border-mid: #7c5dd4;
+  --gui-border-dark: #2a1951;
+  --ascii-overlay-lines: rgba(217, 188, 255, 0.1);
+  --ascii-overlay-vignette: rgba(9, 4, 20, 0.75);
   --pet-bubble-border: rgba(102, 242, 255, 0.5);
   --pet-bubble-bg: rgba(15, 10, 30, 0.94);
   --pet-shell-border: rgba(255, 92, 240, 0.35);
@@ -638,6 +693,7 @@ body.has-custom-cursor textarea {
   width: 100%;
   position: absolute;
   inset: 0;
+  z-index: 1;
   opacity: 1;
   transform: translateY(0);
   transition: opacity 120ms ease, transform 120ms ease;
@@ -676,6 +732,21 @@ body.has-custom-cursor textarea {
   scrollbar-width: none;
   -ms-overflow-style: none;
   position: relative;
+}
+
+body.theme-hacker #terminal {
+  background: linear-gradient(180deg, rgba(1, 13, 8, 0.74), rgba(2, 17, 11, 0.66));
+  backdrop-filter: blur(1.2px);
+}
+
+body.theme-secret #terminal {
+  background: linear-gradient(180deg, rgba(12, 7, 24, 0.74), rgba(19, 10, 34, 0.66));
+  backdrop-filter: blur(1.2px);
+}
+
+body.theme-fire #terminal {
+  background: linear-gradient(180deg, rgba(30, 10, 5, 0.76), rgba(21, 7, 3, 0.66));
+  backdrop-filter: blur(1.2px);
 }
 
 #terminal::-webkit-scrollbar {
@@ -788,13 +859,50 @@ body.has-custom-cursor textarea {
 }
 
 .matrix-canvas {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.28;
+  opacity: 0;
+  image-rendering: pixelated;
+}
+
+@keyframes matrixOpacitySettle {
+  0% {
+    opacity: var(--matrix-op-start, 0.42);
+  }
+  100% {
+    opacity: var(--matrix-op-end, 0.26);
+  }
+}
+
+body.theme-hacker .matrix-canvas {
+  --matrix-op-start: 0.44;
+  --matrix-op-end: 0.26;
+  opacity: var(--matrix-op-end);
+  mix-blend-mode: screen;
+  filter: saturate(1.15) brightness(1.04);
+  animation: matrixOpacitySettle 820ms ease-out both;
+}
+
+body.theme-secret .matrix-canvas {
+  --matrix-op-start: 0.4;
+  --matrix-op-end: 0.23;
+  opacity: var(--matrix-op-end);
+  mix-blend-mode: screen;
+  filter: saturate(1.24) hue-rotate(12deg) brightness(1.06);
+  animation: matrixOpacitySettle 860ms ease-out both;
+}
+
+body.theme-fire .matrix-canvas {
+  --matrix-op-start: 0.56;
+  --matrix-op-end: 0.33;
+  opacity: var(--matrix-op-end);
+  mix-blend-mode: screen;
+  filter: saturate(1.3) brightness(1.08) contrast(1.04);
+  animation: matrixOpacitySettle 900ms ease-out both;
 }
 
 #command-menu {
@@ -1013,8 +1121,110 @@ button:focus-visible,
     linear-gradient(0deg, var(--gui-bg) 0%, var(--gui-bg-light) 100%);
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   font-family: "MS Sans Serif", "Segoe UI", Tahoma, sans-serif;
   color: var(--gui-text);
+}
+
+body.theme-hacker #gui,
+body.theme-secret #gui {
+  background: linear-gradient(140deg, rgba(8, 18, 12, 0.7) 0%, rgba(4, 11, 8, 0.76) 100%);
+}
+
+body.theme-secret #gui {
+  background: linear-gradient(140deg, rgba(22, 11, 39, 0.72) 0%, rgba(9, 6, 20, 0.78) 100%);
+}
+
+body.theme-fire #gui {
+  background: linear-gradient(138deg, rgba(58, 20, 8, 0.74) 0%, rgba(30, 10, 4, 0.8) 100%);
+}
+
+body.theme-hacker #gui::before,
+body.theme-secret #gui::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 2px,
+      var(--ascii-overlay-lines) 3px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 50% 55%, transparent 34%, var(--ascii-overlay-vignette) 100%);
+  opacity: 0.9;
+}
+
+body.theme-fire #gui::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 2px,
+      var(--ascii-overlay-lines) 3px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 48% 64%, transparent 28%, var(--ascii-overlay-vignette) 100%);
+  opacity: 0.92;
+}
+
+body.theme-hacker #gui::after,
+body.theme-secret #gui::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      transparent 38%,
+      rgba(255, 255, 255, 0.016) 72%,
+      transparent 100%
+    );
+  mix-blend-mode: soft-light;
+}
+
+body.theme-fire #gui::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(520px 280px at 52% 90%, rgba(255, 117, 51, 0.2) 0%, transparent 72%),
+    linear-gradient(
+      115deg,
+      rgba(255, 212, 166, 0.05) 0%,
+      transparent 42%,
+      rgba(255, 108, 41, 0.05) 76%,
+      transparent 100%
+    );
+  mix-blend-mode: screen;
+}
+
+body.theme-hacker #gui > #desktop,
+body.theme-hacker #gui > #taskbar,
+body.theme-hacker #gui > #start-menu,
+body.theme-hacker #gui > .window,
+body.theme-fire #gui > #desktop,
+body.theme-fire #gui > #taskbar,
+body.theme-fire #gui > #start-menu,
+body.theme-fire #gui > .window,
+body.theme-secret #gui > #desktop,
+body.theme-secret #gui > #taskbar,
+body.theme-secret #gui > #start-menu,
+body.theme-secret #gui > .window {
+  z-index: 2;
 }
 
 .gui-mono #gui {
@@ -1025,6 +1235,32 @@ button:focus-visible,
   position: absolute;
   inset: 0 0 calc(var(--taskbar-height) + env(safe-area-inset-bottom, 0px)) 0;
   background: var(--gui-bg);
+  z-index: 2;
+}
+
+body.theme-hacker #desktop,
+body.theme-secret #desktop {
+  background: linear-gradient(180deg, rgba(2, 10, 7, 0.24), rgba(1, 7, 4, 0.42));
+}
+
+body.theme-fire #desktop {
+  background: linear-gradient(180deg, rgba(46, 14, 6, 0.26), rgba(17, 5, 2, 0.48));
+}
+
+body.theme-secret .desktop-icon {
+  text-shadow: 0 0 4px rgba(223, 184, 255, 0.34);
+}
+
+body.theme-hacker .desktop-icon {
+  text-shadow: 0 0 4px rgba(139, 255, 205, 0.36);
+}
+
+body.theme-fire .desktop-icon {
+  text-shadow: 0 0 4px rgba(255, 193, 143, 0.42);
+}
+
+body.theme-secret #desktop {
+  background: linear-gradient(180deg, rgba(17, 9, 30, 0.26), rgba(7, 4, 18, 0.46));
 }
 
 #desktop-icons {
@@ -2216,6 +2452,7 @@ button:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .matrix-canvas,
   #pet-mascot,
   .pet-ascii,
   .pet-bubble,
@@ -2236,6 +2473,7 @@ button:focus-visible,
 }
 
 body.reduced-motion #pet-mascot,
+body.reduced-motion .matrix-canvas,
 body.reduced-motion .pet-ascii,
 body.reduced-motion .pet-bubble,
 body.reduced-motion .terminal-line,

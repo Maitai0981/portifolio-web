@@ -35,7 +35,7 @@ import {
 
     options: {
       typing: false,
-      typingSpeed: 1,
+      typingSpeed: 12,
       reducedMotion: false
     },
     content: null,
@@ -46,6 +46,12 @@ import {
       animationId: null,
       columns: 0,
       drops: [],
+      speeds: [],
+      offsets: [],
+      lastTs: 0,
+      fireHeat: [],
+      fireCols: 0,
+      fireRows: 0,
       width: 0,
       height: 0
     },
@@ -127,13 +133,54 @@ import {
     "snake",
     "terminal"
   ];
-  const THEMES = ["dark", "light", "hacker", "retro"];
-  const THEME_CLASSES = ["theme-dark", "theme-light", "theme-hacker", "theme-retro", "theme-secret"];
+  const THEMES = ["dark", "light", "hacker", "retro", "fire"];
+  const THEME_CLASSES = ["theme-dark", "theme-light", "theme-hacker", "theme-retro", "theme-fire", "theme-secret"];
+  const ASCII_THEME_PRESETS = Object.freeze({
+    hacker: {
+      chars: "01<>[]{}#$%&*+-=|/\\",
+      color: "#58ffad",
+      colorAlt: "#9fffd2",
+      trail: "rgba(2, 10, 6, 0.2)",
+      glow: "rgba(88, 255, 173, 0.32)",
+      fontSize: 13,
+      columnWidth: 14,
+      baseSpeed: 0.7,
+      speedVariance: 1.05,
+      resetChance: 0.976
+    },
+    secret: {
+      chars: "░▒▓◇◆✧✦⟡⊹0123456789ABCDEF",
+      color: "#82f0ff",
+      colorAlt: "#ff8af6",
+      trail: "rgba(7, 4, 18, 0.24)",
+      glow: "rgba(255, 138, 246, 0.24)",
+      fontSize: 13,
+      columnWidth: 14,
+      baseSpeed: 0.5,
+      speedVariance: 0.9,
+      resetChance: 0.982
+    },
+    fire: {
+      chars: " .,:;irsXA253hMHGS#9B&@",
+      color: "#ffb347",
+      colorAlt: "#ffde8a",
+      trail: "rgba(14, 4, 1, 0.3)",
+      glow: "rgba(255, 132, 38, 0.38)",
+      fontSize: 13,
+      columnWidth: 12,
+      baseSpeed: 0.3,
+      speedVariance: 0.45,
+      resetChance: 0.96,
+      fireLevels: 24,
+      fireDecayMax: 3
+    }
+  });
   const THEME_COLOR_MAP = Object.freeze({
     dark: "#0b0d10",
     light: "#f5f6f8",
     hacker: "#020b06",
     retro: "#190f0a",
+    fire: "#180703",
     secret: "#05030f"
   });
   const PET_TIMING = Object.freeze({
@@ -1254,6 +1301,115 @@ import {
     return null;
   }
 
+  function getMatrixPreset(theme = state.theme) {
+    return ASCII_THEME_PRESETS[theme] || ASCII_THEME_PRESETS.hacker;
+  }
+
+  function isAsciiTheme(theme = state.theme) {
+    return theme === "hacker" || theme === "secret" || theme === "fire";
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function randomCharIndex(poolLength) {
+    return Math.floor(Math.random() * Math.max(1, poolLength));
+  }
+
+  function fillMatrixColumns(height, columnWidth, preset) {
+    const columns = Math.max(1, Math.floor((state.matrix.width || window.innerWidth) / columnWidth));
+    state.matrix.columns = columns;
+    state.matrix.drops = Array.from({ length: columns }, () => Math.random() * (height / columnWidth));
+    state.matrix.speeds = Array.from(
+      { length: columns },
+      () => preset.baseSpeed + Math.random() * Math.max(0.01, preset.speedVariance)
+    );
+    state.matrix.offsets = Array.from(
+      { length: columns },
+      () => randomCharIndex(String(preset.chars || "").length)
+    );
+  }
+
+  function ensureFireGrid(width, height, preset) {
+    const columnWidth = Math.max(8, Number(preset.columnWidth) || 12);
+    const cols = Math.max(1, Math.floor(width / columnWidth));
+    const rows = Math.max(1, Math.floor(height / columnWidth));
+    const expectedSize = cols * rows;
+    if (
+      state.matrix.fireCols !== cols ||
+      state.matrix.fireRows !== rows ||
+      !Array.isArray(state.matrix.fireHeat) ||
+      state.matrix.fireHeat.length !== expectedSize
+    ) {
+      state.matrix.fireCols = cols;
+      state.matrix.fireRows = rows;
+      state.matrix.fireHeat = Array.from({ length: expectedSize }, () => 0);
+    }
+  }
+
+  function runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset) {
+    ensureFireGrid(width, height, preset);
+    const cols = state.matrix.fireCols;
+    const rows = state.matrix.fireRows;
+    const heat = state.matrix.fireHeat;
+    const levels = Math.max(8, Number(preset.fireLevels) || 24);
+    const decayMax = Math.max(1, Number(preset.fireDecayMax) || 3);
+    const charPool = String(preset.chars || " .:*#@");
+    const charLast = Math.max(1, charPool.length - 1);
+    const cell = Math.max(8, Number(preset.columnWidth) || 12);
+    const reduced = state.options.reducedMotion;
+
+    ctx.fillStyle = preset.trail;
+    ctx.fillRect(0, 0, width, height);
+    ctx.font = `${preset.fontSize}px monospace`;
+    ctx.textBaseline = "top";
+    ctx.shadowBlur = reduced ? 0 : 10;
+    ctx.shadowColor = preset.glow;
+
+    const bottomRow = rows - 1;
+    const burnChance = reduced ? 0.68 : 0.86;
+    for (let x = 0; x < cols; x += 1) {
+      const idx = bottomRow * cols + x;
+      const base = Math.random() < burnChance ? levels - 1 : levels - 2;
+      heat[idx] = Math.max(0, base - Math.floor(Math.random() * 2));
+    }
+
+    const spreadLoops = reduced ? 1 : Math.min(3, Math.max(1, Math.round(dt * motionFactor)));
+    for (let n = 0; n < spreadLoops; n += 1) {
+      for (let y = rows - 1; y > 0; y -= 1) {
+        for (let x = 0; x < cols; x += 1) {
+          const srcIndex = y * cols + x;
+          const source = heat[srcIndex];
+          if (source <= 0) continue;
+          const decay = Math.floor(Math.random() * decayMax);
+          const shift = Math.floor(Math.random() * 3) - 1;
+          const dstX = clamp(x + shift, 0, cols - 1);
+          const dstIndex = (y - 1) * cols + dstX;
+          heat[dstIndex] = Math.max(0, source - decay);
+        }
+      }
+    }
+
+    for (let y = 0; y < rows; y += 1) {
+      for (let x = 0; x < cols; x += 1) {
+        const level = heat[y * cols + x];
+        if (level <= 0) continue;
+        const ratio = clamp(level / (levels - 1), 0, 1);
+        const charIndex = clamp(Math.floor(ratio * charLast), 0, charLast);
+        const ch = charPool.charAt(charIndex);
+        const hue = 6 + ratio * 48;
+        const sat = 94;
+        const light = 20 + ratio * 44;
+        const alpha = 0.2 + ratio * 0.8;
+        const flicker = Math.sin(now * 0.018 + x * 0.62 + y * 0.24) * 1.8;
+        ctx.fillStyle = `hsla(${hue + flicker}, ${sat}%, ${light}%, ${alpha})`;
+        ctx.fillText(ch, x * cell, y * cell);
+      }
+    }
+    ctx.shadowBlur = 0;
+  }
+
   function toFiniteNumber(value, fallback) {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
@@ -1503,6 +1659,7 @@ import {
       light: "claro",
       hacker: "hacker",
       retro: "retro",
+      fire: "fogo",
       secret: "secreto"
     };
     const namesEn = {
@@ -1510,6 +1667,7 @@ import {
       light: "light",
       hacker: "hacker",
       retro: "retro",
+      fire: "fire",
       secret: "secret"
     };
     const table = isPt ? namesPt : namesEn;
@@ -1524,6 +1682,7 @@ import {
       light: [`Tema ${label} aplicado. Agora ate meu bigode brilha.`],
       hacker: [`Tema ${label} aplicado. Iniciando ronron criptografado.`],
       retro: [`Tema ${label} aplicado. Vibe 90s e arranhador vintage.`],
+      fire: [`Tema ${label} aplicado. Aquecendo pixels no modo brasa.`],
       secret: [`Tema ${label} aplicado. Nivel lendario desbloqueado.`],
       default: [`Tema ${label} aplicado. Casaco novo, mesmo mascote.`]
     };
@@ -1532,6 +1691,7 @@ import {
       light: [`${label} theme on. Even my whiskers are brighter.`],
       hacker: [`${label} theme on. Encrypting purr sequence.`],
       retro: [`${label} theme on. Vintage vibes, modern claws.`],
+      fire: [`${label} theme on. Flame mode ignited.`],
       secret: [`${label} theme on. Legendary mode unlocked.`],
       default: [`${label} theme on. New style, same cat.`]
     };
@@ -4535,9 +4695,20 @@ import {
 
       const safeLine = line == null ? "" : String(line);
       const plain = removeAnsi(safeLine);
+      if (!plain.length) {
+        renderLineContent(lineEl, safeLine);
+        resolve();
+        return;
+      }
+
       let i = 0;
-      const chunk = plain.length >= 280 ? 6 : plain.length >= 160 ? 4 : plain.length >= 80 ? 3 : 2;
-      const tickMs = Math.max(1, Number(speed) || 1);
+      const typedSpeed = clamp(Math.round(Number(speed) || state.options.typingSpeed || 12), 1, 18);
+      const speedRatio = typedSpeed / 18;
+      const baseChunk = plain.length >= 320 ? 9 : plain.length >= 180 ? 7 : plain.length >= 90 ? 5 : 4;
+      const chunk = Math.max(4, Math.round(baseChunk + speedRatio * 14));
+      const tickMs = state.options.reducedMotion
+        ? 10
+        : clamp(8 - Math.round(speedRatio * 5), 3, 8);
       const interval = setInterval(() => {
         i += chunk;
         lineEl.textContent = plain.slice(0, i);
@@ -4815,7 +4986,7 @@ import {
   function updateMonoToggle() { }
 
   function updateMatrixState() {
-    const shouldEnable = state.theme === "hacker" || state.theme === "secret";
+    const shouldEnable = isAsciiTheme();
     if (shouldEnable) {
       enableMatrix();
     } else {
@@ -4827,10 +4998,12 @@ import {
     if (state.matrix.active) return;
     const canvas = document.createElement("canvas");
     canvas.className = "matrix-canvas";
-    dom.terminal.prepend(canvas);
+    const host = document.getElementById("app") || document.body;
+    host.prepend(canvas);
     state.matrix.canvas = canvas;
     state.matrix.ctx = canvas.getContext("2d");
     state.matrix.active = true;
+    state.matrix.lastTs = 0;
     resizeMatrix();
     runMatrix();
     window.addEventListener("resize", resizeMatrix);
@@ -4847,13 +5020,20 @@ import {
     state.matrix.canvas = null;
     state.matrix.ctx = null;
     state.matrix.drops = [];
+    state.matrix.speeds = [];
+    state.matrix.offsets = [];
+    state.matrix.lastTs = 0;
+    state.matrix.fireHeat = [];
+    state.matrix.fireCols = 0;
+    state.matrix.fireRows = 0;
     window.removeEventListener("resize", resizeMatrix);
   }
 
   function resizeMatrix() {
     if (!state.matrix.canvas || !state.matrix.ctx) return;
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const hostRect = (document.getElementById("app") || document.body).getBoundingClientRect();
+    const width = Math.max(1, Math.round(hostRect.width || window.innerWidth));
+    const height = Math.max(1, Math.round(hostRect.height || window.innerHeight));
     const dpr = window.devicePixelRatio || 1;
     state.matrix.canvas.width = width * dpr;
     state.matrix.canvas.height = height * dpr;
@@ -4862,36 +5042,74 @@ import {
     state.matrix.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     state.matrix.width = width;
     state.matrix.height = height;
-    const columnWidth = 14;
-    const columns = Math.max(1, Math.floor(width / columnWidth));
-    state.matrix.columns = columns;
-    state.matrix.drops = Array.from({ length: columns }, () => Math.random() * (height / columnWidth));
+    const preset = getMatrixPreset();
+    if (state.theme === "fire") {
+      ensureFireGrid(width, height, preset);
+    } else {
+      fillMatrixColumns(height, preset.columnWidth, preset);
+    }
   }
 
   function runMatrix() {
     const ctx = state.matrix.ctx;
     if (!ctx) return;
+    const preset = getMatrixPreset();
+    if (!isAsciiTheme()) {
+      disableMatrix();
+      return;
+    }
+
+    const now = performance.now();
+    if (!state.matrix.lastTs) {
+      state.matrix.lastTs = now;
+    }
+    const dt = clamp((now - state.matrix.lastTs) / 16.67, 0.45, 2.2);
+    state.matrix.lastTs = now;
+    const motionFactor = state.options.reducedMotion ? 0.38 : 1;
+
     const width = state.matrix.width || window.innerWidth;
     const height = state.matrix.height || window.innerHeight;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+    if (state.theme === "fire") {
+      runFireAsciiFrame(ctx, now, dt, motionFactor, width, height, preset);
+      state.matrix.animationId = requestAnimationFrame(runMatrix);
+      return;
+    }
+
+    ctx.fillStyle = preset.trail;
     ctx.fillRect(0, 0, width, height);
 
-    const chars = "01アイウエオカキクケコサシスセソタチツテト";
-    ctx.fillStyle = state.theme === "secret" ? "#66f2ff" : "#38ff84";
-    ctx.font = "12px monospace";
+    const chars = String(preset.chars || "01");
+    const charsLen = chars.length;
+    const columnWidth = preset.columnWidth;
+    ctx.font = `${preset.fontSize}px monospace`;
+    ctx.textBaseline = "top";
+    ctx.shadowBlur = state.options.reducedMotion ? 0 : 8;
+    ctx.shadowColor = preset.glow;
 
-    const columnWidth = 14;
+    if (state.matrix.drops.length !== state.matrix.columns) {
+      fillMatrixColumns(height, columnWidth, preset);
+    }
     state.matrix.drops.forEach((drop, index) => {
-      const text = chars.charAt(Math.floor(Math.random() * chars.length));
+      const charIndex = (Math.floor(drop + state.matrix.offsets[index] + Math.random() * 2) + index) % charsLen;
+      const text = chars.charAt(charIndex);
       const x = index * columnWidth;
       const y = drop * columnWidth;
-      ctx.fillText(text, x, y);
-      if (y > height && Math.random() > 0.975) {
-        state.matrix.drops[index] = 0;
+      if (state.theme === "secret") {
+        const pulse = (Math.sin(now * 0.003 + index * 0.4) + 1) * 0.5;
+        ctx.fillStyle = pulse > 0.64 ? preset.colorAlt : preset.color;
       } else {
-        state.matrix.drops[index] = drop + 1;
+        ctx.fillStyle = preset.color;
+      }
+      ctx.fillText(text, x, y);
+      if (y > height + columnWidth * 2 && Math.random() > preset.resetChance) {
+        state.matrix.drops[index] = Math.random() * 4;
+        state.matrix.offsets[index] = randomCharIndex(charsLen);
+        state.matrix.speeds[index] = preset.baseSpeed + Math.random() * Math.max(0.01, preset.speedVariance);
+      } else {
+        state.matrix.drops[index] = drop + state.matrix.speeds[index] * dt * motionFactor;
       }
     });
+    ctx.shadowBlur = 0;
 
     state.matrix.animationId = requestAnimationFrame(runMatrix);
   }
