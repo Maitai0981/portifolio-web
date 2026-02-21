@@ -60,6 +60,25 @@ test("disallowed origin returns 403 on protected routes", async () => {
   assert.equal(payload.code, "origin_not_allowed");
 });
 
+test("POST /me rejects oversized question payload", async () => {
+  const env = {
+    AI: { run: async () => ({ response: "ok" }) },
+    ALLOWED_ORIGIN: "http://localhost:8080",
+    GITHUB_USERNAME: "demo"
+  };
+  const hugeQuestion = "x".repeat(1400);
+  const request = new Request("https://example.workers.dev/me", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: "http://localhost:8080" },
+    body: JSON.stringify({ question: hugeQuestion, lang: "pt" })
+  });
+  const response = await worker.fetch(request, env);
+  assert.equal(response.status, 413);
+  const payload = await response.json();
+  assert.equal(payload.code, "question_too_long");
+  assert.equal(payload.maxQuestionChars, 1200);
+});
+
 test("POST /inspector-auth validates password hash", async () => {
   const env = {
     AI: { run: async () => ({ response: "ok" }) },

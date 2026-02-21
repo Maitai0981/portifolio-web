@@ -11,9 +11,10 @@ export class Trie {
   }
 
   insert(word) {
-    if (!word) return;
+    const normalized = String(word ?? "").trim();
+    if (!normalized) return;
     let node = this.root;
-    for (const ch of word) {
+    for (const ch of normalized) {
       if (!node.children.has(ch)) {
         node.children.set(ch, new TrieNode());
       }
@@ -23,14 +24,16 @@ export class Trie {
   }
 
   startsWith(prefix, limit = 10) {
+    const normalizedPrefix = String(prefix ?? "");
+    const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 10;
     let node = this.root;
-    for (const ch of prefix) {
+    for (const ch of normalizedPrefix) {
       if (!node.children.has(ch)) return [];
       node = node.children.get(ch);
     }
     const results = [];
-    const stack = [{ node, word: prefix }];
-    while (stack.length && results.length < limit) {
+    const stack = [{ node, word: normalizedPrefix }];
+    while (stack.length && results.length < normalizedLimit) {
       const current = stack.pop();
       if (current.node.isWord) results.push(current.word);
       for (const [ch, child] of current.node.children.entries()) {

@@ -30,6 +30,7 @@ const REPO_CACHE_TTL_MS = 10 * 60 * 1000;
 const README_CACHE_TTL_MS = 20 * 60 * 1000;
 const MAX_REPOS_FOR_CONTEXT = 7;
 const MAX_README_CHARS = 2200;
+const MAX_QUESTION_CHARS = 1200;
 const API_SCHEMA = "me.v1";
 
 const repoCache = new Map<string, RepoCacheEntry>();
@@ -549,6 +550,21 @@ export default {
         400,
         allowOrigin,
         "question_required"
+      );
+    }
+    if (question.length > MAX_QUESTION_CHARS) {
+      return timedJsonResponse(
+        path,
+        method,
+        startedAt,
+        {
+          error: `Question too long. Max ${MAX_QUESTION_CHARS} characters.`,
+          code: "question_too_long",
+          maxQuestionChars: MAX_QUESTION_CHARS
+        },
+        413,
+        allowOrigin,
+        "question_too_long"
       );
     }
 
