@@ -4,6 +4,16 @@ Portfolio SPA com dois modos de interacao:
 - terminal estilo CLI;
 - GUI retro inspirada no Windows 95.
 
+## Preview
+
+### GUI
+
+![Preview GUI](docs/images/preview-gui.png)
+
+### CLI
+
+![Preview CLI](docs/images/preview-cli.png)
+
 ## Objetivo
 
 Entregar uma experiencia interativa de apresentacao profissional com foco em:

@@ -155,6 +155,7 @@ body.theme-secret {
   --pet-shell-border: rgba(255, 92, 240, 0.35);
   --pet-shell-bg-start: rgba(32, 16, 54, 0.95);
   --pet-shell-bg-end: rgba(12, 7, 28, 0.96);
+  --gui-text: #ffe8d6;
 }
 
 * {
@@ -1134,9 +1135,9 @@ body.theme-secret #gui {
   background: none;
 }
 
-/* body.theme-secret #gui {
+body.theme-secret #gui {
   background: none;
-} */
+} 
 
 body.theme-fire #gui {
   background: none;
