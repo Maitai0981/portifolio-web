@@ -72,7 +72,8 @@ export function createFireTelemetryState() {
     recommendTier: "high",
     tierCooldownUntil: 0,
     sampleFrames: 0,
-    sampleSlowFrames: 0
+    sampleSlowFrames: 0,
+    lastUpdatedAt: 0
   };
 }
 
@@ -83,20 +84,85 @@ export function getFireColumnWidth(preset, qualityConfig) {
   );
 }
 
+function resampleHeatGrid(previousHeat, oldCols, oldRows, nextCols, nextRows) {
+  const next = Array.from({ length: nextCols * nextRows }, () => 0);
+  if (!Array.isArray(previousHeat) || previousHeat.length !== oldCols * oldRows) {
+    return next;
+  }
+  for (let y = 0; y < nextRows; y += 1) {
+    const sourceY = clamp(Math.floor((y / Math.max(1, nextRows - 1)) * Math.max(0, oldRows - 1)), 0, oldRows - 1);
+    for (let x = 0; x < nextCols; x += 1) {
+      const sourceX = clamp(
+        Math.floor((x / Math.max(1, nextCols - 1)) * Math.max(0, oldCols - 1)),
+        0,
+        oldCols - 1
+      );
+      next[y * nextCols + x] = Math.max(0, Number(previousHeat[sourceY * oldCols + sourceX]) || 0);
+    }
+  }
+  return next;
+}
+
+function resampleSourceLine(previousSource, oldCols, nextCols, levels) {
+  const fallbackValue = Math.max(1, levels - 2);
+  const next = Array.from({ length: nextCols }, () => fallbackValue);
+  if (!Array.isArray(previousSource) || previousSource.length !== oldCols) {
+    return next;
+  }
+  for (let x = 0; x < nextCols; x += 1) {
+    const sourceX = clamp(
+      Math.floor((x / Math.max(1, nextCols - 1)) * Math.max(0, oldCols - 1)),
+      0,
+      oldCols - 1
+    );
+    next[x] = clamp(Number(previousSource[sourceX]) || fallbackValue, 0, levels - 1);
+  }
+  return next;
+}
+
+function rescaleBursts(previousBursts, oldCols, oldRows, nextCols, nextRows) {
+  if (!Array.isArray(previousBursts) || previousBursts.length === 0) return [];
+  const scaleX = nextCols / Math.max(1, oldCols);
+  const scaleY = nextRows / Math.max(1, oldRows);
+  return previousBursts.map((burst) => ({
+    ...burst,
+    x: clamp(Math.round(normalizeNumber(burst?.x, 0) * scaleX), 0, Math.max(0, nextCols - 1)),
+    y: clamp(Math.round(normalizeNumber(burst?.y, 0) * scaleY), 0, Math.max(0, nextRows - 1)),
+    radius: clamp(Math.round(normalizeNumber(burst?.radius, 1) * ((scaleX + scaleY) * 0.5)), 1, 16)
+  }));
+}
+
 export function ensureFireGrid(matrixState, width, height, columnWidth) {
   const cols = Math.max(1, Math.floor(width / Math.max(1, columnWidth)));
   const rows = Math.max(1, Math.floor(height / Math.max(1, columnWidth)));
   const expectedSize = cols * rows;
+  const previousCols = Math.max(0, Number(matrixState.fireCols) || 0);
+  const previousRows = Math.max(0, Number(matrixState.fireRows) || 0);
+  const previousHeat = Array.isArray(matrixState.fireHeat) ? matrixState.fireHeat : [];
+  const previousBursts = Array.isArray(matrixState.fireBursts) ? matrixState.fireBursts : [];
+  const previousSource = Array.isArray(matrixState.fireSource) ? matrixState.fireSource : [];
   if (
-    matrixState.fireCols !== cols ||
-    matrixState.fireRows !== rows ||
+    previousCols !== cols ||
+    previousRows !== rows ||
     !Array.isArray(matrixState.fireHeat) ||
     matrixState.fireHeat.length !== expectedSize
   ) {
     matrixState.fireCols = cols;
     matrixState.fireRows = rows;
-    matrixState.fireHeat = Array.from({ length: expectedSize }, () => 0);
-    matrixState.fireBursts = [];
+    matrixState.fireHeat =
+      previousCols > 0 && previousRows > 0
+        ? resampleHeatGrid(previousHeat, previousCols, previousRows, cols, rows)
+        : Array.from({ length: expectedSize }, () => 0);
+    matrixState.fireBursts =
+      previousCols > 0 && previousRows > 0
+        ? rescaleBursts(previousBursts, previousCols, previousRows, cols, rows)
+        : [];
+    matrixState.fireSource = resampleSourceLine(
+      previousSource,
+      Math.max(1, previousCols),
+      cols,
+      DOOM_FIRE_PALETTE.length
+    );
   }
 }
 
@@ -179,13 +245,15 @@ export function updateFireTelemetry(telemetryInput, { frameMs, now, burstsActive
     telemetry.sampleSlowFrames = Math.max(0, Number(telemetry.sampleSlowFrames) || 0) + 1;
   }
 
-  if (telemetry.sampleFrames >= 36) {
+  if (telemetry.sampleFrames >= 24) {
     const slowRatio = telemetry.sampleSlowFrames / Math.max(1, telemetry.sampleFrames);
+    const avgFrame = Number(telemetry.avgFrameMs) || safeFrameMs;
+    const fps = Number(telemetry.fps) || 0;
     if (reducedMotion) {
       telemetry.recommendTier = "low";
-    } else if (telemetry.avgFrameMs > 30 || slowRatio > 0.35) {
+    } else if (avgFrame > 27 || fps < 30 || slowRatio > 0.28) {
       telemetry.recommendTier = "low";
-    } else if (telemetry.avgFrameMs > 23 || slowRatio > 0.2) {
+    } else if (avgFrame > 20 || fps < 44 || slowRatio > 0.12) {
       telemetry.recommendTier = "medium";
     } else {
       telemetry.recommendTier = "high";
@@ -200,6 +268,18 @@ export function updateFireTelemetry(telemetryInput, { frameMs, now, burstsActive
   return telemetry;
 }
 
+function normalizeTier(value, fallback = "high") {
+  const tier = String(value || fallback).toLowerCase();
+  if (tier === "low" || tier === "medium" || tier === "high") return tier;
+  return fallback;
+}
+
+function tierRank(tier) {
+  if (tier === "low") return 0;
+  if (tier === "medium") return 1;
+  return 2;
+}
+
 export function resolveFirePerformanceTier({
   telemetry,
   currentTier = "high",
@@ -211,16 +291,45 @@ export function resolveFirePerformanceTier({
     return "low";
   }
 
-  const target = String(telemetry?.recommendTier || currentTier || "high");
-  const tier = target === "low" || target === "medium" ? target : "high";
+  const current = normalizeTier(currentTier, "high");
+  const fps = Number(telemetry?.fps) || 0;
+  const avgFrame = Number(telemetry?.avgFrameMs) || 16.67;
+  let target = normalizeTier(telemetry?.recommendTier, current);
+  if (avgFrame > 32 || fps < 24) {
+    target = "low";
+  } else if (avgFrame > 22 || fps < 38) {
+    target = target === "low" ? "low" : "medium";
+  }
   const cooldownUntil = Number(telemetry?.tierCooldownUntil) || 0;
   if (now < cooldownUntil) {
-    return currentTier;
+    return current;
   }
-  if (tier !== currentTier) {
-    telemetry.tierCooldownUntil = now + 1800;
+  if (target !== current) {
+    const upgrade = tierRank(target) > tierRank(current);
+    telemetry.tierCooldownUntil = now + (upgrade ? 2800 : 900);
   }
-  return tier;
+  return target;
+}
+
+function ensureFireSource(matrixState, cols, levels, reducedMotion, now) {
+  if (!Array.isArray(matrixState.fireSource) || matrixState.fireSource.length !== cols) {
+    matrixState.fireSource = Array.from({ length: cols }, () => levels - 2 - Math.random() * 1.4);
+  }
+  const swayBase = Math.sin(now * 0.00055) * (reducedMotion ? 0.16 : 0.34);
+  matrixState.fireWind = clamp((Number(matrixState.fireWind) || 0) * 0.92 + swayBase * 0.08, -0.9, 0.9);
+
+  const smoothing = reducedMotion ? 0.94 : 0.86;
+  const sparkChance = reducedMotion ? 0.02 : 0.075;
+  const turbulenceScale = reducedMotion ? 0.9 : 2.2;
+  for (let x = 0; x < cols; x += 1) {
+    const wave = Math.sin(now * 0.0018 + x * 0.19) * 0.7;
+    const turbulence = (Math.random() - 0.5) * turbulenceScale;
+    const sparkBoost = Math.random() < sparkChance ? 1.4 + Math.random() * 2.2 : 0;
+    const target = clamp((levels - 2) + wave + turbulence + sparkBoost, 0.6, levels - 1);
+    const current = Number(matrixState.fireSource[x]) || target;
+    matrixState.fireSource[x] = current * smoothing + target * (1 - smoothing);
+  }
+  return matrixState.fireSource;
 }
 
 export function runDoomFireFrame({
@@ -235,7 +344,9 @@ export function runDoomFireFrame({
   qualityConfig,
   reducedMotion = false
 }) {
-  const columnWidth = getFireColumnWidth(preset, qualityConfig);
+  const requestedCell = Number(matrixState?.fireCellSize) || getFireColumnWidth(preset, qualityConfig);
+  const columnWidth = Math.max(8, Math.round(requestedCell));
+  matrixState.fireCellSize = columnWidth;
   ensureFireGrid(matrixState, width, height, columnWidth);
 
   const cols = matrixState.fireCols;
@@ -251,11 +362,12 @@ export function runDoomFireFrame({
   ctx.shadowColor = preset.glow;
 
   const bottomRow = rows - 1;
-  const burnChance = reducedMotion ? 0.72 : 0.9;
+  const source = ensureFireSource(matrixState, cols, levels, reducedMotion, now);
   for (let x = 0; x < cols; x += 1) {
     const idx = bottomRow * cols + x;
-    const jitter = Math.random() < burnChance ? 0 : 1;
-    heat[idx] = Math.max(0, levels - 1 - jitter);
+    const targetHeat = clamp(Math.round(Number(source[x]) || levels - 2), 0, levels - 1);
+    const currentHeat = Number(heat[idx]) || 0;
+    heat[idx] = Math.max(Math.max(0, currentHeat - 1), targetHeat);
   }
 
   applyFireBursts(matrixState, heat, cols, rows, levels, now);
@@ -266,14 +378,19 @@ export function runDoomFireFrame({
     for (let y = 0; y < rows - 1; y += 1) {
       for (let x = 0; x < cols; x += 1) {
         const belowIndex = (y + 1) * cols + x;
-        const source = heat[belowIndex];
-        if (source <= 0) {
-          nextHeat[y * cols + x] = 0;
+        const sourceHeat = heat[belowIndex];
+        if (sourceHeat <= 0) {
+          const cooling = Math.max(0, (nextHeat[y * cols + x] || 0) - 1);
+          nextHeat[y * cols + x] = cooling;
           continue;
         }
         const decay = Math.floor(Math.random() * decayMax);
-        const dstX = clamp(x - decay + 1, 0, cols - 1);
-        nextHeat[y * cols + dstX] = Math.max(0, source - decay);
+        const windShift = Math.round((Number(matrixState.fireWind) || 0) + (Math.random() - 0.5) * 0.8);
+        const dstX = clamp(x - decay + 1 + windShift, 0, cols - 1);
+        nextHeat[y * cols + dstX] = Math.max(
+          nextHeat[y * cols + dstX] || 0,
+          Math.max(0, sourceHeat - decay)
+        );
       }
     }
     heat = nextHeat;

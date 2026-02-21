@@ -1,0 +1,12 @@
+:root {
+  --layout-layer-version: "2026-02-fire";
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+#app {
+  isolation: isolate;
+}

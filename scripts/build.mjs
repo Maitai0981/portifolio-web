@@ -17,6 +17,7 @@ const COPY_LIST = [
   "robots.txt",
   "service-worker.js",
   "sitemap.xml",
+  "styles",
   "styles.css"
 ];
 

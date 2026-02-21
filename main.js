@@ -963,12 +963,12 @@ import {
     if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
 
     const preset = getMatrixPreset("fire");
-    const qualityConfig = getMatrixQualityConfig(
-      state.matrix.performanceTier,
-      state.options.reducedMotion,
-      "fire"
-    );
-    const cell = getFireColumnWidth(preset, qualityConfig);
+    const cell =
+      Math.max(8, Math.round(Number(state.matrix.fireCellSize) || 0)) ||
+      getFireColumnWidth(
+        preset,
+        getMatrixQualityConfig(state.matrix.performanceTier, state.options.reducedMotion, "fire")
+      );
     ensureFireGrid(state.matrix, state.matrix.width || rect.width, state.matrix.height || rect.height, cell);
 
     const cols = state.matrix.fireCols;
@@ -4587,6 +4587,9 @@ import {
     state.matrix.lastRenderAt = 0;
     state.matrix.smoothedDt = 1;
     state.matrix.performanceTier = state.options.reducedMotion ? "low" : "high";
+    state.matrix.fireCellSize = 0;
+    state.matrix.fireSource = [];
+    state.matrix.fireWind = 0;
     state.matrix.fireBursts = [];
     state.matrix.fireTelemetry = createFireTelemetryState();
     resizeMatrix();
@@ -4614,6 +4617,9 @@ import {
     state.matrix.fireHeat = [];
     state.matrix.fireCols = 0;
     state.matrix.fireRows = 0;
+    state.matrix.fireSource = [];
+    state.matrix.fireWind = 0;
+    state.matrix.fireCellSize = 0;
     state.matrix.fireBursts = [];
     state.matrix.fireTelemetry = createFireTelemetryState();
     window.__FIRE_TELEMETRY__ = null;
@@ -4635,13 +4641,20 @@ import {
     state.matrix.height = height;
     const preset = getMatrixPreset();
     if (state.theme === "fire") {
-      const qualityConfig = getMatrixQualityConfig(
-        state.matrix.performanceTier,
-        state.options.reducedMotion,
-        state.theme
+      if (!(Number(state.matrix.fireCellSize) > 0)) {
+        const qualityConfig = getMatrixQualityConfig(
+          state.matrix.performanceTier,
+          state.options.reducedMotion,
+          state.theme
+        );
+        state.matrix.fireCellSize = getFireColumnWidth(preset, qualityConfig);
+      }
+      ensureFireGrid(
+        state.matrix,
+        width,
+        height,
+        Math.max(8, Math.round(Number(state.matrix.fireCellSize) || preset.columnWidth || 12))
       );
-      const fireColumnWidth = getFireColumnWidth(preset, qualityConfig);
-      ensureFireGrid(state.matrix, width, height, fireColumnWidth);
     } else {
       fillMatrixColumns(height, preset.columnWidth, preset);
     }

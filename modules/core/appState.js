@@ -45,6 +45,9 @@ export function createAppState({ initialMode = "gui", viewportWidth = 0, viewpor
       fireHeat: [],
       fireCols: 0,
       fireRows: 0,
+      fireSource: [],
+      fireWind: 0,
+      fireCellSize: 0,
       fireBursts: [],
       fireTelemetry: {
         frameCount: 0,

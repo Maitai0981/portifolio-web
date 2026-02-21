@@ -1,0 +1,16 @@
+/* Efeitos: ajustes performaticos e estabilidade de animacao */
+.matrix-canvas {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+body.theme-fire .matrix-canvas {
+  image-rendering: pixelated;
+  animation-duration: 1200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matrix-canvas {
+    transition: none !important;
+  }
+}

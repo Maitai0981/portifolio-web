@@ -10,6 +10,7 @@ const mainPath = path.join(root, "main.js");
 const manifestPath = path.join(root, "manifest.webmanifest");
 const robotsPath = path.join(root, "robots.txt");
 const sitemapPath = path.join(root, "sitemap.xml");
+const stylesPath = path.join(root, "styles.css");
 
 const data = JSON.parse(await readFile(dataPath, "utf8"));
 const indexHtml = await readFile(indexPath, "utf8");
@@ -17,6 +18,7 @@ const mainSource = await readFile(mainPath, "utf8");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const robots = await readFile(robotsPath, "utf8");
 const sitemap = await readFile(sitemapPath, "utf8");
+const stylesSource = await readFile(stylesPath, "utf8");
 
 test("data.json possui traduções e seções essenciais em pt/en", () => {
   assert.equal(typeof data.meta?.user, "string");
@@ -104,4 +106,12 @@ test("manifest, robots e sitemap possuem configuração básica válida", () => 
 
   assert.match(sitemap, /<urlset/i);
   assert.match(sitemap, /<loc>https:\/\/maitai0981\.github\.io\/portifolio-web\/<\/loc>/i);
+});
+
+test("styles.css usa arquitetura em camadas via imports", () => {
+  assert.match(stylesSource, /@layer\s+base,\s*components,\s*themes,\s*effects;/i);
+  assert.match(stylesSource, /@import url\("\.\/styles\/base\.css"\)\s+layer\(base\);/i);
+  assert.match(stylesSource, /@import url\("\.\/styles\/components\.css"\)\s+layer\(components\);/i);
+  assert.match(stylesSource, /@import url\("\.\/styles\/themes\.css"\)\s+layer\(themes\);/i);
+  assert.match(stylesSource, /@import url\("\.\/styles\/effects\.css"\)\s+layer\(effects\);/i);
 });

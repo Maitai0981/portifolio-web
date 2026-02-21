@@ -45,8 +45,8 @@ test("getMatrixQualityConfig e shouldRenderMatrixFrame aplicam throttling espera
 
   assert.equal(high.drawStride, 1);
   assert.equal(high.frameIntervalMs <= 20, true);
-  assert.equal(lowFire.drawStride, 2);
-  assert.equal(lowFire.frameIntervalMs >= 38, true);
+  assert.equal(lowFire.drawStride >= 2, true);
+  assert.equal(lowFire.frameIntervalMs >= 44, true);
 
   assert.equal(matrixAdaptive.shouldRenderMatrixFrame(100, 0, 16), true);
   assert.equal(matrixAdaptive.shouldRenderMatrixFrame(100, 96, 16), false);

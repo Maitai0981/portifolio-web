@@ -1,0 +1,16 @@
+/* Tema: overrides agrupados por dominio visual */
+body.theme-fire .matrix-canvas {
+  --matrix-op-start: 0.52;
+  --matrix-op-end: 0.28;
+  opacity: var(--matrix-op-end);
+}
+
+body.theme-hacker .matrix-canvas {
+  --matrix-op-start: 0.42;
+  --matrix-op-end: 0.24;
+}
+
+body.theme-secret .matrix-canvas {
+  --matrix-op-start: 0.38;
+  --matrix-op-end: 0.22;
+}

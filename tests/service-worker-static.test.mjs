@@ -31,6 +31,7 @@ test("precache inclui arquivos críticos de inicialização", () => {
   const requiredAssets = [
     "./index.html",
     "./styles.css",
+    "./styles/components.css",
     "./main.js",
     "./data.json",
     "./manifest.webmanifest",

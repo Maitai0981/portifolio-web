@@ -22,27 +22,28 @@ export function updateMatrixPerformanceState(matrixState, dt, reducedMotion) {
 }
 
 export function getMatrixQualityConfig(performanceTier, reducedMotion, theme = "") {
+  const isFire = theme === "fire";
   if (reducedMotion || performanceTier === "low") {
     return {
-      frameIntervalMs: theme === "fire" ? 44 : 38,
-      columnScale: 1.35,
-      drawStride: 2,
+      frameIntervalMs: isFire ? 58 : 38,
+      columnScale: isFire ? 1.5 : 1.35,
+      drawStride: isFire ? 3 : 2,
       shadowBlur: 0
     };
   }
   if (performanceTier === "medium") {
     return {
-      frameIntervalMs: theme === "fire" ? 28 : 24,
-      columnScale: 1.15,
-      drawStride: 1,
-      shadowBlur: 5
+      frameIntervalMs: isFire ? 36 : 24,
+      columnScale: isFire ? 1.25 : 1.15,
+      drawStride: isFire ? 2 : 1,
+      shadowBlur: isFire ? 3 : 5
     };
   }
   return {
-    frameIntervalMs: theme === "fire" ? 20 : 16,
+    frameIntervalMs: isFire ? 18 : 16,
     columnScale: 1,
     drawStride: 1,
-    shadowBlur: 8
+    shadowBlur: isFire ? 6 : 8
   };
 }
 
