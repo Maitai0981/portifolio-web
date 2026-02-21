@@ -104,7 +104,7 @@ function resampleHeatGrid(previousHeat, oldCols, oldRows, nextCols, nextRows) {
 }
 
 function resampleSourceLine(previousSource, oldCols, nextCols, levels) {
-  const fallbackValue = Math.max(1, levels - 2);
+  const fallbackValue = Math.max(1, Math.round(levels * 0.56));
   const next = Array.from({ length: nextCols }, () => fallbackValue);
   if (!Array.isArray(previousSource) || previousSource.length !== oldCols) {
     return next;
@@ -313,19 +313,21 @@ export function resolveFirePerformanceTier({
 
 function ensureFireSource(matrixState, cols, levels, reducedMotion, now) {
   if (!Array.isArray(matrixState.fireSource) || matrixState.fireSource.length !== cols) {
-    matrixState.fireSource = Array.from({ length: cols }, () => levels - 2 - Math.random() * 1.4);
+    const base = Math.max(2, Math.round(levels * 0.56));
+    matrixState.fireSource = Array.from({ length: cols }, () => base + (Math.random() - 0.5) * 0.8);
   }
-  const swayBase = Math.sin(now * 0.00055) * (reducedMotion ? 0.16 : 0.34);
-  matrixState.fireWind = clamp((Number(matrixState.fireWind) || 0) * 0.92 + swayBase * 0.08, -0.9, 0.9);
+  const swayBase = Math.sin(now * 0.00055) * (reducedMotion ? 0.12 : 0.22);
+  matrixState.fireWind = clamp((Number(matrixState.fireWind) || 0) * 0.95 + swayBase * 0.05, -0.65, 0.65);
 
-  const smoothing = reducedMotion ? 0.94 : 0.86;
-  const sparkChance = reducedMotion ? 0.02 : 0.075;
-  const turbulenceScale = reducedMotion ? 0.9 : 2.2;
+  const smoothing = reducedMotion ? 0.95 : 0.9;
+  const sparkChance = reducedMotion ? 0.008 : 0.022;
+  const turbulenceScale = reducedMotion ? 0.45 : 1.05;
+  const baseHeat = Math.max(2, Math.round(levels * 0.56));
   for (let x = 0; x < cols; x += 1) {
-    const wave = Math.sin(now * 0.0018 + x * 0.19) * 0.7;
+    const wave = Math.sin(now * 0.0017 + x * 0.19) * 0.45;
     const turbulence = (Math.random() - 0.5) * turbulenceScale;
-    const sparkBoost = Math.random() < sparkChance ? 1.4 + Math.random() * 2.2 : 0;
-    const target = clamp((levels - 2) + wave + turbulence + sparkBoost, 0.6, levels - 1);
+    const sparkBoost = Math.random() < sparkChance ? 0.8 + Math.random() * 1.6 : 0;
+    const target = clamp(baseHeat + wave + turbulence + sparkBoost, 0.6, levels - 2);
     const current = Number(matrixState.fireSource[x]) || target;
     matrixState.fireSource[x] = current * smoothing + target * (1 - smoothing);
   }
@@ -365,33 +367,34 @@ export function runDoomFireFrame({
   const source = ensureFireSource(matrixState, cols, levels, reducedMotion, now);
   for (let x = 0; x < cols; x += 1) {
     const idx = bottomRow * cols + x;
-    const targetHeat = clamp(Math.round(Number(source[x]) || levels - 2), 0, levels - 1);
+    const targetHeat = clamp(Math.round(Number(source[x]) || Math.round(levels * 0.56)), 0, levels - 1);
     const currentHeat = Number(heat[idx]) || 0;
-    heat[idx] = Math.max(Math.max(0, currentHeat - 1), targetHeat);
+    heat[idx] = currentHeat * 0.35 + targetHeat * 0.65;
   }
 
   applyFireBursts(matrixState, heat, cols, rows, levels, now);
 
   const spreadLoops = reducedMotion ? 1 : Math.min(3, Math.max(1, Math.round(dt * motionFactor)));
   for (let loop = 0; loop < spreadLoops; loop += 1) {
-    const nextHeat = heat.slice();
+    const nextHeat = Array.from({ length: heat.length }, () => 0);
     for (let y = 0; y < rows - 1; y += 1) {
       for (let x = 0; x < cols; x += 1) {
         const belowIndex = (y + 1) * cols + x;
         const sourceHeat = heat[belowIndex];
         if (sourceHeat <= 0) {
-          const cooling = Math.max(0, (nextHeat[y * cols + x] || 0) - 1);
-          nextHeat[y * cols + x] = cooling;
           continue;
         }
         const decay = Math.floor(Math.random() * decayMax);
-        const windShift = Math.round((Number(matrixState.fireWind) || 0) + (Math.random() - 0.5) * 0.8);
+        const windShift = Math.round((Number(matrixState.fireWind) || 0) + (Math.random() - 0.5) * 0.5);
         const dstX = clamp(x - decay + 1 + windShift, 0, cols - 1);
-        nextHeat[y * cols + dstX] = Math.max(
-          nextHeat[y * cols + dstX] || 0,
-          Math.max(0, sourceHeat - decay)
-        );
+        const propagated = Math.max(0, sourceHeat - decay);
+        const dstIndex = y * cols + dstX;
+        nextHeat[dstIndex] = Math.max(nextHeat[dstIndex] || 0, propagated);
       }
+    }
+    for (let x = 0; x < cols; x += 1) {
+      const idx = bottomRow * cols + x;
+      nextHeat[idx] = Math.max(nextHeat[idx] || 0, heat[idx]);
     }
     heat = nextHeat;
   }
@@ -402,13 +405,14 @@ export function runDoomFireFrame({
     for (let x = 0; x < cols; x += stride) {
       const level = heat[y * cols + x];
       if (level <= 0) continue;
-      const ratio = level / Math.max(1, levels - 1);
-      const [baseR, baseG, baseB] = DOOM_FIRE_PALETTE[Math.min(level, levels - 1)];
+      const colorIndex = clamp(Math.round(level), 0, levels - 1);
+      const ratio = colorIndex / Math.max(1, levels - 1);
+      const [baseR, baseG, baseB] = DOOM_FIRE_PALETTE[colorIndex];
       const flicker = Math.sin(now * 0.02 + x * 0.21 + y * 0.11) * 6;
       const red = clamp(Math.round(baseR + flicker), 0, 255);
       const green = clamp(Math.round(baseG + flicker * 0.4), 0, 255);
       const blue = clamp(Math.round(baseB + flicker * 0.2), 0, 255);
-      const alpha = 0.2 + ratio * 0.8;
+      const alpha = 0.08 + ratio * 0.62;
       ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
       ctx.fillRect(
         x * cell,

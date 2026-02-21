@@ -1352,7 +1352,7 @@ body.theme-secret #desktop {
   --sprite-size-h: 96px;
   width: 48px;
   height: 48px;
-  background-image: url("./assets/sprite_94.webp");
+  background-image: url("../assets/sprite_94.webp");
   background-repeat: no-repeat;
   background-size: var(--sprite-size-w) var(--sprite-size-h);
   display: block;
