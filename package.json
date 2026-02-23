@@ -17,6 +17,11 @@
     "worker:dev": "npm --prefix config run worker:dev",
     "worker:deploy": "npm --prefix config run worker:deploy",
     "worker:tail": "npm --prefix config run worker:tail",
-    "postinstall": "npm run install:config"
+    "postinstall": "npm run install:config",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
   }
 }
