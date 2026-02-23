@@ -1,6 +1,6 @@
 {
   "name": "portifolio-web",
-  "main": "worker/src/index.ts",
+  "main": "../worker/src/index.ts",
   "compatibility_date": "2026-02-20",
   "ai": {
     "binding": "AI"

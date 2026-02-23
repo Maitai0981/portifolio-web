@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
-const swPath = path.join(process.cwd(), "service-worker.js");
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(testDir, "..");
+const swPath = path.join(root, "app", "service-worker.js");
 const swSource = await readFile(swPath, "utf8");
 
 test("service-worker define caches com versionamento e prefixo", () => {

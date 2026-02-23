@@ -8,11 +8,11 @@ Portfolio SPA com dois modos de interacao:
 
 ### GUI
 
-![Preview GUI](docs/images/preview-gui.png)
+![Preview GUI](./images/preview-gui.png)
 
 ### CLI
 
-![Preview CLI](docs/images/preview-cli.png)
+![Preview CLI](./images/preview-cli.png)
 
 ## Objetivo
 
@@ -47,10 +47,11 @@ Servidor local:
 
 ## Scripts
 
-- `npm run dev`: sobe o servidor local (`server.js`).
-- `npm start`: alias de `npm run dev`.
+- `npm run dev`: sobe o servidor local (`scripts/server.js`).
+- `npm start`: alias de `dev`.
 - `npm run build`: gera `dist/` com arquivos minificados para deploy estatico.
 - `npm run lint`: validacoes de JS/TS + checks basicos de HTML.
+- `npm run project:map`: imprime no terminal o mapa de pastas e pontos de acesso.
 - `npm run worker:dev`: executa o Worker localmente (Cloudflare).
 - `npm run worker:deploy`: publica o Worker no Cloudflare.
 - `npm run worker:tail`: acompanha logs do Worker.
@@ -78,28 +79,33 @@ Workflow:
 - gatilho: push em `main` e execucao manual.
 
 Fluxo:
-- instala dependencias com `npm ci`;
-- executa `npm run build`;
+- instala dependencias com `npm ci` em `config/`;
+- executa `npm run build` em `config/`;
 - publica `dist/` via `actions/deploy-pages`.
 
 Arquivos de suporte ao Pages:
-- `404.html`: fallback de rota para SPA;
-- `.nojekyll`: desativa processamento Jekyll;
-- `robots.txt` e `sitemap.xml`: indexacao.
+- `app/404.html`: fallback de rota para SPA;
+- `app/.nojekyll`: desativa processamento Jekyll;
+- `app/robots.txt` e `app/sitemap.xml`: indexacao.
 
 ## Estrutura principal
 
-- `index.html`: bootstrap da aplicacao, meta tags, SEO social, schema JSON-LD.
-- `main.js`: estado global, comandos, GUI, i18n, registro de SW.
-- `styles.css`: tema terminal + GUI.
-- `data.json`: conteudo textual (pt/en), projetos e metadados.
-- `modules/`: modulos auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`, `algorithmViewer`, `snakeGame`).
-- `service-worker.js`: cache e fallback offline.
-- `wrangler.jsonc`: configuracao do Cloudflare Worker (backend do comando `me`).
+- `app/index.html`: bootstrap da aplicacao, meta tags, SEO social, schema JSON-LD.
+- `app/main.js`: entrypoint fino que delega para `app/modules/app/bootstrap.js`.
+- `app/modules/app/bootstrap.js`: orquestracao de runtime (estado, eventos, i18n, GUI/CLI, SW).
+- `app/styles.css`: entrypoint de estilo por camadas.
+- `app/styles/`: `base.css`, `components.css`, `themes.css`, `effects.css`.
+- `app/data.json`: conteudo textual (pt/en), projetos e metadados.
+- `app/modules/core/`: estado base e configuracoes de tema.
+- `app/modules/features/`: dominios (`terminal`, `pet`, `gui`, `effects`) com barrels `index.js`.
+- `app/modules/index.js`: facade de acesso central para modulos do frontend.
+- `app/modules/`: utilitarios auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`, `algorithmViewer`, `snakeGame`).
+- `app/service-worker.js`: cache e fallback offline.
+- `config/wrangler.jsonc`: configuracao do Cloudflare Worker (backend do comando `me`).
 - `worker/src/index.ts`: API `/me` com GitHub + Llama 3 (Workers AI).
-- `manifest.webmanifest`: metadados PWA.
-- `server.js`: servidor HTTP local sem dependencias externas.
-- `assets/`: imagens, sprites, capas e modelo CNN.
+- `app/manifest.webmanifest`: metadados PWA.
+- `scripts/server.js`: servidor HTTP local sem dependencias externas.
+- `app/assets/`: imagens, sprites, capas e modelo CNN.
 
 ## Comportamento de cache e Service Worker
 
@@ -112,19 +118,19 @@ Arquivos de suporte ao Pages:
 ## SEO e indexacao
 
 - `canonical`, `og:*`, `twitter:*` e `theme-color` configurados.
-- `sitemap.xml` e `robots.txt` incluidos.
-- JSON-LD (`Person`) no `index.html`.
+- `app/sitemap.xml` e `app/robots.txt` incluidos.
+- JSON-LD (`Person`) no `app/index.html`.
 
 ## Roteamento SPA no Pages
 
-- `404.html` redireciona para `/?p=...`.
-- `index.html` restaura a rota original no carregamento.
+- `app/404.html` redireciona para `/?p=...`.
+- `app/index.html` restaura a rota original no carregamento.
 - rotas sem extensao tambem recebem barra final para manter consistencia de caminho.
 
 ## Conteudo do portfolio
 
 Fonte unica:
-- `data.json`
+- `app/data.json`
 
 Para atualizar portfolio:
 - edite `translations.pt` e `translations.en`;
@@ -146,6 +152,7 @@ Para atualizar portfolio:
 ## Documentacao detalhada
 
 - `docs/ARCHITECTURE.md`
+- `docs/PROJECT_MAP.md`
 - `docs/DEPLOY_GITHUB_PAGES.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/CLOUDFLARE_WORKER_ME.md`

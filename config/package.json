@@ -1,0 +1,26 @@
+{
+  "name": "portfolio-terminal-gui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SPA portfolio with terminal and Windows 95 GUI",
+  "scripts": {
+    "build": "node ../scripts/build.mjs",
+    "dev": "node ../scripts/server.js",
+    "start": "node ../scripts/server.js",
+    "lint": "node ../scripts/lint.mjs",
+    "test": "node --test ../tests/*.test.mjs",
+    "test:soak": "node ../scripts/soak-tests.mjs",
+    "test:e2e": "playwright test --config ./playwright.config.mjs",
+    "test:e2e:headed": "playwright test --config ./playwright.config.mjs --headed",
+    "test:e2e:install": "playwright install chromium",
+    "project:map": "node ../scripts/project-map.mjs",
+    "worker:dev": "npx wrangler dev --config ./wrangler.jsonc",
+    "worker:deploy": "npx wrangler deploy --config ./wrangler.jsonc",
+    "worker:tail": "npx wrangler tail --config ./wrangler.jsonc"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "esbuild": "^0.25.0",
+    "sharp": "^0.34.5"
+  }
+}

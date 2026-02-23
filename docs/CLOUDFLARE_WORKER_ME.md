@@ -4,7 +4,7 @@ Este projeto foi preparado para usar um backend serverless gratuito via Cloudfla
 
 ## Arquivos adicionados
 
-- `wrangler.jsonc`
+- `config/wrangler.jsonc`
 - `worker/src/index.ts`
 
 ## O que o Worker faz
@@ -42,29 +42,29 @@ node -e "const c=require('crypto'); const s='SUA-SENHA-FORTE'; console.log(c.cre
 ## Deploy via CLI (local)
 
 ```bash
-npm run worker:deploy
+npm --prefix config run worker:deploy
 ```
 
 ## Deploy via Git integration (Cloudflare)
 
 No projeto de Worker no Cloudflare:
 
-- Build command: `npm run build` (opcional, para validar site)
-- Deploy command: `npx wrangler deploy`
+- Build command: `npm --prefix config run build` (opcional, para validar site)
+- Deploy command: `npx wrangler deploy --config ./config/wrangler.jsonc`
 
-Importante: agora existe `wrangler.jsonc` no root, entao `wrangler deploy` encontra o entrypoint em `worker/src/index.ts`.
+Importante: o arquivo de configuracao agora fica em `config/wrangler.jsonc`.
 
-Se o Cloudflare mostrar aviso de `Worker name mismatch`, alinhe o campo `name` no `wrangler.jsonc` com o nome esperado pelo projeto de Build conectado (neste repo: `portifolio-web`).
+Se o Cloudflare mostrar aviso de `Worker name mismatch`, alinhe o campo `name` no `config/wrangler.jsonc` com o nome esperado pelo projeto de Build conectado (neste repo: `portifolio-web`).
 
 ## Integracao no frontend
 
-No `index.html`, configure:
+No `app/index.html`, configure:
 
 ```html
 <meta name="me-api-url" content="https://SEU-WORKER.workers.dev" />
 ```
 
-O `main.js` adiciona automaticamente `/me` ao final da URL.
+O `app/main.js` adiciona automaticamente `/me` ao final da URL.
 
 ## Teste rapido
 

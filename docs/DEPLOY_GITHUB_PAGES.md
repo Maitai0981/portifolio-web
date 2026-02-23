@@ -17,31 +17,31 @@ Trigger:
 Etapas:
 1. Checkout.
 2. Setup Node 20.
-3. `npm ci`.
-4. `npm run build`.
+3. `npm ci` em `config/`.
+4. `npm run build` em `config/`.
 5. Upload de `dist/`.
 6. Deploy com `actions/deploy-pages`.
 
 ## Arquivos obrigatorios de suporte
 
 - `.nojekyll`
-- `404.html`
-- `robots.txt`
-- `sitemap.xml`
+- `app/404.html`
+- `app/robots.txt`
+- `app/sitemap.xml`
 
 ## SPA fallback
 
 Como funciona:
-- Pages retorna `404.html` em rota desconhecida.
-- `404.html` redireciona para `/?p=<rota-original>`.
-- `index.html` le `p`, restaura a URL e continua o boot da SPA.
+- Pages retorna `app/404.html` em rota desconhecida.
+- `app/404.html` redireciona para `/?p=<rota-original>`.
+- `app/index.html` le `p`, restaura a URL e continua o boot da SPA.
 
 ## Publicacao local para validar
 
 ```bash
-npm install
-npm run build
-npm run dev
+npm --prefix config install
+npm --prefix config run build
+npm --prefix config run dev
 ```
 
 Validar:
@@ -51,8 +51,8 @@ Validar:
 
 ## Checklist antes do push
 
-- `npm run build` sem erro;
+- `npm --prefix config run build` sem erro;
 - links principais funcionando;
-- `data.json` valido;
-- `index.html` com `__APP_VERSION__` atualizado;
+- `app/data.json` valido;
+- `app/index.html` com `__APP_VERSION__` atualizado;
 - sem arquivos locais desnecessarios no commit.

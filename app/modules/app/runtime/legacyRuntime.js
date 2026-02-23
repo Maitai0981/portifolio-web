@@ -3,16 +3,17 @@ import {
   getPrefixMatches,
   searchCommands,
   suggestCommands
-} from "./modules/commandSearch.js";
-import { createAppState, createDomRefs } from "./modules/core/appState.js";
+} from "../../commandSearch.js";
 import {
+  createAppState,
+  createDomRefs,
   THEMES,
   THEME_CLASSES,
   THEME_COLOR_MAP,
   getAsciiThemePreset,
   isAsciiThemeEnabled
-} from "./modules/core/themeConfig.js";
-import { GUI_WINDOW_COMMANDS } from "./modules/features/gui/config.js";
+} from "../../core/index.js";
+import { GUI_WINDOW_COMMANDS } from "../../features/gui/index.js";
 import {
   PET_ALWAYS_ACTIVE,
   PET_KEY_BURST_WINDOW_MS,
@@ -22,20 +23,20 @@ import {
   PET_REACTION_CLASS_BY_TYPE,
   PET_REACTION_COOLDOWN_MS,
   PET_REACTION_PRIORITY,
-  PET_TIMING
-} from "./modules/features/pet/config.js";
-import { PET_ASCII_SPRITE_SHEET } from "./modules/features/pet/spriteSheet.js";
-import { COMMANDS, HISTORY_MAX_ITEMS, TERMINAL_MAX_LINES } from "./modules/features/terminal/config.js";
+  PET_TIMING,
+  PET_ASCII_SPRITE_SHEET
+} from "../../features/pet/index.js";
 import {
+  COMMANDS,
+  HISTORY_MAX_ITEMS,
+  TERMINAL_MAX_LINES,
   getTypingRenderProfile,
   shouldTypeLinesByVolume
-} from "./modules/features/terminal/typing.js";
+} from "../../features/terminal/index.js";
 import {
   getMatrixQualityConfig,
   shouldRenderMatrixFrame,
-  updateMatrixPerformanceState
-} from "./modules/features/effects/matrixAdaptive.js";
-import {
+  updateMatrixPerformanceState,
   createFireTelemetryState,
   ensureFireGrid,
   getFireColumnWidth,
@@ -43,10 +44,10 @@ import {
   queueFireBurst,
   resolveFirePerformanceTier,
   runDoomFireFrame
-} from "./modules/features/effects/doomFire.js";
+} from "../../features/effects/index.js";
 
-(() => {
-  const INITIAL_MODE = "gui";
+export function startLegacyPortfolioRuntime(runtimeContext = {}) {
+  const INITIAL_MODE = runtimeContext.startupMode === "cli" ? "cli" : "gui";
 
   const state = createAppState({
     initialMode: INITIAL_MODE,
@@ -71,7 +72,7 @@ import {
   const commandIndex = buildCommandIndex(COMMANDS);
 
   const TRANSITION_MS = 120;
-  const APP_VERSION = window.__APP_VERSION__ || "dev";
+  const APP_VERSION = runtimeContext.appVersion || window.__APP_VERSION__ || "dev";
   const SW_CACHE_PREFIX = "portfolio-cache-";
   const SUPPORTED_LANGS = ["pt", "en"];
   const ME_API_TIMEOUT_MS = 14000;
@@ -5421,6 +5422,5 @@ import {
     setPetActive(state.pet.active || PET_ALWAYS_ACTIVE);
     prewarmGuiModules();
   }
-
   init();
-})();
+}

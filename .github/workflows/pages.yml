@@ -27,18 +27,23 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: config/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./config
 
       - name: Lint
         run: npm run lint
+        working-directory: ./config
 
       - name: Test
         run: npm test
+        working-directory: ./config
 
       - name: Build static site
         run: npm run build
+        working-directory: ./config
 
       - name: Lighthouse audit
         uses: treosh/lighthouse-ci-action@v12
@@ -46,7 +51,7 @@ jobs:
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 2
-          configPath: ./.lighthouserc.json
+          configPath: ./config/.lighthouserc.json
 
   deploy:
     needs: quality
@@ -63,12 +68,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: config/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./config
 
       - name: Build static site
         run: npm run build
+        working-directory: ./config
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

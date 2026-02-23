@@ -1,4 +1,6 @@
-import { expect, test } from "@playwright/test";
+import playwrightTest from "../../config/node_modules/@playwright/test/index.js";
+
+const { expect, test } = playwrightTest;
 
 async function openTerminal(page) {
   const icon = page.locator('.desktop-icon[data-command="terminal"]');

@@ -2,100 +2,98 @@
 
 ## Visao geral
 
-Aplicacao SPA com entrada em `index.html` e orquestracao principal em `main.js`.
+Aplicacao SPA com entrada em `app/index.html`.
+
+O entrypoint `app/main.js` agora e fino e delega toda a inicializacao para:
+- `app/modules/app/bootstrap.js`
+
+O bootstrap segue composição funcional:
+- `app/modules/app/runtime/runtime.js` (criação de contexto + runtime)
+- `app/modules/app/runtime/dependencies.js` (injeção de dependências)
+- `app/modules/app/runtime/legacyRuntime.js` (motor existente encapsulado)
+
+Isso reduz acoplamento no arquivo raiz e centraliza a orquestracao em um modulo de aplicacao dedicado.
 
 Modos de interface:
 - CLI (terminal);
-- GUI (janelas estilo retro).
+- GUI (desktop retro).
+
+## Estrutura por camadas
+
+- `app/main.js`
+  - composicao da aplicacao (apenas bootstrap)
+- `app/modules/app/`
+  - orquestracao do runtime e ciclo de vida
+  - runtime funcional com composição + injeção
+- `app/modules/core/`
+  - estado base, preferencias e presets de tema
+- `app/modules/features/`
+  - dominios funcionais (terminal, pet, gui, effects)
+- `app/modules/*.js`
+  - utilitarios e features independentes (busca de comandos, demos, jogos)
+- `app/styles.css` + `app/styles/`
+  - estilo em camadas (`base`, `components`, `themes`, `effects`)
+- `config/`
+  - configuracoes do workspace (`package.json`, `playwright`, `wrangler`, `lighthouse`)
+- `worker/src/`
+  - backend edge para endpoint `me`
 
 ## Fluxo de inicializacao
 
-1. `index.html` carrega metadados, CSS e `main.js`.
-2. `main.js` monta referencias de DOM e eventos.
-3. Conteudo e carregado de `data.json`.
-4. Idioma, tema e preferencias sao aplicados.
-5. Em producao, Service Worker e registrado.
+1. `app/index.html` carrega metadados, CSS e `app/main.js`.
+2. `app/main.js` executa `initPortfolioApp()`.
+3. `app/modules/app/bootstrap.js`:
+   - cria estado e refs de DOM;
+   - registra eventos;
+   - carrega `app/data.json`;
+   - aplica idioma/tema/preferencias;
+   - inicia terminal, GUI e pet;
+   - registra Service Worker em producao.
 
-## Camadas principais
+## Barrels e contratos
 
-- Apresentacao:
-  - `index.html`
-  - `styles.css`
-- Aplicacao (orquestracao):
-  - `main.js`
-- Core (estado e configuracao):
-  - `modules/core/appState.js`
-  - `modules/core/themeConfig.js`
-- Features:
-  - `modules/commandSearch.js`
-  - `modules/algorithmViewer.js`
-  - `modules/cnnDemo.js`
-  - `modules/snakeGame.js`
-- Dados:
-  - `data.json`
+Para reduzir imports diretos e padronizar domínios:
+- `app/modules/core/index.js`
+- `app/modules/features/gui/index.js`
+- `app/modules/features/pet/index.js`
+- `app/modules/features/terminal/index.js`
+- `app/modules/features/effects/index.js`
 
-## Estado e eventos
-
-`main.js` mantém apenas a coordenacao do estado.
-
-Estado-base e referencias de DOM foram extraidos para `modules/core/appState.js`:
-- modo atual (`cli`/`gui`);
-- historico de comandos;
-- idioma;
-- tema;
-- estado de janelas;
-- preferencias persistidas em `localStorage`.
-
-Configuracoes de tema e presets de animacao ASCII foram extraidos para `modules/core/themeConfig.js`.
-
-Eventos principais:
-- teclado no terminal;
-- clique/duplo clique em icones desktop;
-- atalhos globais;
-- interacoes de janela.
+Esses arquivos funcionam como contratos publicos de cada camada.
 
 ## Conteudo e i18n
 
-`data.json` contem:
-- `meta`;
-- traducoes `pt` e `en`;
-- textos de secoes;
-- projetos;
-- educacao;
-- links sociais;
+`app/data.json` concentra:
+- metadata;
+- traducoes (`pt` e `en`);
+- secoes de conteudo;
+- lista de projetos/educacao/social;
 - help e commandHelp.
 
-Fallback local:
-- se `data.json` falhar, `main.js` monta conteudo minimo de fallback.
+Se `app/data.json` falhar, o bootstrap aplica fallback local minimo para manter o app operacional.
 
 ## Service Worker
 
-Arquivo: `service-worker.js`.
+Arquivo: `app/service-worker.js`.
 
-Estrategia:
-- `networkFirst` para navegacao e JSON;
-- `staleWhileRevalidate` para estaticos.
+Estrategias:
+- `networkFirst` para navegacao e dados;
+- `staleWhileRevalidate` para assets estaticos.
 
 Detalhes:
-- cleanup de caches antigos por prefixo;
-- fallback para `index.html` em navegacao offline;
-- em `localhost`, SW e removido para evitar ruido de desenvolvimento.
+- versionamento de cache por prefixo;
+- limpeza de caches antigos;
+- fallback para `index.html` offline;
+- desregistro automatico em `localhost`.
 
-## Build
+## Build e deploy
 
-Arquivo: `scripts/build.mjs`.
+- Build: `scripts/build.mjs`
+  - limpa `dist/`;
+  - copia arquivos do `app/` definidos em `COPY_LIST`;
+  - injeta versao de build;
+  - minifica JS/CSS com `esbuild`.
 
-Pipeline:
-- limpa `dist/`;
-- copia arquivos definidos em `COPY_LIST`;
-- minifica `.js` e `.css` com `esbuild`.
-
-## Deploy
-
-Workflow: `.github/workflows/pages.yml`.
-
-Resumo:
-- `npm ci`;
-- `npm run build`;
-- upload de `dist/`;
-- deploy no GitHub Pages.
+- Deploy:
+  - GitHub Pages via `.github/workflows/pages.yml`;
+  - Cloudflare Worker via `config/wrangler.jsonc` e `worker/src/index.ts`.
