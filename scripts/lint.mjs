@@ -1,14 +1,18 @@
 import { readFile, readdir, stat } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { transform } from "esbuild";
 
-const ROOT = process.cwd();
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(SCRIPT_DIR, "..");
+const require = createRequire(import.meta.url);
+const { transform } = require(path.join(ROOT, "config/node_modules/esbuild"));
 const JS_TARGETS = [
-  "main.js",
-  "service-worker.js",
+  "app/main.js",
+  "app/service-worker.js",
+  "app/modules",
   "scripts/build.mjs",
   "scripts/lint.mjs",
-  "modules",
   "worker"
 ];
 
@@ -55,7 +59,7 @@ async function lintJs(filePath) {
 }
 
 async function lintHtml() {
-  const html = await readFile(path.join(ROOT, "index.html"), "utf8");
+  const html = await readFile(path.join(ROOT, "app", "index.html"), "utf8");
   const checks = [
     { pattern: /<title>.+<\/title>/i, message: "index.html is missing <title>" },
     {

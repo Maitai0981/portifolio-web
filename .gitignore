@@ -3,3 +3,10 @@ dist/
 playwright-report/
 test-results/
 tests/e2e/*-snapshots/*-win32.png
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

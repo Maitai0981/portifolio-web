@@ -18,18 +18,24 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: config/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./config
 
       - name: Lint
         run: npm run lint
+        working-directory: ./config
 
       - name: Test
         run: npm test
+        working-directory: ./config
 
       - name: Build
         run: npm run build
+        working-directory: ./config
 
       - name: Worker dry run
-        run: npx wrangler deploy --dry-run
+        run: npx wrangler deploy --dry-run --config ./wrangler.jsonc
+        working-directory: ./config

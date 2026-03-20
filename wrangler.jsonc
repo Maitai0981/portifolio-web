@@ -1,12 +1,14 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "portifolio-web",
-  "main": "worker/src/index.ts",
-  "compatibility_date": "2026-02-20",
-  "ai": {
-    "binding": "AI"
+  "compatibility_date": "2025-09-27",
+  "observability": {
+    "enabled": true
   },
-  "vars": {
-    "ALLOWED_ORIGIN": "https://maitai0981.github.io,http://localhost:8080,http://127.0.0.1:8080",
-    "GITHUB_USERNAME": "Maitai0981"
-  }
+  "assets": {
+    "directory": "app"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
 }

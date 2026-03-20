@@ -2,19 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
-const root = process.cwd();
-const dataPath = path.join(root, "data.json");
-const indexPath = path.join(root, "index.html");
-const mainPath = path.join(root, "main.js");
-const manifestPath = path.join(root, "manifest.webmanifest");
-const robotsPath = path.join(root, "robots.txt");
-const sitemapPath = path.join(root, "sitemap.xml");
-const stylesPath = path.join(root, "styles.css");
+const testDir = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(testDir, "..");
+const appRoot = path.join(root, "app");
+const dataPath = path.join(appRoot, "data.json");
+const indexPath = path.join(appRoot, "index.html");
+const mainPath = path.join(appRoot, "main.js");
+const bootstrapPath = path.join(appRoot, "modules", "app", "bootstrap.js");
+const runtimeIndexPath = path.join(appRoot, "modules", "app", "runtime", "index.js");
+const runtimeCorePath = path.join(appRoot, "modules", "app", "runtime", "runtime.js");
+const runtimeLegacyPath = path.join(appRoot, "modules", "app", "runtime", "legacyRuntime.js");
+const modulesFacadePath = path.join(appRoot, "modules", "index.js");
+const featuresFacadePath = path.join(appRoot, "modules", "features", "index.js");
+const projectMapDocPath = path.join(root, "docs", "PROJECT_MAP.md");
+const manifestPath = path.join(appRoot, "manifest.webmanifest");
+const robotsPath = path.join(appRoot, "robots.txt");
+const sitemapPath = path.join(appRoot, "sitemap.xml");
+const stylesPath = path.join(appRoot, "styles.css");
 
 const data = JSON.parse(await readFile(dataPath, "utf8"));
 const indexHtml = await readFile(indexPath, "utf8");
 const mainSource = await readFile(mainPath, "utf8");
+const bootstrapSource = await readFile(bootstrapPath, "utf8");
+const runtimeIndexSource = await readFile(runtimeIndexPath, "utf8");
+const runtimeCoreSource = await readFile(runtimeCorePath, "utf8");
+const runtimeLegacySource = await readFile(runtimeLegacyPath, "utf8");
+const modulesFacadeSource = await readFile(modulesFacadePath, "utf8");
+const featuresFacadeSource = await readFile(featuresFacadePath, "utf8");
+const projectMapDocSource = await readFile(projectMapDocPath, "utf8");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const robots = await readFile(robotsPath, "utf8");
 const sitemap = await readFile(sitemapPath, "utf8");
@@ -63,18 +80,26 @@ test("index.html contém contratos estruturais da aplicação", () => {
   });
 });
 
-test("main.js segue arquitetura modular de core", () => {
-  assert.match(mainSource, /from "\.\/modules\/core\/appState\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/core\/themeConfig\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/gui\/config\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/terminal\/config\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/terminal\/typing\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/pet\/config\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/pet\/spriteSheet\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/effects\/matrixAdaptive\.js"/);
-  assert.match(mainSource, /from "\.\/modules\/features\/effects\/doomFire\.js"/);
-  assert.match(mainSource, /createAppState\(/);
-  assert.match(mainSource, /createDomRefs\(/);
+test("entrypoint main.js delega bootstrap para módulo de aplicação", () => {
+  assert.match(mainSource, /from "\.\/modules\/app\/bootstrap\.js"/);
+  assert.match(mainSource, /initPortfolioApp\(\)/);
+});
+
+test("bootstrap.js faz composição funcional do runtime", () => {
+  assert.match(bootstrapSource, /from "\.\/runtime\/index\.js"/);
+  assert.match(bootstrapSource, /createPortfolioDependencies\(/);
+  assert.match(bootstrapSource, /createPortfolioRuntime\(/);
+  assert.match(bootstrapSource, /runtime\.start\(\)/);
+});
+
+test("runtime modular separa contratos e motor legado", () => {
+  assert.match(runtimeIndexSource, /from "\.\/dependencies\.js"/);
+  assert.match(runtimeIndexSource, /from "\.\/runtime\.js"/);
+  assert.match(runtimeIndexSource, /from "\.\/legacyRuntime\.js"/);
+  assert.match(runtimeCoreSource, /export function createPortfolioRuntime/);
+  assert.match(runtimeLegacySource, /from "\.\.\/\.\.\/core\/index\.js"/);
+  assert.match(runtimeLegacySource, /from "\.\.\/\.\.\/features\/effects\/index\.js"/);
+  assert.match(runtimeLegacySource, /createAppState\(/);
 });
 
 test("index.html mantém versão consistente entre APP_VERSION e assets cacheados", () => {
@@ -114,4 +139,18 @@ test("styles.css usa arquitetura em camadas via imports", () => {
   assert.match(stylesSource, /@import url\("\.\/styles\/components\.css"\)\s+layer\(components\);/i);
   assert.match(stylesSource, /@import url\("\.\/styles\/themes\.css"\)\s+layer\(themes\);/i);
   assert.match(stylesSource, /@import url\("\.\/styles\/effects\.css"\)\s+layer\(effects\);/i);
+});
+
+test("facades de módulos expõem pontos centrais de acesso", () => {
+  assert.match(modulesFacadeSource, /from "\.\/core\/index\.js"/);
+  assert.match(modulesFacadeSource, /from "\.\/features\/index\.js"/);
+  assert.match(featuresFacadeSource, /from "\.\/terminal\/index\.js"/);
+  assert.match(featuresFacadeSource, /from "\.\/pet\/index\.js"/);
+  assert.match(featuresFacadeSource, /from "\.\/effects\/index\.js"/);
+});
+
+test("documentação possui mapa de acesso do projeto", () => {
+  assert.match(projectMapDocSource, /# Mapa de Projeto/);
+  assert.match(projectMapDocSource, /## Entrypoints/);
+  assert.match(projectMapDocSource, /## Comandos de acesso rapido/);
 });

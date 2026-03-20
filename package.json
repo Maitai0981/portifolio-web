@@ -1,25 +1,27 @@
 {
-  "name": "portfolio-terminal-gui",
-  "version": "1.0.0",
+  "name": "portifolio-web-root",
   "private": true,
-  "description": "SPA portfolio with terminal and Windows 95 GUI",
+  "description": "Root command launcher for organized app/config layout",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "dev": "node server.js",
-    "start": "node server.js",
-    "lint": "node scripts/lint.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "test:soak": "node scripts/soak-tests.mjs",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:install": "playwright install chromium",
-    "worker:dev": "npx wrangler dev",
-    "worker:deploy": "npx wrangler deploy",
-    "worker:tail": "npx wrangler tail"
+    "install:config": "npm --prefix config install",
+    "dev": "npm --prefix config run dev",
+    "start": "npm --prefix config run start",
+    "lint": "npm --prefix config run lint",
+    "test": "npm --prefix config test",
+    "test:soak": "npm --prefix config run test:soak",
+    "test:e2e": "npm --prefix config run test:e2e",
+    "test:e2e:headed": "npm --prefix config run test:e2e:headed",
+    "test:e2e:install": "npm --prefix config run test:e2e:install",
+    "build": "npm --prefix config run build",
+    "project:map": "npm --prefix config run project:map",
+    "worker:dev": "npm --prefix config run worker:dev",
+    "worker:deploy": "npm --prefix config run worker:deploy",
+    "worker:tail": "npm --prefix config run worker:tail",
+    "postinstall": "npm run install:config",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "esbuild": "^0.25.0",
-    "sharp": "^0.34.5"
+    "wrangler": "^4.68.0"
   }
 }

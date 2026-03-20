@@ -1,9 +1,14 @@
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { transform } from "esbuild";
 
-const ROOT = process.cwd();
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(SCRIPT_DIR, "..");
+const APP_ROOT = path.join(ROOT, "app");
 const DIST = path.join(ROOT, "dist");
+const require = createRequire(import.meta.url);
+const { transform } = require(path.join(ROOT, "config/node_modules/esbuild"));
 const COPY_LIST = [
   ".nojekyll",
   "404.html",
@@ -32,7 +37,7 @@ function getBuildVersion() {
 }
 
 async function safeCopy(relativePath) {
-  const source = path.join(ROOT, relativePath);
+  const source = path.join(APP_ROOT, relativePath);
   const destination = path.join(DIST, relativePath);
   await cp(source, destination, { recursive: true });
 }

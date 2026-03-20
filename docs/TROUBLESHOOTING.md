@@ -6,7 +6,7 @@ Causa:
 - script de live reload externo (extensao/preview), nao parte do projeto.
 
 Como resolver:
-1. Rodar com `npm run dev`.
+1. Rodar com `npm --prefix config run dev`.
 2. Desativar live reload do preview/extensao.
 3. Recarregar com `Ctrl+F5`.
 
@@ -34,9 +34,9 @@ Observacao:
 
 ## Rota interna da SPA abre 404
 
-1. Confirmar existencia de `404.html` na raiz publicada.
-2. Confirmar que `index.html` contem rotina de restauracao de `?p=`.
-3. Confirmar `APP_BASE_PATH` correto em `404.html`:
+1. Confirmar existencia de `app/404.html` na raiz publicada.
+2. Confirmar que `app/index.html` contem rotina de restauracao de `?p=`.
+3. Confirmar `APP_BASE_PATH` correto em `app/404.html`:
    - atual: `/portifolio-web/`
 
 ## Modelo CNN nao carrega

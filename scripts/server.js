@@ -4,7 +4,7 @@ const path = require("path");
 const { URL } = require("url");
 
 const PORT = Number(process.env.PORT) || 8080;
-const ROOT = __dirname;
+const APP_ROOT = path.resolve(__dirname, "../app");
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -16,10 +16,13 @@ const MIME_TYPES = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
-  ".txt": "text/plain; charset=utf-8"
+  ".txt": "text/plain; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".webp": "image/webp",
+  ".pdf": "application/pdf"
 };
 
-function logRequest(req, res, statusCode, filePath) {
+function logRequest(req, statusCode, filePath) {
   const timestamp = new Date().toISOString().replace("T", " ").replace("Z", "");
   const line = `[${timestamp}] ${req.method} ${req.url} ${statusCode} ${filePath}`;
   console.log(line);
@@ -35,17 +38,17 @@ const server = http.createServer((req, res) => {
   let pathname = decodeURIComponent(url.pathname);
   if (pathname === "/") pathname = "/index.html";
 
-  const filePath = path.normalize(path.join(ROOT, pathname));
-  if (!filePath.startsWith(ROOT)) {
+  const filePath = path.normalize(path.join(APP_ROOT, pathname));
+  if (!filePath.startsWith(APP_ROOT)) {
     sendError(res, 403, "Forbidden");
-    logRequest(req, res, 403, "BLOCKED");
+    logRequest(req, 403, "BLOCKED");
     return;
   }
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       sendError(res, 404, "Not Found");
-      logRequest(req, res, 404, filePath);
+      logRequest(req, 404, filePath);
       return;
     }
 
@@ -60,11 +63,11 @@ const server = http.createServer((req, res) => {
     const stream = fs.createReadStream(filePath);
     stream.on("error", () => {
       sendError(res, 500, "Internal Server Error");
-      logRequest(req, res, 500, filePath);
+      logRequest(req, 500, filePath);
     });
 
     stream.on("end", () => {
-      logRequest(req, res, 200, filePath);
+      logRequest(req, 200, filePath);
     });
 
     stream.pipe(res);
