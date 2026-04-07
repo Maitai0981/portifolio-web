@@ -3738,10 +3738,11 @@ import {
   }
 
   function colorizeEducationLine(entry, index) {
-    const { institution, years } = normalizeEducationEntry(entry);
+    const { institution, course, years } = normalizeEducationEntry(entry);
     const colors = [32, 34, 31];
     const baseColor = colors[index] ?? 37;
-    const left = institution ? ansiColor(baseColor, institution) : "";
+    let left = institution ? ansiColor(baseColor, institution) : "";
+    if (course) left += ` ${ansiColor(36, `(${course})`)}`;
     const right = years ? ansiColor(35, years) : "";
     if (left && right) {
       return `${left} | ${right}`;
@@ -3753,12 +3754,13 @@ import {
     if (entry && typeof entry === "object") {
       return {
         institution: entry.institution || entry.name || "",
+        course: entry.course || "",
         years: entry.years || entry.period || "",
         logo: entry.logo || entry.image || entry.cover || ""
       };
     }
     const { institution, years } = splitEducationLine(entry);
-    return { institution, years, logo: "" };
+    return { institution, course: "", years, logo: "" };
   }
 
   function splitEducationLine(line) {
@@ -5034,6 +5036,7 @@ import {
   function appendAboutContent(wrapper, content) {
     const meta = content.meta || {};
     const keywords = content.aboutKeywords || [];
+
     const header = document.createElement("div");
     header.className = "about-header";
     const photo = document.createElement("img");
@@ -5045,23 +5048,52 @@ import {
     if (meta.name || meta.role || meta.location) {
       const info = document.createElement("div");
       info.className = "about-info";
+
       const name = document.createElement("div");
       name.className = "about-name";
       name.textContent = meta.name || "";
+
       const role = document.createElement("div");
       role.className = "about-role";
-      role.textContent = [meta.role, meta.location].filter(Boolean).join(" • ");
+      role.textContent = meta.role || "";
+
+      const location = document.createElement("div");
+      location.className = "about-location";
+      location.textContent = meta.location || "";
+
       info.append(name, role);
+      if (meta.location) info.append(location);
       header.append(info);
     }
 
     wrapper.append(header);
 
+    const bioSection = document.createElement("div");
+    bioSection.className = "about-bio";
     (content.about || []).forEach((line) => {
       const p = document.createElement("p");
       appendHighlightedText(p, String(line), keywords);
-      wrapper.append(p);
+      bioSection.append(p);
     });
+    wrapper.append(bioSection);
+
+    if (keywords.length) {
+      const skillsSection = document.createElement("div");
+      skillsSection.className = "about-skills";
+      const skillsLabel = document.createElement("div");
+      skillsLabel.className = "about-skills-label";
+      skillsLabel.textContent = "Stack";
+      const skillsList = document.createElement("div");
+      skillsList.className = "skills-list";
+      keywords.forEach((kw) => {
+        const tag = document.createElement("span");
+        tag.className = "skill-tag";
+        tag.textContent = kw;
+        skillsList.append(tag);
+      });
+      skillsSection.append(skillsLabel, skillsList);
+      wrapper.append(skillsSection);
+    }
   }
 
   function appendRowsFromLines(wrapper, lines = []) {
@@ -5180,43 +5212,54 @@ import {
       return;
     }
 
-    lines.forEach((entry, index) => {
-      const { institution, years, logo } = normalizeEducationEntry(entry);
-      const row = document.createElement("div");
-      const colorIndex = (index % 3) + 1;
-      row.className = `edu-item edu-item-${colorIndex}`;
+    wrapper.classList.add("edu-list");
 
+    lines.forEach((entry) => {
+      const { institution, course, years, logo } = normalizeEducationEntry(entry);
+      const card = document.createElement("div");
+      card.className = "edu-card";
+
+      const logoWrap = document.createElement("div");
+      logoWrap.className = "edu-logo-wrap";
       if (logo) {
         const img = document.createElement("img");
         img.className = "edu-logo";
         img.src = logo;
-        img.alt = institution ? `Logo ${institution}` : "Logo da instituicao";
+        img.alt = institution ? `Logo ${institution}` : "";
         img.loading = "lazy";
-        row.append(img);
+        logoWrap.append(img);
+      } else {
+        const initials = document.createElement("div");
+        initials.className = "edu-logo-initials";
+        initials.textContent = (institution || "?").charAt(0).toUpperCase();
+        logoWrap.append(initials);
       }
+      card.append(logoWrap);
 
-      const textWrap = document.createElement("div");
-      textWrap.className = "edu-text";
+      const body = document.createElement("div");
+      body.className = "edu-body";
 
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "edu-name";
-      nameSpan.textContent = institution || String(entry || "");
-      textWrap.append(nameSpan);
+      const nameEl = document.createElement("div");
+      nameEl.className = "edu-name";
+      nameEl.textContent = institution || String(entry || "");
+      body.append(nameEl);
+
+      if (course) {
+        const courseEl = document.createElement("div");
+        courseEl.className = "edu-course";
+        courseEl.textContent = course;
+        body.append(courseEl);
+      }
 
       if (years) {
-        const sep = document.createElement("span");
-        sep.className = "edu-sep";
-        sep.textContent = " | ";
-        textWrap.append(sep);
-
-        const yearsSpan = document.createElement("span");
-        yearsSpan.className = "edu-years";
-        yearsSpan.textContent = years;
-        textWrap.append(yearsSpan);
+        const yearsEl = document.createElement("div");
+        yearsEl.className = "edu-years";
+        yearsEl.textContent = years;
+        body.append(yearsEl);
       }
 
-      row.append(textWrap);
-      wrapper.append(row);
+      card.append(body);
+      wrapper.append(card);
     });
   }
 
@@ -5233,15 +5276,19 @@ import {
     const curated = projects.slice(0, 6);
     curated.forEach((project, index) => {
       const card = document.createElement("div");
-      card.className = "gui-card project-card";
+      const accentIndex = (index % 5) + 1;
+      card.className = `gui-card project-card project-accent-${accentIndex}`;
 
       if (project.cover) {
+        const coverWrap = document.createElement("div");
+        coverWrap.className = "project-cover-wrap";
         const cover = document.createElement("img");
         cover.className = "project-cover";
         cover.src = project.cover;
         cover.alt = project.name ? `Capa do projeto ${project.name}` : "Capa do projeto";
         cover.loading = "lazy";
-        card.append(cover);
+        coverWrap.append(cover);
+        card.append(coverWrap);
       }
 
       const header = document.createElement("div");

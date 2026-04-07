@@ -160,7 +160,14 @@
       ],
       "education": [
         {
+          "institution": "UEL - Universidade Estadual de Londrina",
+          "course": "Fisica",
+          "years": "2025 - agora",
+          "logo": "assets/edu/UEL.png"
+        },
+        {
           "institution": "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas, IFAM Campus Parintins",
+          "course": "Ensino Médio Técnico em Informática",
           "years": "2023 - 2025",
           "logo": "assets/edu/ifam.png"
         },
@@ -261,7 +268,7 @@
       ],
       "bannerMobile": [
         "\u001b[33mMatheus Saragoca\u001b[0m",
-        "\u001b[90mType \u001b[0m\u001b[36mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m",
+        "\u001b[90mType \u001b[0m\u001b[33mhelp\u001b[0m\u001b[90m to list commands.\u001b[0m",
         "\u001b[90mType \u001b[0m\u001b[36mgui\u001b[0m\u001b[90m to open the graphical interface.\u001b[0m"
       ],
       "about": [
@@ -312,6 +319,10 @@
             "Modeled availability and avoided booking conflicts.",
             "Separated user and owner flows with permissions.",
             "Integrated payments and notifications."
+          ],
+          "stack": [
+            "React Native",
+            "Expo"
           ],
           "aliases": [
             "supasport",
@@ -392,12 +403,20 @@
       ],
       "education": [
         {
+          "institution": "UEL - Universidade Estadual de Londrina",
+          "course": "Physics",
+          "years": "2025 - present",
+          "logo": "assets/edu/UEL.png"
+        },
+        {
           "institution": "IFAM - Federal Institute of Amazonas (Parintins)",
+          "course": "Informatics",
           "years": "2023 - 2025",
           "logo": "assets/edu/ifam.png"
         },
         {
           "institution": "SESI/SENAI Padre Francisco Luppino",
+          "course": "Technical High School",
           "years": "2017 - 2022",
           "logo": "assets/edu/sesi-senai.png"
         },
