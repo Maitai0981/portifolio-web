@@ -3,3 +3,12 @@ dist/
 playwright-report/
 test-results/
 tests/e2e/*-snapshots/*-win32.png
+.claude/
+.wrangler/
+wrangler.config.js
+wrangler.toml
+*.log
+*.env
+*.local
+*.pem
+*.key

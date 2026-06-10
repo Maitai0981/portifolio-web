@@ -156,13 +156,110 @@
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]
+        },
+        {
+          "name": "get-shop",
+          "description": "API que converte pedidos recebidos via WhatsApp e arquivos CSV em registros de estoque estruturados automaticamente.",
+          "details": "Back-end em Python e FastAPI com endpoints REST para ingestao e gestao de inventario a partir de fontes semi-estruturadas como mensagens e planilhas.",
+          "cover": "assets/covers/get-shop.svg",
+          "lessons": [
+            "Parsing de formatos semi-estruturados (mensagens WhatsApp, CSV).",
+            "Design de APIs REST com validacao automatica via Pydantic.",
+            "Gestao de estado de estoque com controle de erros robusto."
+          ],
+          "stack": [
+            "Python",
+            "FastAPI"
+          ],
+          "aliases": [
+            "get-shop",
+            "estoque",
+            "fastapi",
+            "inventario",
+            "whatsapp"
+          ],
+          "links": []
+        },
+        {
+          "name": "PW_100",
+          "description": "Monitor de arbitragem de criptomoedas com rastreamento de precos em tempo real e alertas automaticos entre exchanges.",
+          "details": "Plataforma full-stack para deteccao de oportunidades de arbitragem, com visualizacao de graficos ao vivo e sistema de alertas configuravel.",
+          "cover": "assets/covers/pw100.svg",
+          "lessons": [
+            "Sincronizacao de dados em tempo real com polling e WebSockets.",
+            "Modelagem de series temporais em MongoDB.",
+            "Integracao com APIs de exchanges com tratamento de rate limiting."
+          ],
+          "stack": [
+            "Python",
+            "Express.js",
+            "Next.js",
+            "MongoDB"
+          ],
+          "aliases": [
+            "pw100",
+            "crypto",
+            "arbitragem",
+            "criptomoedas",
+            "monitor"
+          ],
+          "links": []
+        },
+        {
+          "name": "Rodando Moto Center",
+          "description": "Sistema web completo para gestao de uma moto center: clientes, ordens de servico, estoque e financeiro.",
+          "details": "Plataforma full-stack com back-end Spring Boot, front-end React e banco PostgreSQL containerizado com Docker, com deploy ao vivo no Vercel.",
+          "cover": "assets/covers/rodando.svg",
+          "lessons": [
+            "Arquitetura REST com Spring Boot e JPA/Hibernate.",
+            "Containerizacao com Docker Compose para dev e producao.",
+            "Deploy full-stack com separacao de responsabilidades entre servicos."
+          ],
+          "stack": [
+            "Spring Boot",
+            "React",
+            "PostgreSQL",
+            "Docker"
+          ],
+          "aliases": [
+            "rodando",
+            "moto center",
+            "oficina",
+            "spring boot",
+            "gestao"
+          ],
+          "links": []
+        },
+        {
+          "name": "Mundo de Libras",
+          "description": "Site educacional para aprendizado de Lingua Brasileira de Sinais (Libras) com conteudo organizado por categorias tematicas.",
+          "details": "Plataforma web com navegacao por temas — saudacoes, tecnologia, turismo, cultura e agricultura — para facilitar o aprendizado inclusivo de Libras.",
+          "cover": "assets/covers/site-libras.svg",
+          "lessons": [
+            "Estruturacao de conteudo acessivel e navegavel para diferentes publicos.",
+            "Organizacao tematica de vocabulario em JavaScript puro.",
+            "Foco em acessibilidade e inclusao digital desde o design."
+          ],
+          "stack": [
+            "HTML5",
+            "CSS3",
+            "JavaScript"
+          ],
+          "aliases": [
+            "libras",
+            "lingua de sinais",
+            "educacao",
+            "acessibilidade",
+            "mundo de libras"
+          ],
+          "links": []
         }
       ],
       "education": [
         {
           "institution": "UEL - Universidade Estadual de Londrina",
           "course": "Fisica",
-          "years": "2025 - agora",
+          "years": "2026 - agora",
           "logo": "assets/edu/UEL.png"
         },
         {
@@ -186,7 +283,8 @@
         "Curriculo: https://drive.google.com/file/d/1GelNq-_nek3QaswELxQqkk-o_1Ohp7c9/view?usp=sharing"
       ],
       "email": [
-        "Contato: matheussaragoca2017@gmail.com"
+        "Gmail: matheussaragoca2017@gmail.com",
+        "UEL: matheus.saragoca@uel.br"
       ],
       "help": [
         "Comandos disponiveis:",
@@ -399,6 +497,102 @@
           "links": [
             "https://github.com/Maitai0981/Crud_BD_02"
           ]
+        },
+        {
+          "name": "get-shop",
+          "description": "API that converts WhatsApp messages and CSV files into structured inventory records automatically.",
+          "details": "Python and FastAPI back-end with REST endpoints for inventory ingestion and management from semi-structured sources such as messages and spreadsheets.",
+          "cover": "assets/covers/get-shop.svg",
+          "lessons": [
+            "Parsing semi-structured formats (WhatsApp messages, CSV).",
+            "REST API design with automatic validation via Pydantic.",
+            "Inventory state management with robust error handling."
+          ],
+          "stack": [
+            "Python",
+            "FastAPI"
+          ],
+          "aliases": [
+            "get-shop",
+            "inventory",
+            "fastapi",
+            "whatsapp"
+          ],
+          "links": []
+        },
+        {
+          "name": "PW_100",
+          "description": "Cryptocurrency arbitrage monitor with real-time price tracking and automatic alerts across exchanges.",
+          "details": "Full-stack platform for detecting arbitrage opportunities, with live chart visualization and a configurable alert system.",
+          "cover": "assets/covers/pw100.svg",
+          "lessons": [
+            "Real-time data sync with polling and WebSockets.",
+            "Time-series data modeling in MongoDB.",
+            "Exchange API integration with rate limiting handling."
+          ],
+          "stack": [
+            "Python",
+            "Express.js",
+            "Next.js",
+            "MongoDB"
+          ],
+          "aliases": [
+            "pw100",
+            "crypto",
+            "arbitrage",
+            "cryptocurrency",
+            "monitor"
+          ],
+          "links": []
+        },
+        {
+          "name": "Rodando Moto Center",
+          "description": "Full-stack web system for managing a motorcycle center: customers, service orders, inventory, and financials.",
+          "details": "Full-stack platform with Spring Boot back-end, React front-end, and PostgreSQL database containerized with Docker, deployed live on Vercel.",
+          "cover": "assets/covers/rodando.svg",
+          "lessons": [
+            "REST architecture with Spring Boot and JPA/Hibernate.",
+            "Containerization with Docker Compose for dev and production.",
+            "Full-stack deployment with proper service separation."
+          ],
+          "stack": [
+            "Spring Boot",
+            "React",
+            "PostgreSQL",
+            "Docker"
+          ],
+          "aliases": [
+            "rodando",
+            "moto center",
+            "workshop",
+            "spring boot",
+            "management"
+          ],
+          "links": []
+        },
+        {
+          "name": "Mundo de Libras",
+          "description": "Educational website for learning Brazilian Sign Language (Libras) with content organized by thematic categories.",
+          "details": "Web platform with navigation by theme — greetings, technology, tourism, culture, and agriculture — to facilitate inclusive Libras learning.",
+          "cover": "assets/covers/site-libras.svg",
+          "lessons": [
+            "Structuring accessible content for diverse audiences.",
+            "Thematic vocabulary organization in plain JavaScript.",
+            "Accessibility and digital inclusion as core design principles."
+          ],
+          "stack": [
+            "HTML5",
+            "CSS3",
+            "JavaScript"
+          ],
+          "aliases": [
+            "libras",
+            "sign language",
+            "education",
+            "accessibility",
+            "mundo de libras"
+          ],
+          "links": []
         }
       ],
       "education": [
@@ -430,7 +624,8 @@
         "Resume: https://drive.google.com/file/d/1GelNq-_nek3QaswELxQqkk-o_1Ohp7c9/view?usp=sharing"
       ],
       "email": [
-        "Contact: matheussaragoca2017@gmail.com"
+        "Gmail: matheussaragoca2017@gmail.com",
+        "UEL: matheus.saragoca@uel.br"
       ],
       "help": [
         "Available commands:",

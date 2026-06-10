@@ -70,7 +70,7 @@ import {
   });
   const commandIndex = buildCommandIndex(COMMANDS);
 
-  const TRANSITION_MS = 120;
+  const TRANSITION_MS = 240;
   const APP_VERSION = window.__APP_VERSION__ || "dev";
   const SW_CACHE_PREFIX = "portfolio-cache-";
   const SUPPORTED_LANGS = ["pt", "en"];
@@ -478,6 +478,118 @@ import {
     lastTime: 0
   };
 
+  const STACK_TOOLTIPS = {
+    pt: {
+      python:               "Linguagem principal para ciencia de dados, IA e automacao.",
+      javascript:           "Linguagem principal da web; usada em todo este portfolio.",
+      typescript:           "JavaScript com tipagem estatica — mais seguro e escalavel.",
+      sql:                  "Linguagem para consulta e manipulacao de bancos de dados relacionais.",
+      "c++":                "Linguagem de alto desempenho; usada em programacao competitiva.",
+      java:                 "Linguagem orientada a objetos robusta para back-end corporativo.",
+      kotlin:               "Linguagem moderna JVM/Android, concisa e com seguranca de tipos.",
+      react:                "Biblioteca JS para interfaces baseadas em componentes reutilizaveis.",
+      reactnative:          "React para dispositivos moveis — iOS e Android com codigo compartilhado.",
+      expo:                 "Plataforma e toolchain que simplifica o desenvolvimento React Native.",
+      nextjs:               "Framework React com SSR, rotas e otimizacoes de producao built-in.",
+      expressjs:            "Framework Node.js minimalista para APIs e servidores HTTP.",
+      springboot:           "Framework Java para back-end robusto, com IoC e autoconfiguracoes.",
+      django:               "Framework web Python completo, com ORM, auth e admin inclusos.",
+      djangorestframework:  "Extensao do Django para construcao de APIs REST padronizadas.",
+      flask:                "Microframework Python leve para APIs e prototipagem rapida.",
+      fastapi:              "Framework Python moderno para APIs REST com tipagem e docs automaticas.",
+      tensorflow:           "Framework de ML do Google; o modelo CNN deste portfolio usa TensorFlow.",
+      pandas:               "Biblioteca Python para manipulacao e analise de dados tabulares.",
+      numpy:                "Computacao numerica eficiente com arrays n-dimensionais em Python.",
+      postgresql:           "Banco de dados relacional open-source, robusto e extensivel.",
+      mongodb:              "Banco de dados NoSQL orientado a documentos, flexivel e escalavel.",
+      docker:               "Plataforma de containerizacao para empacotamento e deploy consistente.",
+      mercadopago:          "SDK/API de pagamentos para integracao com o ecossistema MercadoPago.",
+      html5:                "Linguagem de marcacao para estrutura de paginas web modernas.",
+      css3:                 "Linguagem de estilo para layout, animacoes e design visual na web."
+    },
+    en: {
+      python:               "Primary language for data science, AI, and automation.",
+      javascript:           "Core language of the web; used throughout this portfolio.",
+      typescript:           "JavaScript with static typing — safer and more scalable.",
+      sql:                  "Language for querying and manipulating relational databases.",
+      "c++":                "High-performance language used in competitive programming.",
+      java:                 "Robust object-oriented language for enterprise back-end.",
+      kotlin:               "Modern JVM/Android language, concise and type-safe.",
+      react:                "JS library for building reusable component-based interfaces.",
+      reactnative:          "React for mobile — iOS and Android with shared code.",
+      expo:                 "Platform and toolchain that simplifies React Native development.",
+      nextjs:               "React framework with SSR, routing, and production optimizations built-in.",
+      expressjs:            "Minimalist Node.js framework for APIs and HTTP servers.",
+      springboot:           "Java framework for robust back-end with IoC and auto-configuration.",
+      django:               "Full-featured Python web framework with ORM, auth, and admin.",
+      djangorestframework:  "Django extension for building standardized REST APIs.",
+      flask:                "Lightweight Python microframework for APIs and rapid prototyping.",
+      fastapi:              "Modern Python REST API framework with automatic typing and docs.",
+      tensorflow:           "Google's ML framework; the CNN model in this portfolio uses TensorFlow.",
+      pandas:               "Python library for tabular data manipulation and analysis.",
+      numpy:                "Efficient numerical computing with n-dimensional arrays in Python.",
+      postgresql:           "Robust and extensible open-source relational database.",
+      mongodb:              "Flexible document-oriented NoSQL database, scalable and schema-free.",
+      docker:               "Containerization platform for consistent packaging and deployment.",
+      mercadopago:          "Payment SDK/API for integration with the MercadoPago ecosystem.",
+      html5:                "Markup language for structuring modern web pages.",
+      css3:                 "Style language for layout, animations, and visual design on the web."
+    }
+  };
+
+  const KEYWORD_TOOLTIPS = {
+    pt: {
+      "programacao competitiva": "Resolucao de problemas algoritmicos sob pressao de tempo. Ver perfil no Codeforces e Beecrowd.",
+      "ciencia de dados": "Analise, limpeza e visualizacao de dados para extrair insights e apoiar decisoes.",
+      "inteligencia artificial": "Sistemas computacionais que aprendem e tomam decisoes — abrange ML, DL e NLP.",
+      "aprendizado de maquina": "Modelos que aprendem padroes a partir de dados sem regras explicitas.",
+      "aprendizado profundo": "Redes neurais com multiplas camadas para visao computacional, linguagem e mais.",
+      "redes neurais convolucionais": "Arquitetura de DL para analise de imagens; usada no projeto PIBIC Dermatologia.",
+      "python": "Linguagem principal para ciencia de dados, IA e automacao.",
+      "sql": "Linguagem para consulta e manipulacao de bancos de dados relacionais.",
+      "c++": "Linguagem de alto desempenho usada em programacao competitiva.",
+      "java": "Linguagem orientada a objetos usada em sistemas back-end.",
+      "javascript": "Linguagem central deste portfolio — terminal, GUI Win95 e todos os efeitos interativos.",
+      "kotlin": "Linguagem moderna JVM/Android, concisa e com seguranca de tipos.",
+      "django": "Framework web Python de alto nivel, com ORM, auth e admin inclusos.",
+      "flask": "Microframework Python leve para APIs e prototipagem rapida.",
+      "react": "Biblioteca JS para interfaces baseadas em componentes reutilizaveis.",
+      "pandas": "Biblioteca Python para manipulacao e analise de dados tabulares.",
+      "numpy": "Computacao numerica eficiente em Python com arrays n-dimensionais.",
+      "tensorflow": "Framework de ML do Google; usado no modelo CNN embutido neste portfolio.",
+      "pytorch": "Framework de DL do Meta, flexivel e amplamente adotado em pesquisa.",
+      "scikit-learn": "Biblioteca Python com algoritmos classicos de ML prontos para uso.",
+      "algoritmos": "Procedimentos passo a passo para resolucao de problemas — veja o Visualizador.",
+      "estruturas de dados": "Formas de organizar dados para acesso e modificacao eficiente.",
+      "ia": "Sigla para Inteligencia Artificial."
+    },
+    en: {
+      "competitive programming": "Solving algorithmic problems under time pressure. See Codeforces and Beecrowd profiles.",
+      "data science": "Analyzing and visualizing data to extract insights and inform decisions.",
+      "artificial intelligence": "Systems that learn and make decisions — covers ML, DL, and NLP.",
+      "machine learning": "Models that learn patterns from data without explicit rules.",
+      "deep learning": "Deep neural networks for vision, language, and more.",
+      "convolutional neural networks": "DL architecture for image analysis; used in the PIBIC Dermatology project.",
+      "python": "Primary language for data science, AI, and automation.",
+      "sql": "Language for querying and manipulating relational databases.",
+      "c++": "High-performance language used in competitive programming.",
+      "java": "Object-oriented language for back-end systems.",
+      "javascript": "Core language of this portfolio — terminal, Win95 GUI, and all interactive effects.",
+      "kotlin": "Modern JVM/Android language, concise and type-safe.",
+      "django": "High-level Python web framework with ORM, auth, and admin built-in.",
+      "flask": "Lightweight Python microframework for APIs and rapid prototyping.",
+      "react": "JS library for building reusable component-based interfaces.",
+      "pandas": "Python library for tabular data manipulation and analysis.",
+      "numpy": "Efficient numerical computing in Python with n-dimensional arrays.",
+      "tensorflow": "Google's ML framework; used in the CNN model embedded in this portfolio.",
+      "pytorch": "Meta's flexible DL framework, widely used in research.",
+      "scikit-learn": "Python library with ready-to-use classical ML algorithms.",
+      "algorithms": "Step-by-step procedures for problem solving — see the Visualizer.",
+      "data structures": "Ways to organize data for efficient access and modification.",
+      "ai": "Abbreviation for Artificial Intelligence."
+    }
+  };
+
   const KONAMI_SEQUENCE = [
     "ArrowUp",
     "ArrowUp",
@@ -498,11 +610,17 @@ import {
     windows: new Map(),
     createWindow({ title, lines, commandKey, contentFactory }) {
       const id = this.nextId++;
-      const offset = (this.windows.size % 5) * 24;
+      const cascade = this.windows.size % 7;
       const win = document.createElement("div");
       win.className = "window";
-      win.style.left = `${60 + offset}px`;
-      win.style.top = `${80 + offset}px`;
+      const vpw = window.innerWidth;
+      const vph = window.innerHeight - getTaskbarHeight();
+      const defaultW = 400;
+      const defaultH = 460;
+      const centerLeft = Math.max(40, Math.round((vpw - defaultW) / 2) + cascade * 30);
+      const centerTop = Math.max(32, Math.round((vph - defaultH) / 2) + cascade * 22);
+      win.style.left = `${centerLeft}px`;
+      win.style.top = `${centerTop}px`;
       win.style.zIndex = this.zIndex++;
       win.dataset.id = id;
 
@@ -617,15 +735,24 @@ import {
       const winData = this.windows.get(id);
       if (!winData) return;
       const shouldMinimize = force !== undefined ? force : !winData.minimized;
+      if (shouldMinimize === winData.minimized) return;
       winData.minimized = shouldMinimize;
-      winData.element.classList.toggle("minimized", shouldMinimize);
       if (shouldMinimize) {
-        winData.element.classList.remove("active");
-      }
-      winData.taskButton.classList.toggle("active", !shouldMinimize);
-      if (!shouldMinimize) {
+        winData.element.classList.remove("active", "is-restoring");
+        winData.element.classList.add("is-minimizing");
+        setTimeout(() => {
+          winData.element.classList.add("minimized");
+          winData.element.classList.remove("is-minimizing");
+        }, 185);
+      } else {
+        winData.element.classList.remove("minimized", "is-minimizing");
+        winData.element.classList.add("is-restoring");
+        setTimeout(() => {
+          winData.element.classList.remove("is-restoring");
+        }, 230);
         this.focusWindow(id);
       }
+      winData.taskButton.classList.toggle("active", !shouldMinimize);
     },
     closeWindow(id) {
       const winData = this.windows.get(id);
@@ -633,9 +760,12 @@ import {
       if (winData.onClose) {
         winData.onClose();
       }
-      winData.element.remove();
+      winData.element.classList.add("is-closing");
       winData.taskButton.remove();
       this.windows.delete(id);
+      setTimeout(() => {
+        winData.element.remove();
+      }, 145);
     },
     ensureWindowVisible(win) {
       if (!win) return;
@@ -4887,11 +5017,13 @@ import {
         appendResumeContent(wrapper, content.resume);
         break;
       case "email":
-        appendRowsFromLines(wrapper, content.email);
+        appendEmailContent(wrapper, content.email);
+        wrapper.__windowMeta = { size: { width: 380, height: 360 } };
         break;
       case "projects":
         wrapper.classList.add("gui-projects");
         appendProjectCards(wrapper, content.projects || []);
+        wrapper.__windowMeta = { size: { width: 700, height: 540 } };
         break;
       case "education":
         appendEducationContent(wrapper, content.education);
@@ -5163,6 +5295,126 @@ import {
     wrapper.append(linkWrap);
   }
 
+  function appendEmailContent(wrapper, lines = []) {
+    const isPt = (state.language || "pt") === "pt";
+
+    const EMAIL_META = {
+      gmail: {
+        badge: "G",
+        badgeClass: "email-badge-gmail",
+        label: isPt ? "Gmail" : "Gmail",
+        context: isPt ? "Pessoal" : "Personal",
+        composeLabel: isPt ? "Compor email" : "Compose email"
+      },
+      uel: {
+        badge: "UEL",
+        badgeClass: "email-badge-uel",
+        label: isPt ? "UEL Institucional" : "UEL Institutional",
+        context: isPt ? "Institucional · Universidade Estadual de Londrina" : "Institutional · State University of Londrina",
+        composeLabel: isPt ? "Compor email" : "Compose email"
+      },
+      default: {
+        badge: "@",
+        badgeClass: "email-badge-default",
+        label: isPt ? "Email" : "Email",
+        context: "",
+        composeLabel: isPt ? "Compor email" : "Compose email"
+      }
+    };
+
+    const copyLabel  = isPt ? "Copiar" : "Copy";
+    const copiedLabel = isPt ? "Copiado ✓" : "Copied ✓";
+
+    const section = document.createElement("div");
+    section.className = "email-section";
+
+    const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+
+    lines.forEach((line) => {
+      const text = String(line);
+      const match = text.match(/^([^:]+):\s*(.+)$/);
+      if (!match) return;
+
+      const rawLabel = match[1].trim();
+      const address  = match[2].trim();
+      if (!EMAIL_REGEX.test(address)) return;
+
+      const key = rawLabel.toLowerCase().replace(/\s+/g, "");
+      const meta = EMAIL_META[key] || EMAIL_META.default;
+
+      const card = document.createElement("div");
+      card.className = "email-card";
+
+      // header row: badge + name
+      const header = document.createElement("div");
+      header.className = "email-card-header";
+
+      const badge = document.createElement("span");
+      badge.className = `email-badge ${meta.badgeClass}`;
+      badge.textContent = meta.badge;
+      badge.setAttribute("aria-hidden", "true");
+
+      const name = document.createElement("span");
+      name.className = "email-card-name";
+      name.textContent = meta.label;
+
+      header.append(badge, name);
+
+      // address
+      const addrEl = document.createElement("a");
+      addrEl.className = "email-address";
+      addrEl.href = `mailto:${address}`;
+      addrEl.textContent = address;
+      addrEl.setAttribute("aria-label", `${meta.label}: ${address}`);
+
+      // context
+      const ctx = document.createElement("div");
+      ctx.className = "email-context";
+      ctx.textContent = meta.context;
+
+      // actions row
+      const actions = document.createElement("div");
+      actions.className = "email-actions";
+
+      const composeBtn = document.createElement("a");
+      composeBtn.className = "gui-button email-compose-btn";
+      composeBtn.href = `mailto:${address}`;
+      composeBtn.textContent = meta.composeLabel;
+      composeBtn.setAttribute("role", "button");
+
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "gui-button email-copy-btn";
+      copyBtn.textContent = copyLabel;
+      copyBtn.addEventListener("click", () => {
+        navigator.clipboard?.writeText(address).then(() => {
+          copyBtn.textContent = copiedLabel;
+          copyBtn.classList.add("is-copied");
+          setTimeout(() => {
+            copyBtn.textContent = copyLabel;
+            copyBtn.classList.remove("is-copied");
+          }, 1800);
+        }).catch(() => {
+          // fallback: select the text
+          addrEl.focus();
+        });
+      });
+
+      actions.append(composeBtn, copyBtn);
+      card.append(header, addrEl, ctx, actions);
+      section.append(card);
+    });
+
+    if (!section.children.length) {
+      const empty = document.createElement("div");
+      empty.textContent = getUi().noContent;
+      wrapper.append(empty);
+      return;
+    }
+
+    wrapper.append(section);
+  }
+
   function findFirstUrl(lines) {
     if (!Array.isArray(lines)) return "";
     for (const line of lines) {
@@ -5265,7 +5517,6 @@ import {
 
   function appendProjectCards(wrapper, projects) {
     const ui = getUi();
-    const messages = getMessages();
     if (!projects.length) {
       const empty = document.createElement("div");
       empty.textContent = ui.noProjects;
@@ -5273,101 +5524,159 @@ import {
       return;
     }
 
-    const curated = projects.slice(0, 6);
-    curated.forEach((project, index) => {
-      const card = document.createElement("div");
-      const accentIndex = (index % 5) + 1;
-      card.className = `gui-card project-card project-accent-${accentIndex}`;
+    const curated = projects.slice(0, 8);
 
+    // header bar
+    const hdr = document.createElement("div");
+    hdr.className = "projects-header";
+    const hdrTitle = document.createElement("span");
+    hdrTitle.className = "projects-header-title";
+    hdrTitle.textContent = state.language === "pt" ? "Projetos" : "Projects";
+    const hdrCount = document.createElement("span");
+    hdrCount.className = "projects-header-count";
+    hdrCount.textContent = curated.length;
+    hdr.append(hdrTitle, hdrCount);
+    wrapper.append(hdr);
+
+    // grid
+    const grid = document.createElement("div");
+    grid.className = "projects-grid";
+
+    curated.forEach((project, index) => {
+      const accentIndex = (index % 5) + 1;
+      const isFeatured = index === 0;
+      const card = document.createElement("div");
+      card.className = `project-card project-accent-${accentIndex}${isFeatured ? " project-featured" : ""}`;
+
+      // cover
       if (project.cover) {
         const coverWrap = document.createElement("div");
         coverWrap.className = "project-cover-wrap";
+
         const cover = document.createElement("img");
         cover.className = "project-cover";
         cover.src = project.cover;
-        cover.alt = project.name ? `Capa do projeto ${project.name}` : "Capa do projeto";
-        cover.loading = "lazy";
+        cover.alt = project.name || "";
+        cover.loading = index < 3 ? "eager" : "lazy";
         coverWrap.append(cover);
+
+        // live badge
+        const hasLive = Array.isArray(project.links) &&
+          project.links.some((l) => !l.includes("github.com"));
+        if (hasLive) {
+          const liveBadge = document.createElement("span");
+          liveBadge.className = "project-live-badge";
+          liveBadge.textContent = "LIVE";
+          coverWrap.append(liveBadge);
+        }
+
+        // hover overlay
+        if (project.description) {
+          const overlay = document.createElement("div");
+          overlay.className = "project-cover-overlay";
+          const overlayText = document.createElement("p");
+          overlayText.textContent = project.description;
+          overlay.append(overlayText);
+          coverWrap.append(overlay);
+        }
+
         card.append(coverWrap);
       }
 
-      const header = document.createElement("div");
-      header.className = "project-header";
+      // body
+      const body = document.createElement("div");
+      body.className = "project-body";
+
+      // title row
+      const titleRow = document.createElement("div");
+      titleRow.className = "project-title-row";
       const title = document.createElement("h4");
-      title.textContent = project.name || messages.projectDefaultName;
-      const badge = document.createElement("span");
-      badge.className = "project-index";
-      badge.textContent = String(index + 1).padStart(2, "0");
-      header.append(title, badge);
-      card.append(header);
+      title.className = "project-title";
+      title.textContent = project.name || "Project";
+      const idx = document.createElement("span");
+      idx.className = "project-index";
+      idx.textContent = String(index + 1).padStart(2, "0");
+      titleRow.append(title, idx);
+      body.append(titleRow);
 
-      if (project.description) {
-        const desc = document.createElement("p");
-        desc.className = "project-desc";
-        desc.textContent = project.description;
-        card.append(desc);
-      }
-
-      if (project.details && project.details !== project.description) {
-        const details = document.createElement("p");
-        details.className = "project-details";
-        details.textContent = project.details;
-        card.append(details);
-      }
-
+      // stack tags with language-specific data attr
       if (Array.isArray(project.stack) && project.stack.length) {
         const tags = document.createElement("div");
         tags.className = "project-tags";
+        const lang = state.language || "pt";
+        const stackTipMap = STACK_TOOLTIPS[lang] || STACK_TOOLTIPS.pt;
         project.stack.forEach((item) => {
           const tag = document.createElement("span");
           tag.className = "project-tag";
+          const normKey = item.toLowerCase().replace(/[\s.+]/g, "");
+          tag.dataset.lang = normKey;
           tag.textContent = item;
+          const tip = stackTipMap[normKey];
+          if (tip) {
+            tag.dataset.tooltip = tip;
+            tag.setAttribute("tabindex", "0");
+            tag.setAttribute("role", "note");
+            tag.setAttribute("aria-label", `${item}: ${tip}`);
+          }
           tags.append(tag);
         });
-        card.append(tags);
+        body.append(tags);
       }
 
-      const lessons = formatProjectLessons(project, messages);
-      if (lessons) {
-        const lessonEl = document.createElement("div");
-        lessonEl.className = "project-lessons";
-        const label = document.createElement("span");
-        label.className = "project-lessons-label";
-        label.textContent = `${messages.projectLessonsLabel}:`;
-        const value = document.createElement("span");
-        value.textContent = ` ${lessons}`;
-        lessonEl.append(label, value);
-        card.append(lessonEl);
+      // lessons as bullet list
+      if (Array.isArray(project.lessons) && project.lessons.length) {
+        const ul = document.createElement("ul");
+        ul.className = "project-lessons-list";
+        project.lessons.forEach((lesson) => {
+          const li = document.createElement("li");
+          li.textContent = lesson;
+          ul.append(li);
+        });
+        body.append(ul);
       }
 
+      // link buttons
       if (Array.isArray(project.links) && project.links.length) {
-        const links = document.createElement("div");
-        links.className = "gui-links project-links";
+        const linksRow = document.createElement("div");
+        linksRow.className = "project-links-row";
         project.links.forEach((link) => {
           const a = document.createElement("a");
+          a.href = link;
           a.target = "_blank";
           a.rel = "noopener noreferrer";
-          a.classList.add("link");
-          const isEmail = link.includes("@") && !link.startsWith("http");
-          const type = classifyLink(link, isEmail);
-          applyLinkClasses(a, link, isEmail, type);
-          a.append(buildLinkIcon(type), document.createTextNode(link));
-          links.append(a);
+          const isGithub = link.includes("github.com");
+          a.className = isGithub
+            ? "project-link-btn project-link-github"
+            : "project-link-btn project-link-live";
+          a.textContent = isGithub ? "GitHub ↗" : "Live Demo ↗";
+          linksRow.append(a);
         });
-        card.append(links);
+        body.append(linksRow);
       }
 
-      wrapper.append(card);
+      card.append(body);
+      grid.append(card);
     });
+
+    wrapper.append(grid);
   }
 
   function appendHighlightedText(container, text, keywords) {
+    const lang = state.language || "pt";
+    const tooltipMap = KEYWORD_TOOLTIPS[lang] || KEYWORD_TOOLTIPS.pt;
     const segments = splitByKeywords(text, keywords);
     segments.forEach((segment) => {
       if (segment.highlight) {
         const span = document.createElement("span");
         span.className = "keyword-magenta";
         span.textContent = segment.text;
+        const tip = tooltipMap[segment.text.toLowerCase()];
+        if (tip) {
+          span.dataset.tooltip = tip;
+          span.setAttribute("tabindex", "0");
+          span.setAttribute("role", "note");
+          span.setAttribute("aria-label", `${segment.text}: ${tip}`);
+        }
         container.append(span);
       } else {
         linkify(segment.text, container);
@@ -5452,11 +5761,91 @@ import {
       });
   }
 
+  function initKeywordTooltip() {
+    const tip = document.createElement("div");
+    tip.id = "kw-tooltip";
+    tip.setAttribute("role", "tooltip");
+    document.body.append(tip);
+
+    let currentEl = null;
+    let hideTimer = null;
+
+    function show(el) {
+      if (currentEl === el) return;
+      clearTimeout(hideTimer);
+      currentEl = el;
+      tip.textContent = el.dataset.tooltip;
+      tip.classList.remove("is-visible");
+
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const tipW = tip.offsetWidth || 220;
+        const tipH = tip.offsetHeight || 36;
+        const gap = 8;
+
+        let left = rect.left + rect.width / 2 - tipW / 2;
+        let top = rect.top - tipH - gap;
+
+        if (top < 4) top = rect.bottom + gap;
+        left = Math.max(4, Math.min(left, vw - tipW - 4));
+        top = Math.max(4, Math.min(top, vh - tipH - 4));
+
+        tip.style.left = `${Math.round(left)}px`;
+        tip.style.top = `${Math.round(top)}px`;
+
+        requestAnimationFrame(() => tip.classList.add("is-visible"));
+      });
+    }
+
+    function hide() {
+      currentEl = null;
+      tip.classList.remove("is-visible");
+      hideTimer = setTimeout(() => {
+        tip.style.left = "-9999px";
+      }, 160);
+    }
+
+    const TIP_SEL = "[data-tooltip]";
+
+    document.addEventListener("mouseover", (e) => {
+      const kw = e.target.closest?.(TIP_SEL);
+      if (kw) {
+        show(kw);
+      } else if (currentEl && !currentEl.contains(e.target)) {
+        hide();
+      }
+    });
+
+    document.addEventListener("mouseout", (e) => {
+      if (!e.target.closest?.(TIP_SEL)) return;
+      const to = e.relatedTarget;
+      if (!to || !to.closest?.(TIP_SEL)) {
+        hide();
+      }
+    });
+
+    document.addEventListener("focusin", (e) => {
+      const kw = e.target.closest?.(TIP_SEL);
+      if (kw) show(kw);
+    });
+
+    document.addEventListener("focusout", (e) => {
+      const kw = e.target.closest?.(TIP_SEL);
+      if (kw) hide();
+    });
+
+    tip.style.left = "-9999px";
+    tip.style.top = "-9999px";
+  }
+
   async function init() {
     cacheDom();
     ensurePetMascot();
     bindEvents();
     initCustomCursor();
+    initKeywordTooltip();
     state.language = resolveInitialLanguage();
     state.locale = getLocaleForLanguage(state.language);
     restoreUserPreferences();

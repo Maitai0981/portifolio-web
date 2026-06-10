@@ -1,151 +1,323 @@
-# Portfolio Terminal + GUI
+# Matheus Saragoca — Interactive Portfolio
 
-Portfolio SPA com dois modos de interacao:
-- terminal estilo CLI;
-- GUI retro inspirada no Windows 95.
+> A single-page portfolio with a dual interface: an Ubuntu-style browser terminal and a Windows 95-inspired GUI. Built entirely with vanilla JavaScript — no frameworks.
 
-## Preview
+**Live:** https://maitai0981.github.io/portifolio-web/
 
-### GUI
+---
 
-![Preview GUI](docs/images/preview-gui.png)
+## Overview
 
-### CLI
+This portfolio presents professional and academic content through two interactive modes:
 
-![Preview CLI](docs/images/preview-cli.png)
+| Mode | Description |
+|------|-------------|
+| **GUI** | Windows 95-style desktop with draggable windows, taskbar, Start menu, and desktop icons |
+| **Terminal** | Ubuntu-like CLI with command history, fuzzy search, tab-completion, and ANSI color output |
 
-## Objetivo
+Both modes share the same application state and content source (`data.json`), and the user can switch between them at any time via the `gui` / `terminal` commands or the desktop Terminal icon.
 
-Entregar uma experiencia interativa de apresentacao profissional com foco em:
-- navegacao por comandos;
-- janelas e componentes visuais;
-- deploy estatico no GitHub Pages;
-- suporte offline parcial com Service Worker.
+---
 
-## Stack
+## Features
 
-- HTML + CSS + JavaScript (ES Modules).
-- Node.js apenas para servidor local e build.
-- `esbuild` para minificacao no build de producao.
-- GitHub Actions para deploy automatico no GitHub Pages.
+### Terminal
+- **25+ commands** — `help`, `about`, `projects`, `education`, `social`, `me`, `algorithms`, `cnn`, `snake`, `theme`, `neofetch`, `cowsay`, `sudo`, and more
+- **Fuzzy command search** — Trie-based prefix matching + Levenshtein distance for typo correction
+- **Command Menu** — palette-style overlay (Ctrl+K) with live search and keyboard navigation
+- **Typing animation** — configurable speed, volume-aware (auto-disables for large output)
+- **ANSI rendering** — color codes and hyperlink detection
+- **Command history** — persistent across sessions (up to 220 entries via `localStorage`)
+- **Bilingual** — `lang pt` / `lang en` switches all content at runtime
 
-## Como rodar localmente
+### GUI (Windows 95)
+- Desktop icons, double-click to open windows
+- Draggable, resizable windows with z-index management
+- Start menu with full app list
+- Taskbar with open window buttons, availability badge, and live clock
+- Windows: About, Social, Projects, Education, Curriculum, Email, Algorithms, CNN Demo, Snake, Terminal
 
-Pre-requisito:
-- Node.js 20+ (recomendado).
+### Interactive Apps
+| App | Command | Description |
+|-----|---------|-------------|
+| **Algorithm Viewer** | `algorithms` | Step-by-step visualization of Bubble, Selection, Merge, Quick, Heap Sort, and Dijkstra |
+| **CNN Demo** | `cnn` | In-browser image classification using a pre-trained TensorFlow.js model |
+| **Snake Game** | `snake` | Keyboard-controlled Snake with score tracking |
 
-Comandos:
+### Visual Effects
+- **Matrix Rain** — ASCII canvas animation, theme-aware (characters and palette vary per theme)
+- **Doom Fire** — Palettized fire simulation on canvas, adaptive to device performance tier
+- **Desktop Pet** — ASCII sprite companion that reacts to clicks, keystrokes, command streaks, and errors
+
+### Themes
+| Theme | Matrix Style |
+|-------|-------------|
+| `dark` | — |
+| `light` | — |
+| `hacker` | Binary/symbol rain, green palette |
+| `retro` | — |
+| `fire` | ASCII fire rain, orange palette + Doom Fire background |
+| `secret` | Block/hex rain, cyan/pink palette *(unlock required)* |
+
+---
+
+## Architecture
+
+```
+portifolio-web/
+├── index.html              # Entry point — markup for terminal, GUI, command menu
+├── main.js                 # Application orchestrator (IIFE, ~5 400 lines)
+├── styles.css              # CSS layer entry point (@import of all layers)
+├── data.json               # All content and translations (pt / en)
+├── service-worker.js       # Offline cache via Cache API
+├── manifest.webmanifest    # PWA manifest
+│
+├── modules/
+│   ├── core/
+│   │   ├── appState.js     # Central mutable state object (createAppState / createDomRefs)
+│   │   └── themeConfig.js  # Theme names, CSS classes, canvas presets, color map
+│   │
+│   ├── features/
+│   │   ├── terminal/
+│   │   │   ├── config.js   # COMMANDS list, TERMINAL_MAX_LINES, HISTORY_MAX_ITEMS
+│   │   │   └── typing.js   # Typing speed profiles, volume-aware rendering decisions
+│   │   ├── gui/
+│   │   │   └── config.js   # GUI_WINDOW_COMMANDS — which commands open windows
+│   │   ├── effects/
+│   │   │   ├── matrixAdaptive.js  # Performance-tier logic for Matrix Rain
+│   │   │   └── doomFire.js        # Doom Fire palette, grid, burst queue, telemetry
+│   │   └── pet/
+│   │       ├── config.js          # Pet timing constants, reaction priorities
+│   │       └── spriteSheet.js     # ASCII sprite frames per reaction type
+│   │
+│   ├── commandSearch.js    # buildCommandIndex / getPrefixMatches / searchCommands / suggestCommands
+│   ├── trie.js             # Prefix trie for O(k) command lookup
+│   ├── levenshtein.js      # Edit distance for fuzzy matching
+│   ├── algorithmViewer.js  # Sorting/graph algorithm visualizer (DOM-based)
+│   ├── cnnDemo.js          # TensorFlow.js image classifier
+│   └── snakeGame.js        # Canvas-based Snake game
+│
+├── styles/
+│   ├── base.css            # CSS layer: resets, layout, terminal, fonts
+│   ├── components.css      # CSS layer: GUI windows, cards, buttons, taskbar
+│   ├── themes.css          # CSS layer: CSS custom properties per theme
+│   └── effects.css         # CSS layer: matrix, fire, pet, animations
+│
+├── assets/
+│   ├── Matheus.webp        # Profile photo (OG image)
+│   ├── sprite.png / sprite_94.webp   # Icon sprite sheet
+│   ├── covers/             # SVG project cover images
+│   ├── edu/                # Education institution logos
+│   └── web_model/          # TensorFlow.js model (model.json + weights)
+│
+├── scripts/
+│   ├── build.mjs           # esbuild pipeline: copy, minify JS/CSS, inject version
+│   ├── lint.mjs            # Static linting script
+│   └── soak-tests.mjs      # Long-running performance/stability tests
+│
+├── tests/
+│   ├── core-modules.test.mjs         # Unit tests — appState, themeConfig
+│   ├── command-search.test.mjs       # Unit tests — Trie, Levenshtein, search API
+│   ├── performance-adaptive.test.mjs # Unit tests — matrix/fire adaptive logic
+│   ├── content-static.test.mjs       # Unit tests — data.json schema validation
+│   ├── service-worker-static.test.mjs
+│   ├── worker-api.test.mjs           # Unit tests — Cloudflare Worker API
+│   └── e2e/
+│       ├── app.e2e.spec.mjs          # Playwright functional E2E tests
+│       └── visual.e2e.spec.mjs       # Playwright visual regression snapshots
+│
+└── dist/                   # Build output — deployed to GitHub Pages
+```
+
+### State Management
+
+All runtime state lives in a single plain object created by `createAppState()` (`modules/core/appState.js`). There is no reactive framework; `main.js` mutates state directly and calls render functions as needed. Persistent preferences (theme, language, typing speed, reduced motion) are serialized to `localStorage` under namespaced keys.
+
+### Command Search Pipeline
+
+```
+User input
+    │
+    ▼
+buildCommandIndex(COMMANDS)        ← called once at startup
+    │  Trie + normalized command list
+    ▼
+getPrefixMatches(index, prefix)    ← O(k) prefix lookup via Trie
+    │
+    ▼  (fallback when no prefix match)
+searchCommands(index, query)       ← Levenshtein fuzzy match
+    │                                 len ≤ 4 → d≤1 | len ≤ 7 → d≤2 | else → d≤3
+    ▼
+suggestCommands(index, query)      ← up to 6 ranked suggestions ("did you mean?")
+```
+
+### CSS Layer Order
+
+```css
+@layer base, components, themes, effects;
+```
+
+Lower layers can be overridden without specificity conflicts. Theme variables are declared per `[data-theme]` attribute; effects are isolated to the highest layer to prevent bleed-through.
+
+### Performance Tiers
+
+The Matrix Rain and Doom Fire effects self-regulate based on measured frame time:
+
+| Tier | Condition |
+|------|-----------|
+| `high` | smoothedDt ≤ 1.2 |
+| `medium` | smoothedDt ≤ 1.65 |
+| `low` | smoothedDt > 1.65 or `prefers-reduced-motion` |
+
+Frame interval, column scale, and draw stride adjust per tier to maintain smooth animation on low-end devices.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | Vanilla JavaScript (ES Modules, ES2020 target) |
+| Styling | CSS (4-layer architecture — base / components / themes / effects) |
+| ML / AI | TensorFlow.js (in-browser CNN inference) |
+| Build | esbuild (JS + CSS minification, version injection) |
+| Testing | Node.js built-in test runner (unit) + Playwright (E2E + visual regression) |
+| Backend | Cloudflare Workers (AI chat endpoint — `me` command) |
+| Hosting | GitHub Pages |
+| PWA | Service Worker + Web App Manifest |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js ≥ 18
+
+### Install
 
 ```bash
 npm install
+```
+
+### Development server
+
+```bash
 npm run dev
 ```
 
-Servidor local:
-- URL padrao: `http://localhost:8080`
-- Porta customizada: definir `PORT` no ambiente.
+Starts a local server. Open `http://localhost:<port>` in your browser.
 
-## Scripts
-
-- `npm run dev`: sobe o servidor local (`server.js`).
-- `npm start`: alias de `npm run dev`.
-- `npm run build`: gera `dist/` com arquivos minificados para deploy estatico.
-- `npm run lint`: validacoes de JS/TS + checks basicos de HTML.
-- `npm run worker:dev`: executa o Worker localmente (Cloudflare).
-- `npm run worker:deploy`: publica o Worker no Cloudflare.
-- `npm run worker:tail`: acompanha logs do Worker.
-
-## Build de producao
+### Build
 
 ```bash
 npm run build
 ```
 
-Saida:
-- pasta `dist/` pronta para publicacao;
-- JS/CSS minificados;
-- arquivos estaticos copiados automaticamente.
+Outputs minified assets to `./dist/`. The build version is injected automatically (format: `YYYY-MM-DD-HHmmss`) into `index.html`, `styles.css`, `main.js`, and the Service Worker cache key.
 
-Pipeline de build:
-- arquivo: `scripts/build.mjs`
-- copia arquivos principais;
-- percorre `dist/` e minifica `.js` e `.css`.
+### Tests
 
-## Deploy no GitHub Pages
+```bash
+# Unit tests (Node.js built-in runner)
+npm test
 
-Workflow:
-- arquivo: `.github/workflows/pages.yml`
-- gatilho: push em `main` e execucao manual.
+# End-to-end tests (Playwright)
+npm run test:e2e:install   # first time only — installs Chromium
+npm run test:e2e
+npm run test:e2e:headed    # with visible browser window
 
-Fluxo:
-- instala dependencias com `npm ci`;
-- executa `npm run build`;
-- publica `dist/` via `actions/deploy-pages`.
+# Soak / performance tests
+npm run test:soak
+```
 
-Arquivos de suporte ao Pages:
-- `404.html`: fallback de rota para SPA;
-- `.nojekyll`: desativa processamento Jekyll;
-- `robots.txt` e `sitemap.xml`: indexacao.
+### Cloudflare Worker (`me` command backend)
 
-## Estrutura principal
+```bash
+npm run worker:dev      # local dev via Wrangler
+npm run worker:deploy   # deploy to Cloudflare
+npm run worker:tail     # stream live logs
+```
 
-- `index.html`: bootstrap da aplicacao, meta tags, SEO social, schema JSON-LD.
-- `main.js`: estado global, comandos, GUI, i18n, registro de SW.
-- `styles.css`: tema terminal + GUI.
-- `data.json`: conteudo textual (pt/en), projetos e metadados.
-- `modules/`: modulos auxiliares (`trie`, `levenshtein`, `commandSearch`, `cnnDemo`, `algorithmViewer`, `snakeGame`).
-- `service-worker.js`: cache e fallback offline.
-- `wrangler.jsonc`: configuracao do Cloudflare Worker (backend do comando `me`).
-- `worker/src/index.ts`: API `/me` com GitHub + Llama 3 (Workers AI).
-- `manifest.webmanifest`: metadados PWA.
-- `server.js`: servidor HTTP local sem dependencias externas.
-- `assets/`: imagens, sprites, capas e modelo CNN.
+---
 
-## Comportamento de cache e Service Worker
+## Terminal Commands Reference
 
-- Em producao (HTTPS): Service Worker e registrado.
-- Em localhost: Service Worker e removido automaticamente para evitar cache sujo durante desenvolvimento.
-- Estrategia principal:
-  - navegacao/documento e JSON: `networkFirst` com fallback para `index.html`;
-  - estaticos: `staleWhileRevalidate`.
+| Command | Description |
+|---------|-------------|
+| `help` | List all available commands |
+| `about` | Professional summary and skill tags |
+| `projects` | List projects; `projects <name>` for details |
+| `education` | Academic background |
+| `social` | Links (GitHub, LinkedIn, Codeforces, Beecrowd) |
+| `resume` / `curriculum` | Open PDF résumé |
+| `email` | Contact email |
+| `me` | AI-powered conversational assistant (Cloudflare Worker) |
+| `lang pt` / `lang en` | Switch interface language |
+| `theme <name>` | Change theme (`dark`, `light`, `hacker`, `retro`, `fire`) |
+| `typing` | Toggle typing animation |
+| `motion` | Toggle reduced motion |
+| `pet` | Toggle desktop pet |
+| `algorithms` | Open algorithm visualizer |
+| `cnn` | Open CNN image classifier demo |
+| `snake` | Play Snake |
+| `gui` | Switch to GUI mode |
+| `terminal` | Switch to terminal mode (from GUI) |
+| `neofetch` | System info display |
+| `cowsay <text>` | ASCII cow with message |
+| `date` | Current date and time |
+| `banner` | Re-display the ASCII banner |
+| `history` | Show command history |
+| `clear` / `cls` | Clear terminal output |
+| `sudo` | *(easter egg)* |
 
-## SEO e indexacao
+**Keyboard shortcuts**
 
-- `canonical`, `og:*`, `twitter:*` e `theme-color` configurados.
-- `sitemap.xml` e `robots.txt` incluidos.
-- JSON-LD (`Person`) no `index.html`.
+| Shortcut | Action |
+|----------|--------|
+| `↑` / `↓` | Navigate command history |
+| `Tab` | Autocomplete from suggestions |
+| `Ctrl+K` | Open Command Menu |
+| `Esc` | Close Command Menu / active GUI window |
 
-## Roteamento SPA no Pages
+---
 
-- `404.html` redireciona para `/?p=...`.
-- `index.html` restaura a rota original no carregamento.
-- rotas sem extensao tambem recebem barra final para manter consistencia de caminho.
+## Projects Showcased
 
-## Conteudo do portfolio
+| Project | Stack | Description |
+|---------|-------|-------------|
+| **SupaSport** | React Native, Expo | Sports facility booking platform with owner and user flows |
+| **PIBIC Dermatologia** | React Native, Python, TensorFlow | Mobile app for preliminary skin lesion analysis (research) |
+| **Sistema de Cadastro de Alunos** | Python, Django REST Framework | Student registration CRUD API with image upload |
+| **Crud BD Python** | Python | Basic database CRUD operations |
+| **get-shop** | Python, FastAPI | Converts WhatsApp messages and CSV files into structured inventory records |
+| **PW_100** | Python, Express.js, Next.js, MongoDB | Cryptocurrency arbitrage monitor with real-time price tracking and alerts |
+| **Rodando Moto Center** | Spring Boot, React, PostgreSQL, Docker | Full-stack workshop management (clients, service orders, inventory, financials) |
+| **Mundo de Libras** | HTML5, CSS3, JavaScript | Educational website for Brazilian Sign Language (Libras) |
 
-Fonte unica:
-- `data.json`
+---
 
-Para atualizar portfolio:
-- edite `translations.pt` e `translations.en`;
-- atualize links, projetos, educacao e resume no JSON;
-- valide com `npm run build`.
+## Deployment
 
-## Troubleshooting rapido
+The site is deployed to GitHub Pages from the `dist/` directory. A `.nojekyll` file disables Jekyll processing. The `404.html` redirects unknown paths back to the SPA via a query-string encoding trick, which restores the original URL on load.
 
-- Erro `refresh.js` com `ws://localhost:8081`:
-  - nao pertence ao projeto;
-  - normalmente vem de extensao de live reload/preview.
-- Mudanca nao aparece no browser:
-  - faca hard reload (`Ctrl+F5`);
-  - limpe SW/caches no DevTools se necessario.
-- Deploy nao atualizou:
-  - confira run do workflow em `Actions`;
-  - confirme que o Pages usa source `GitHub Actions`.
+The Service Worker pre-caches all static assets on install and serves them offline. Cache keys are versioned with the build version string to ensure clean updates on each deploy.
 
-## Documentacao detalhada
+---
 
-- `docs/ARCHITECTURE.md`
-- `docs/DEPLOY_GITHUB_PAGES.md`
-- `docs/TROUBLESHOOTING.md`
-- `docs/CLOUDFLARE_WORKER_ME.md`
+## Browser Support
+
+Targets ES2020 via esbuild. Requires:
+
+- Canvas API (Matrix Rain, Doom Fire, Snake)
+- ES Modules (`type="module"`)
+- CSS custom properties and `@layer`
+- `localStorage` (preferences persistence)
+- Service Worker (offline support — optional)
+
+---
+
+## Author
+
+**Matheus Saragoca** — Software Developer  
+[GitHub](https://github.com/Maitai0981) · [LinkedIn](https://www.linkedin.com/in/matheus-sarago%C3%A7a-a352342b6/) · [Codeforces](https://codeforces.com/profile/Matheus2081)

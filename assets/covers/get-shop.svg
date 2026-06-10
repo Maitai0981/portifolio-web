@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-label="get-shop cover">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#253352"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#g1)"/>
+  <rect x="0" y="0" width="640" height="4" fill="#306998"/>
+  <!-- Python logo hint -->
+  <rect x="460" y="60" width="130" height="240" rx="8" fill="#ffffff" opacity="0.04"/>
+  <!-- JSON blocks -->
+  <rect x="40" y="90" width="380" height="22" rx="3" fill="#ffffff" opacity="0.06"/>
+  <rect x="40" y="120" width="310" height="22" rx="3" fill="#ffffff" opacity="0.04"/>
+  <rect x="40" y="150" width="350" height="22" rx="3" fill="#ffffff" opacity="0.06"/>
+  <rect x="40" y="180" width="290" height="22" rx="3" fill="#ffffff" opacity="0.04"/>
+  <rect x="40" y="210" width="330" height="22" rx="3" fill="#ffffff" opacity="0.06"/>
+  <!-- arrow -->
+  <text x="460" y="200" font-family="Arial, Helvetica, sans-serif" font-size="40" fill="#FFD43B" opacity="0.7">→</text>
+  <rect x="500" y="165" width="90" height="60" rx="4" fill="#306998" opacity="0.5"/>
+  <text x="515" y="200" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#ffffff">JSON</text>
+  <text x="40" y="60" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#ffffff">get-shop</text>
+  <text x="40" y="300" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#FFD43B" font-weight="600">WhatsApp / CSV  →  Inventory API</text>
+  <text x="40" y="328" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#8baac4">Python · FastAPI</text>
+</svg>
